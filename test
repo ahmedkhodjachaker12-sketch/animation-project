@@ -45,7 +45,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
 <body>
 <main>
   <h1>Firsts, drawn in code</h1>
-  <p class="sub">The whole video: the opening grid, all nine firsts, and the closing grid. Written labels are off so you can add them in your editor; switch them on below to see where they were.</p>
+  <p class="sub">The whole video: the opening grid, all nine firsts, and the closing grid. Written labels sit on white cards so they never clash with the drawing; switch them off below if you'd rather add them in your editor.</p>
   <div class="stage"><canvas id="cv" width="1920" height="1080" aria-label="Current panel"></canvas></div>
   <p class="caption" id="cap" aria-live="polite"></p>
   <div class="bar">
@@ -60,7 +60,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     <label><input type="checkbox" id="optCap" checked> Show narration</label>
     <label><input type="checkbox" id="optBoil"> Hand-drawn wobble</label>
     <label><input type="checkbox" id="optPush" checked> Slow push-in on key panels</label>
-    <label><input type="checkbox" id="optText"> Show written text (dates, labels)</label>
+    <label><input type="checkbox" id="optText" checked> Show written text (dates, labels)</label>
     <label><input type="checkbox" id="optName" checked> Name in the title bar</label>
   </div>
 </main>
@@ -80,7 +80,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     smoke: '#9aa0a7', burnt: '#5c4a3e', burnt2: '#7a6454', paper: '#fbf8f1',
     wicker: '#c9a063', wickerD: '#a37c45', sepia: '#d8c6a1', ruler: '#f1d36a', coatN: '#2f3a4f', coatK: '#2e2e30', trou: '#8b8f96', locoY: '#e7c13a', locoG: '#3f6b4a', copper: '#c07a3a', steel: '#3a3a3a', grand: '#8e2323', grass: '#d4e5b4', greyH: '#b9b9b9', olive: '#7d7248', straw: '#e8cf8a', cloth: '#f1e8d0', dressN: '#3b4a6b', dressP: '#5e4a6e', hairD: '#3e2e24', slate: '#58606b', whitewash: '#f3f0e8', stone: '#bdb6a8', iron: '#4a4d52', brick: '#b5654a', road: '#a7a7a3'
   };
-  var J = 1.3, LW = 5, BOIL = 0, TEXT_ON = false, BAR_NAME = true, BAR_H = 150;
+  var J = 1.3, LW = 5, BOIL = 0, TEXT_ON = true, BAR_NAME = true, BAR_H = 150, BADGE = { x: 1792, y: 140, r: 116 };
 
   /* ---------- seeded randomness ---------- */
   var _s = 1;
@@ -442,7 +442,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   }
   /* someone standing in a basket: body behind the wicker, forearms and hands over the rim */
   function rider(ctx, o, hands, basket) {
-    person(ctx, Object.assign({}, o, { noArms: true, noLegs: true }));
+    person(ctx, Object.assign({}, o, { noArms: true }));
     basket();
     var pl = o.pose && o.pose.l, pr = o.pose && o.pose.r;
     return personArms(ctx, Object.assign({}, o, { pose: { l: pl || { to: hands[0], type: 'fist', bend: 1 }, r: pr || { to: hands[1], type: 'fist', bend: -1 } } }));
@@ -492,8 +492,8 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     o = o || {}; var u = s * 10, lw = pen(u), rot = o.rot || 0, c = Math.cos(rot), sn = Math.sin(rot);
     function L(p) { var dx = p[0] - x, dy = p[1] - y; return [dx * c + dy * sn, -dx * sn + dy * c]; }
     ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
-    if (o.legs) [-1, 1].forEach(function (sd) { ln2(ctx, [[sd * 1.2 * u, 1.6 * u], [sd * 1.8 * u, 7 * u], [sd * 1.4 * u, 12 * u]], lw * 1.05); });
-    if (o.hands) o.hands.forEach(function (hw, i) { var h = L(hw), sx = (i ? 1 : -1) * 3.2 * u; ln2(ctx, [[sx, 0], [(sx + h[0]) / 2, h[1] / 2 + (i ? 1 : -1) * 1.4 * u], h], lw * 1.05); stickHand(ctx, h[0], h[1], Math.atan2(h[1], h[0] - sx), 0.95 * u, 'fist', lw); });
+    if (o.legs) [-1, 1].forEach(function (sd) { ln2(ctx, [[sd * 1.2 * u, 1.6 * u], [sd * 1.8 * u, 7 * u], [sd * 1.4 * u, 12 * u]], lw * 1.05, o.lc); });
+    if (o.hands) o.hands.forEach(function (hw, i) { var h = L(hw), sx = (i ? 1 : -1) * 3.2 * u; ln2(ctx, [[sx, 0], [(sx + h[0]) / 2, h[1] / 2 + (i ? 1 : -1) * 1.4 * u], h], lw * 1.05, o.lc); stickHand(ctx, h[0], h[1], Math.atan2(h[1], h[0] - sx), 0.95 * u, 'fist', lw); });
     E(ctx, 0, 0, 4.2 * u, 2.2 * u, { fill: o.coat || C.coatN, w: lw, j: 0 });
     E(ctx, 0, -0.6 * u, 3.4 * u, 3.4 * u, { fill: o.hair || C.hairB, w: lw, j: 0.3 });
     S(ctx, [[-1.6 * u, -2.6 * u], [0, -1.2 * u], [1.4 * u, -2.8 * u]], { w: lw * 0.5, j: 0 });
@@ -503,6 +503,14 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   function railsPersp(ctx, vx, vy, xl, xr, yb) {
     for (var i = 0; i < 14; i++) { var t = Math.pow(i / 14, 1.8), y = yb - (yb - vy) * (1 - t) * 0.985, f = (y - vy) / (yb - vy), cx = vx + ((xl + xr) / 2 - vx) * f, hw = (xr - xl) / 2 * f * 1.25; Rc(ctx, cx - hw, y - 10 * f, hw * 2, 22 * f + 2, { fill: C.woodL, w: Math.max(1.5, 4 * f), j: 0 }); }
     [xl, xr].forEach(function (x) { Ln(ctx, x, yb, vx + (x - (xl + xr) / 2) * 0.03, vy, { w: 10, j: 0.3 }); });
+  }
+  /* an army officer's peaked cap, as it lies on its side */
+  function officerCap(ctx, cx, cy, sc) {
+    function Q(p) { return [cx + p[0] * sc, cy + p[1] * sc]; }
+    S(ctx, [[-280, 20], [-250, -90], [-120, -170], [110, -180], [270, -100], [300, 10], [200, 60], [-180, 60]].map(Q), { closed: true, fill: C.olive });
+    S(ctx, [[-280, 10], [300, 0], [290, 50], [-270, 60]].map(Q), { closed: true, smooth: false, fill: shade(C.olive, 0.8) });
+    S(ctx, [[-90, 50], [330, 30], [390, 80], [300, 120], [-60, 110]].map(Q), { closed: true, fill: '#2b2b2b' });
+    E(ctx, cx, cy - 70 * sc, 50 * sc, 50 * sc, { fill: C.gold, w: 5 }); E(ctx, cx, cy - 70 * sc, 22 * sc, 22 * sc, { fill: shade(C.gold, 0.8), w: 3 });
   }
   /* ---------- props ---------- */
   function fire(ctx, x, y, s) {
@@ -536,7 +544,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
       var bw = R * 0.62, bh = R * 0.3, by = neckY + R * 0.42;
       Ln(ctx, cx - neckR * 0.9, neckY, cx - bw / 2, by, { w: 3.5 }); Ln(ctx, cx + neckR * 0.9, neckY, cx + bw / 2, by, { w: 3.5 });
       if (o.fire) fire(ctx, cx, neckY + R * 0.12, R * 0.22);
-      if (o.people) { mini(ctx, cx - bw * 0.2, by + 6, R / 190 * 1.6, C.coatB, { hair: o.hairP || C.wig, up: o.up, hat: o.hatP }); mini(ctx, cx + bw * 0.22, by + 6, R / 190 * 1.6, C.coatBl, { hair: o.hairP || C.wig, up: o.up, hat: o.hatP }); }
+      if (o.people) { mini(ctx, cx - bw * 0.22, by + 6, R / 190 * 2.5, C.coatB, { hair: o.hairP || C.wig, up: o.up, hat: o.hatP }); mini(ctx, cx + bw * 0.24, by + 6, R / 190 * 2.5, C.coatBl, { hair: o.hairP || C.wig, up: o.up, hat: o.hatP }); }
       wicker(ctx, cx - bw / 2, by, bw, bh);
     }
     var outline = right.concat(left.slice().reverse().slice(1, -1));
@@ -566,7 +574,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
       var bw = R * 0.6, bh = R * 0.28, by = neckY + R * 0.35;
       Ln(ctx, cx - lowR * 0.35, neckY, cx - bw / 2, by, { w: 3.5 }); Ln(ctx, cx + lowR * 0.35, neckY, cx + bw / 2, by, { w: 3.5 });
       if (o.fire) fire(ctx, cx, neckY + R * 0.14, R * 0.26);
-      if (o.people) { mini(ctx, cx - bw * 0.2, by + 6, R / 190 * 1.6, C.coatB, { hair: C.wig, open: o.shock, up: o.up }); mini(ctx, cx + bw * 0.22, by + 6, R / 190 * 1.6, C.coatBl, { hair: C.wig, open: o.shock, up: o.up }); }
+      if (o.people) { mini(ctx, cx - bw * 0.22, by + 6, R / 190 * 2.5, C.coatB, { hair: C.wig, open: o.shock, up: o.up }); mini(ctx, cx + bw * 0.24, by + 6, R / 190 * 2.5, C.coatBl, { hair: C.wig, open: o.shock, up: o.up }); }
       wicker(ctx, cx - bw / 2, by, bw, bh);
     }
     if (o.lower !== false) {
@@ -673,7 +681,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     o = o || {}; var r = w * 0.12, bb = y - r * 1.75, bt = bb - w * 0.42, col = o.col || '#e0c35a';
     wheel(ctx, x + w * 0.22, y - r, r); wheel(ctx, x + w * 0.78, y - r, r);
     Rc(ctx, x + w * 0.05, bb - 6, w * 0.9, 12, { fill: C.steel, w: 3 });
-    if (o.inside) o.inside(bt, bb);
+    if (o.inside) { ctx.save(); ctx.beginPath(); ctx.rect(x - 20, 0, w + 40, bb - 4); ctx.clip(); o.inside(bt, bb); ctx.restore(); }
     if (o.open) {
       Rc(ctx, x, bb - w * 0.2, w, w * 0.2, { fill: col });
       [0.02, 0.5, 0.98].forEach(function (f) { Ln(ctx, x + w * f, bb - w * 0.2, x + w * f, bt, { w: 5 }); });
@@ -820,8 +828,8 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     S(ctx, [[x + 39 * k, y - 55 * k], [x + 43 * k, y - 55 * k], [x + 42.4 * k, y - 57.5 * k], [x + 39.6 * k, y - 57.5 * k]], { closed: true, smooth: false, fill: C.ink });
     if (o.smoke) { puff(ctx, x + 41 * k, y - 61 * k, 3.5 * k, '#eef2f5'); puff(ctx, x + 47 * k, y - 65 * k, 3 * k, '#eef2f5'); }
     Rc(ctx, x + 22.4 * k, y - 29 * k, 1.8 * k, 8.5 * k, { fill: wood }); Rc(ctx, x + 34.5 * k, y - 29 * k, 1.8 * k, 8.5 * k, { fill: wood });
-    var pos = [15, 19.5, 27, 31.5];
-    (o.seats || []).forEach(function (p, i) { if (!p) return; mini(ctx, x + pos[i] * k, y - 20.5 * k, k * 0.4, p.col, { hat: p.hat, hair: p.hair || C.hairB, open: p.open, bonnetCol: p.bonnetCol, up: p.up }); });
+    var pos = [13.8, 19.8, 26.6, 32.6];
+    (o.seats || []).forEach(function (p, i) { if (!p) return; mini(ctx, x + pos[i] * k, y - 20.5 * k, k * 0.55, p.col, { hat: p.hat, hair: p.hair || C.hairB, open: p.open, bonnetCol: p.bonnetCol, up: p.up }); });
     Rc(ctx, x + 3 * k, y - 17 * k, 43 * k, 2.6 * k, { fill: C.iron });
     S(ctx, [[x + 9 * k, y - 23 * k], [x + 36.5 * k, y - 23 * k], [x + 36.5 * k, y - 17 * k], [x + 10.5 * k, y - 17 * k]], { closed: true, smooth: false, fill: wood });
     Rc(ctx, x + 8.5 * k, y - 24 * k, 28.5 * k, 1.2 * k, { fill: C.gold, w: 3 });
@@ -836,18 +844,20 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     Ln(ctx, -10, horizon, W + 10, horizon, { w: 5 });
     for (var i = 0; i < 18; i++) { var cx = rr(40, W - 40), cy = rr(horizon + 30, H - 20); E(ctx, cx, cy, rr(14, 26), rr(8, 12), { w: 2.6, color: '#8a8a86' }); }
   }
-  function terrace(ctx, baseY, x0, x1) {
-    for (var x = x0; x < x1; x += 260) {
-      Rc(ctx, x, baseY - 420, 260, 420, { fill: C.brick });
-      S(ctx, [[x - 10, baseY - 420], [x + 130, baseY - 500], [x + 270, baseY - 420]], { closed: true, smooth: false, fill: C.slate });
-      for (var r = 0; r < 2; r++) for (var c = 0; c < 2; c++) Rc(ctx, x + 45 + c * 110, baseY - 370 + r * 150, 60, 90, { fill: '#e9e2cf', w: 4 });
-      Rc(ctx, x + 105, baseY - 120, 50, 120, { fill: '#2c3e63', w: 4 });
+  function terrace(ctx, baseY, x0, x1, sc) {
+    sc = sc || 1;
+    for (var x = x0; x < x1; x += 260 * sc) {
+      Rc(ctx, x, baseY - 420 * sc, 260 * sc, 420 * sc, { fill: C.brick });
+      S(ctx, [[x - 10 * sc, baseY - 420 * sc], [x + 130 * sc, baseY - 500 * sc], [x + 270 * sc, baseY - 420 * sc]], { closed: true, smooth: false, fill: C.slate });
+      for (var r = 0; r < 2; r++) for (var c = 0; c < 2; c++) Rc(ctx, x + (45 + c * 110) * sc, baseY - (370 - r * 150) * sc, 60 * sc, 90 * sc, { fill: '#e9e2cf', w: 4 });
+      Rc(ctx, x + 105 * sc, baseY - 120 * sc, 50 * sc, 120 * sc, { fill: '#2c3e63', w: 4 });
     }
   }
-  function irishHouse(ctx, x, baseY, w) {
-    Rc(ctx, x, baseY - 190, w, 190, { fill: C.whitewash });
-    S(ctx, [[x - 10, baseY - 190], [x + 20, baseY - 260], [x + w - 20, baseY - 260], [x + w + 10, baseY - 190]], { closed: true, smooth: false, fill: C.slate });
-    Rc(ctx, x + w * 0.2, baseY - 140, w * 0.2, 60, { fill: '#5d7b95', w: 4 }); Rc(ctx, x + w * 0.6, baseY - 150, w * 0.18, 150, { fill: C.red, w: 4 });
+  function irishHouse(ctx, x, baseY, w, sc) {
+    sc = sc || 1; w *= sc;
+    Rc(ctx, x, baseY - 190 * sc, w, 190 * sc, { fill: C.whitewash });
+    S(ctx, [[x - 10 * sc, baseY - 190 * sc], [x + 20 * sc, baseY - 260 * sc], [x + w - 20 * sc, baseY - 260 * sc], [x + w + 10 * sc, baseY - 190 * sc]], { closed: true, smooth: false, fill: C.slate });
+    Rc(ctx, x + w * 0.2, baseY - 140 * sc, w * 0.2, 60 * sc, { fill: '#5d7b95', w: 4 }); Rc(ctx, x + w * 0.6, baseY - 150 * sc, w * 0.18, 150 * sc, { fill: C.red, w: 4 });
   }
   function church(ctx, x, baseY, s) {
     Rc(ctx, x, baseY - 300 * s, 260 * s, 300 * s, { fill: C.stone });
@@ -896,7 +906,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     });
     [-0.22, 0.22].forEach(function (t) { var a0 = pt(t, 0, 0.1), e = pt(t * 0.4, -0.15, -3.8); S(ctx, [a0, [(a0[0] + e[0]) / 2, a0[1] + 3 * k], e], { w: 4 }); });
     S(ctx, [pt(-1, 0, 0), pt(1, 0, 0), pt(1, 0, 1), pt(-1, 0, 1)], { closed: true, smooth: false, fill: C.cloth });
-    if (o.pilots) { var pp = pt(-0.06, 0, 0.3); mini(ctx, pp[0] - 3.4 * k, pp[1], k * 0.3, '#4a4a4f', { hat: 'cap', hair: C.hairB, open: o.shock }); mini(ctx, pp[0] + 3.4 * k, pp[1] - 0.8 * k, k * 0.3, C.olive, { hair: C.hairB, open: o.shock }); }
+    if (o.pilots) { var pp = pt(-0.06, 0, 0.3); mini(ctx, pp[0] - 3.6 * k, pp[1], k * 0.42, '#4a4a4f', { hat: 'cap', hair: C.hairB, open: o.shock }); mini(ctx, pp[0] + 3.6 * k, pp[1] - 0.8 * k, k * 0.42, C.olive, { hair: C.hairB, open: o.shock }); }
     for (var t = -1; t <= 1.001; t += 0.25) [0, 1].forEach(function (b) { var p0 = pt(t, 0, b), p1 = pt(t, 1, b); Ln(ctx, p0[0], p0[1], p1[0], p1[1], { w: 3, j: 0.3 }); });
     S(ctx, [pt(-1, 1, 0), pt(1, 1, 0), pt(1, 1, 1), pt(-1, 1, 1)], { closed: true, smooth: false, fill: C.cloth });
     var e0 = pt(0, 0.25, -3.8);
@@ -911,7 +921,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     Rc(ctx, x - 20, y - h * 0.45, 40, 50, { fill: '#6b6b6b', w: 4 });
   }
   function barracks(ctx, x, y, w) { Rc(ctx, x, y - 120, w, 120, { fill: '#f3f0e8' }); S(ctx, [[x - 10, y - 120], [x + w / 2, y - 175], [x + w + 10, y - 120]], { closed: true, smooth: false, fill: C.slate }); for (var i = 0; i < 4; i++) Rc(ctx, x + 20 + i * (w - 40) / 4, y - 95, 30, 44, { fill: '#5d7b95', w: 3 }); }
-  function clipboard(ctx, x, y, rot) { polyR(ctx, x, y, 70, 92, rot || 0, { fill: '#b8845a', w: 4 }); polyR(ctx, x, y + 6, 54, 70, rot || 0, { fill: C.paper, w: 3 }); Rc(ctx, x - 14, y - 50, 28, 12, { fill: '#8a8a8a', w: 3 }); }
+  function clipboard(ctx, x, y, rot, sc) { sc = sc || 1; polyR(ctx, x, y, 70 * sc, 92 * sc, rot || 0, { fill: '#b8845a', w: 4 }); polyR(ctx, x, y + 6 * sc, 54 * sc, 70 * sc, rot || 0, { fill: C.paper, w: 3 }); Rc(ctx, x - 14 * sc, y - 50 * sc, 28 * sc, 12 * sc, { fill: '#8a8a8a', w: 3 }); }
   function blade(ctx, cx, cy, len, rot, o) {
     o = o || {}; ctx.save(); ctx.translate(cx, cy); ctx.rotate(rot);
     S(ctx, [[-len / 2, 0], [-len * 0.35, -len * 0.06], [-len * 0.05, -len * 0.035], [len * 0.05, -len * 0.035], [len * (o.broken ? 0.28 : 0.35), -len * 0.06], [len * (o.broken ? 0.3 : 0.5), 0], [len * (o.broken ? 0.28 : 0.35), len * 0.06], [len * 0.05, len * 0.035], [-len * 0.05, len * 0.035], [-len * 0.35, len * 0.06]], { closed: true, fill: '#c9a063' });
@@ -945,7 +955,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     try {
       var len = o.len || 1100, k = len / 1000, x0 = o.x - len / 2, x1 = o.x + len / 2, y = o.y;
       var mTop = y - 330 * k, mBot = mTop + 64 * k, fc = o.frame || '#8a5a3a', metal = !!o.metal;
-      var pat = o.patient || {}, hu = 9.2 * k, shirt = o.shirt || pat.coat || '#dfe8ef';
+      var pat = o.patient || {}, hu = 11.2 * k, shirt = o.shirt || pat.coat || '#dfe8ef';
       function post(px, top) {
         if (metal) { Ln(ctx, px, y, px, top, { w: 16 * k + 6, color: fc }); Ln(ctx, px, y, px, top, { w: 16 * k, color: '#eef2f5', j: 0 }); }
         else Rc(ctx, px - 20 * k, top, 40 * k, y - top, { fill: fc });
@@ -970,7 +980,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
       /* pillow, then the patient's shoulders and head */
       var px = x0 + 150 * k, hx, hy, tilt;
       if (o.propped) {
-        E(ctx, px - 5 * k, mTop - 120 * k, 105 * k, 130 * k, { fill: '#fff', rot: -0.35 });
+        polyR(ctx, x0 + 118 * k, mTop - 118 * k, 64 * k, 210 * k, -0.24, { fill: '#fff' });
         hx = x0 + 175 * k; hy = mTop - 250 * k; tilt = -0.28;
       } else {
         E(ctx, px, mTop - 36 * k, 125 * k, 44 * k, { fill: '#fff' });
@@ -980,7 +990,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
       if (!o.empty) {
         ctx.save(); ctx.translate(hx, hy); ctx.rotate(tilt);
         /* a stick-figure body: narrow chest (bandaged if hurt) under the head */
-        S(ctx, [[-1.9 * bu, 6 * bu], [1.9 * bu, 6 * bu], [2.2 * bu, 22 * bu], [-2.2 * bu, 22 * bu]], { closed: true, fill: shirt, w: plw });
+        S(ctx, [[-1.9 * bu, 6 * bu], [1.9 * bu, 6 * bu], [2.1 * bu, 12 * bu], [-2.1 * bu, 12 * bu]], { closed: true, fill: shirt, w: plw });
         if (o.bandage) for (var bb = 0; bb < 3; bb++) Ln(ctx, -2.1 * bu, (10 + bb * 3) * bu, 2.1 * bu, (10.6 + bb * 3) * bu, { w: 1.6 * bu, color: '#f7f7f2' });
         head(ctx, 0, 0, HEAD_R * bu, Object.assign({}, pat, { hat: '' }));
         ctx.restore();
@@ -1049,8 +1059,19 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   function blood(ctx, x, y, rx, ry) {
     S(ctx, [[x - rx, y], [x - rx * 0.6, y - ry * 0.7], [x, y - ry], [x + rx * 0.7, y - ry * 0.6], [x + rx, y + ry * 0.1], [x + rx * 0.5, y + ry * 0.8], [x - rx * 0.3, y + ry * 0.9], [x - rx * 0.9, y + ry * 0.5]], { closed: true, fill: '#c41e1e', w: 0 });
     E(ctx, x + rx * 0.2, y - ry * 0.1, rx * 0.35, ry * 0.3, { fill: '#8e1414', w: 0 });
-    /* a light pixelation over the pool only: draw it before the body so faces stay clear */
-    mosaic(ctx, x - rx - 4, y - ry - 4, (rx + 4) * 2, (ry + 4) * 2, 7);
+  }
+  /* a light pixelation and a soft blur over a wound: you can still tell what it is, but not the detail */
+  function censor(ctx, x, y, rx, ry) {
+    var x0 = Math.max(0, Math.round(x - rx)), y0 = Math.max(0, Math.round(y - ry)), w = Math.round(Math.min(rx * 2, W - x0)), h = Math.round(Math.min(ry * 2, H - y0));
+    if (w < 4 || h < 4) return;
+    var cell = 9, t = makeCanvas(Math.ceil(w / cell), Math.ceil(h / cell)), tc = t.getContext('2d');
+    tc.drawImage(ctx.canvas, x0, y0, w, h, 0, 0, t.width, t.height);
+    var m = makeCanvas(w, h), mc = m.getContext('2d'); mc.imageSmoothingEnabled = false; mc.drawImage(t, 0, 0, t.width, t.height, 0, 0, w, h);
+    var b = makeCanvas(w, h), bc = b.getContext('2d'); bc.filter = 'blur(3px)'; bc.drawImage(m, 0, 0);
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.beginPath(); ctx.ellipse(x0 + w / 2, y0 + h / 2, w / 2, h / 2, 0, 0, 6.283); ctx.clip();
+    ctx.imageSmoothingEnabled = false; ctx.drawImage(m, x0, y0); ctx.drawImage(b, x0, y0);
+    ctx.restore();
   }
   function motorCar(ctx, x, y, s, o) {
     o = o || {}; var k = s * 10, body = o.col || '#1f4a3a';
@@ -1091,7 +1112,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     o = o || {}; var n = Math.floor((x1 - x0) / (sc * 21)), i;
     for (i = 0; i < n; i++) mini(ctx, x0 + i * sc * 21 + rr(-4, 4), y + rr(-4, 4), sc, cols[i % cols.length], { hat: hats[i % hats.length], hair: i % 3 ? C.hairB : C.hairD, up: o.up, open: o.up && rnd() > 0.5, wave: o.wave && rnd() > 0.7 ? (rnd() > 0.5 ? 1 : -1) : 0, bonnetCol: '#e9d7a8' });
   }
-  function fence(ctx, y, x0, x1) { for (var x = x0; x < x1; x += 60) Rc(ctx, x, y - 70, 12, 70, { fill: '#e9e2cf', w: 3 }); Rc(ctx, x0, y - 58, x1 - x0, 10, { fill: '#e9e2cf', w: 3 }); Rc(ctx, x0, y - 28, x1 - x0, 10, { fill: '#e9e2cf', w: 3 }); }
+  function fence(ctx, y, x0, x1, sc) { sc = sc || 1; for (var x = x0; x < x1; x += 60 * sc) Rc(ctx, x, y - 70 * sc, 12 * sc, 70 * sc, { fill: '#e9e2cf', w: 3 }); Rc(ctx, x0, y - 58 * sc, x1 - x0, 10 * sc, { fill: '#e9e2cf', w: 3 }); Rc(ctx, x0, y - 28 * sc, x1 - x0, 10 * sc, { fill: '#e9e2cf', w: 3 }); }
   function shelf(ctx, x, y, w) { Rc(ctx, x, y, w, 16, { fill: C.wood }); for (var i = 0; i < w / 60 - 1; i++) { var jx = x + 20 + i * 60, jh = rr(40, 80); Rc(ctx, jx, y - jh, 34, jh, { fill: ['#cfe3ef', '#e9d7a8', '#d9e6c4'][i % 3], w: 3 }); Rc(ctx, jx + 4, y - jh - 10, 26, 10, { fill: '#6b6b6b', w: 3 }); } }
   function chalkboard(ctx, x, y, w, h) { Rc(ctx, x, y, w, h, { fill: '#2f4a3a', w: 7 }); for (var i = 0; i < 5; i++) S(ctx, [[x + 30, y + 40 + i * (h - 60) / 5], [x + 90 + rr(0, 40), y + 30 + i * (h - 60) / 5], [x + 160 + rr(0, 60), y + 44 + i * (h - 60) / 5], [x + w * 0.6 + rr(0, 60), y + 34 + i * (h - 60) / 5]], { w: 3, color: '#e8efe9' }); }
 
@@ -1337,8 +1358,17 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
 
   /* ---------- chrome ---------- */
   var ITEMS = {
-    1: 'Pilâtre de Rozier', 2: 'William Huskisson', 3: 'Robert Cocking', '4a': 'Bridget Driscoll', '4b': 'Mary Ward', 5: 'Thomas Selfridge',
-    '6a': 'Harry Daghlian', '6b': 'Louis Slotin', 7: 'The Soyuz 11 crew', 8: 'Robert Williams', 9: 'Elaine Herzberg'
+    1: { title: 'Pilâtre de Rozier', face: function (ctx, x, y) { bust(ctx, { x: x, y: y, s: 0.9, coat: C.coatB, expr: 'determined' }); } },
+    2: { title: 'William Huskisson', face: function (ctx, x, y) { bust(ctx, huskisson({ x: x, y: y, s: 0.9, expr: 'neutral' })); } },
+    3: { title: 'Robert Cocking', face: function (ctx, x, y) { bust(ctx, cocking({ x: x, y: y, s: 0.9, expr: 'determined' })); } },
+    '4a': { title: 'Bridget Driscoll', face: function (ctx, x, y) { bust(ctx, driscoll({ x: x, y: y + 14, s: 0.86, expr: 'neutral' })); } },
+    '4b': { title: 'Mary Ward', face: function (ctx, x, y) { bust(ctx, mward({ x: x, y: y, s: 0.9, expr: 'neutral' })); } },
+    5: { title: 'Thomas Selfridge', face: function (ctx, x, y) { bust(ctx, selfridge({ x: x, y: y, s: 0.9, expr: 'neutral' })); } },
+    '6a': { title: 'Harry Daghlian', face: function (ctx, x, y) { bust(ctx, daghlian({ x: x, y: y, s: 0.9, expr: 'neutral' })); } },
+    '6b': { title: 'Louis Slotin', face: function (ctx, x, y) { bust(ctx, slotin({ x: x, y: y, s: 0.9, expr: 'neutral' })); } },
+    7: { title: 'The Soyuz 11 crew', face: function (ctx, x, y) { [[-56, 8, '#5d7185', C.hairB], [56, 8, '#4f6479', '#6b4a2b'], [0, -4, '#6b7f93', C.hairD]].forEach(function (b) { bust(ctx, cosmonaut({ x: x + b[0], y: y + b[1], s: 0.5, coat: b[2], hair: b[3], expr: 'neutral' })); }); } },
+    8: { title: 'Robert Williams', face: function (ctx, x, y) { bust(ctx, worker({ x: x, y: y + 12, s: 0.86, expr: 'neutral' })); } },
+    9: { title: 'Elaine Herzberg', face: function (ctx, x, y) { bust(ctx, herz({ x: x, y: y, s: 0.9, expr: 'neutral' })); } }
   };
   var DARK = {};
   /* a white title bar across the top, cut off from the picture by a thick line */
@@ -1346,7 +1376,14 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     var j0 = J; J = 0.7; seed(90000 + String(item).length * 7 + (parseInt(item, 10) || 0));
     ctx.save(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, BAR_H); ctx.restore();
     Ln(ctx, -20, BAR_H, W + 20, BAR_H, { w: 9 });
-    if (BAR_NAME) T(ctx, ITEMS[item].toUpperCase(), W / 2, BAR_H / 2 + 6, 84, { always: true, maxW: 1700 });
+    if (BAR_NAME) T(ctx, ITEMS[item].title.toUpperCase(), W / 2, BAR_H / 2 + 6, 84, { always: true, maxW: 1300 });
+    /* the character we're talking about, in a round badge at the top right */
+    var b = BADGE;
+    E(ctx, b.x, b.y, b.r, b.r, { fill: '#fff', stroke: false, j: 0, k: 40 });
+    ctx.save(); ctx.beginPath(); ctx.arc(b.x, b.y, b.r - 2, 0, 6.283); ctx.clip();
+    ITEMS[item].face(ctx, b.x, b.y - 8);
+    ctx.restore();
+    E(ctx, b.x, b.y, b.r, b.r, { w: 8, j: 0, k: 40 });
     J = j0;
   }
 
@@ -1399,8 +1436,8 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     var bw = function () { wicker(ctx, 50, 760, 660, 300); };
     var shock = { x: 225, y: 1040, s: 1.35, coat: C.coatBl, expr: 'shock', look: [0.7, 0.6] };
     var happy = { x: 520, y: 1030, s: 1.35, coat: C.coatB, expr: 'happy', look: [1, 0.6] };
-    person(ctx, Object.assign({ noArms: true, noLegs: true }, shock));
-    person(ctx, Object.assign({ noArms: true, noLegs: true }, happy));
+    person(ctx, Object.assign({ noArms: true }, shock));
+    person(ctx, Object.assign({ noArms: true }, happy));
     bw();
     personArms(ctx, Object.assign({ pose: { l: { to: [140, 744], type: 'fist', bend: 1 }, r: { to: [310, 744], type: 'fist', bend: -1 } } }, shock));
     personArms(ctx, Object.assign({ pose: { l: { to: [440, 744], type: 'fist', bend: 1 }, r: { to: [810, 560], type: 'point', bend: 1 } } }, happy));
@@ -1475,13 +1512,13 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[16] = function (ctx) {
     seed(16); ground(ctx, 980);
-    var g = roziere(ctx, 620, 170, 150, { fire: true, label: true, basket: true });
-    var rx = 850, top = g.hCy + 150, bot = g.fireY + 10;
+    var g = roziere(ctx, 560, 180, 175, { fire: true, label: true, basket: true });
+    var rx = 830, top = g.hCy + 150, bot = g.fireY + 10;
     Rc(ctx, rx - 30, top - 10, 60, bot - top + 20, { fill: C.ruler });
     for (var yy = top; yy < bot; yy += 22) Ln(ctx, rx - 30, yy, rx - (Math.round((yy - top) / 22) % 3 === 0 ? 0 : 12), yy, { w: 3, j: 0.5 });
     Ln(ctx, 720, top, rx - 34, top, { w: 3 }); Ln(ctx, 700, bot, rx - 34, bot, { w: 3 });
     T(ctx, 'far enough', rx + 170, (top + bot) / 2, 50);
-    person(ctx, { x: 1440, y: 1120, s: 1.2, coat: C.coatB, expr: 'smug', look: [-0.6, 0], pose: { l: [60, 150, 'thumb'], r: [18, 8, 'open'] } });
+    person(ctx, { x: 1400, y: 1040, s: 0.62, coat: C.coatB, expr: 'smug', look: [-0.6, 0], pose: { l: [60, 150, 'thumb'], r: [18, 8, 'open'] } });
   };
   P[17] = function (ctx) {
     seed(17);
@@ -1502,7 +1539,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     alpha(ctx, 0.25, function () { E(ctx, 380, 360, 190, 120, { fill: C.fireY, w: 0 }); });
     var wk = function () { wicker(ctx, 90, 760, 700, 320); };
     var a = { x: 225, y: 1045, s: 1.3, coat: C.coatBl, expr: 'worried', look: [0.4, -1] }, b = { x: 610, y: 1040, s: 1.3, coat: C.coatB, expr: 'sniff' };
-    person(ctx, Object.assign({ noArms: true, noLegs: true }, a)); person(ctx, Object.assign({ noArms: true, noLegs: true }, b));
+    person(ctx, Object.assign({ noArms: true }, a)); person(ctx, Object.assign({ noArms: true }, b));
     wk();
     personArms(ctx, Object.assign({ pose: { l: { to: [135, 744], type: 'fist', bend: 1 }, r: { to: [310, 744], type: 'fist', bend: -1 } } }, a));
     personArms(ctx, Object.assign({ pose: { l: { to: [525, 744], type: 'fist', bend: 1 }, r: { to: [700, 744], type: 'fist', bend: -1 } } }, b));
@@ -1523,6 +1560,10 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     alpha(ctx, 0.22, function () { crumpled(ctx, 960, 330, 200); });
     speed(ctx, 960, 470, 130, -Math.PI / 2, 5, 70);
     crumpled(ctx, 960, 640, 210);
+    /* both men falling with it */
+    falling(ctx, { x: 560, y: 560, s: 0.5, rot: -0.5, coat: C.coatB });
+    falling(ctx, { x: 1360, y: 620, s: 0.5, rot: 0.6, coat: C.coatBl, hair: C.wig });
+    speed(ctx, 560, 400, 90, -Math.PI / 2, 3, 30); speed(ctx, 1360, 460, 90, -Math.PI / 2, 3, 30);
   };
   P[21] = function (ctx) {
     seed(21);
@@ -1552,20 +1593,20 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   /* ---------- item 2: the railway ---------- */
   var FAR = 760, NEAR = 960;
   P[26] = function (ctx) {
-    seed(26); ground(ctx, 700); T(ctx, '1830', 660, 330, 96);
-    fence(ctx, 830, -20, W + 20);
-    crowdRow(ctx, 30, 1900, 822, 2.1, ['top', '', 'bonnet', 'top', ''], [C.coatN, C.coatR, C.coatT, C.coatG, C.coatB, '#6b7d4f', '#b56d8a'], { up: false, wave: true });
-    rails(ctx, 940);
-    [[980, '#e0c35a'], [1300, '#c9d7e3'], [1620, '#e0c35a']].forEach(function (c) { carriage(ctx, c[0], 940, 300, { col: c[1], flags: true }); });
-    loco(ctx, 240, 940, 1.05, { col: C.locoG, chim: '#3a3a3a', tender: true, smoke: true });
-    bunting(ctx, 600, 470, 1900, 470, 14);
+    seed(26); ground(ctx, 700); T(ctx, '1830', 660, 300, 96);
+    crowdRow(ctx, 20, 1920, 870, 4.4, ['top', '', 'bonnet', 'top', ''], [C.coatN, C.coatR, C.coatT, C.coatG, C.coatB, '#6b7d4f', '#b56d8a'], { up: false, wave: true });
+    fence(ctx, 884, -20, W + 20, 1.5);
+    rails(ctx, 960);
+    [[900, '#e0c35a'], [1330, '#c9d7e3'], [1760, '#e0c35a']].forEach(function (c) { carriage(ctx, c[0], 960, 420, { col: c[1], flags: true }); });
+    loco(ctx, 200, 960, 1.05, { col: C.locoG, chim: '#3a3a3a', tender: true, smoke: true });
+    bunting(ctx, 600, 400, 1900, 400, 14);
   };
   P[27] = function (ctx) {
     seed(27); ground(ctx, 690); rails(ctx, 830);
     loco(ctx, 1230, 830, 0.85, { flip: true, col: C.locoG, chim: '#3a3a3a', smoke: true });
-    [[900, '#e0c35a'], [590, '#c9d7e3'], [280, '#e0c35a'], [-30, '#c9d7e3']].forEach(function (c) { carriage(ctx, c[0], 830, 290, { col: c[1], flags: true }); });
+    [[870, '#e0c35a'], [510, '#c9d7e3'], [150, '#e0c35a'], [-210, '#c9d7e3']].forEach(function (c) { carriage(ctx, c[0], 830, 350, { col: c[1], flags: true }); });
     var cols = [C.coatN, C.coatR, C.coatT, C.coatG, C.coatK];
-    for (var i = 0; i < 11; i++) mini(ctx, 90 + i * 175 + rr(-20, 20), 1060 + (i % 2) * 18, 3.2, cols[i % 5], { hat: i % 3 === 0 ? 'top' : '', open: true, up: false, wave: i % 2 ? 1 : -1, hair: C.hairB });
+    for (var i = 0; i < 11; i++) mini(ctx, 90 + i * 175 + rr(-20, 20), 1060 + (i % 2) * 18, 6.0, cols[i % 5], { hat: i % 3 === 0 ? 'top' : '', open: true, up: false, wave: i % 2 ? 1 : -1, hair: C.hairB });
   };
   P[28] = function (ctx) {
     seed(28); ground(ctx, 700); rails(ctx, 880);
@@ -1615,7 +1656,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     loco(ctx, 640, 880, 1.05, { col: C.locoG, chim: '#3a3a3a', tender: true });
     var hose = [[570, 430], [780, 330], [1060, 380], [1200, 632]];
     S(ctx, hose, { w: 18, color: C.ink }); S(ctx, hose, { w: 10, color: '#6b6b6b', j: 0 });
-    carriage(ctx, 1320, 880, 320, { col: '#e0c35a' }); carriage(ctx, 1660, 880, 320, { col: '#c9d7e3' });
+    carriage(ctx, 1300, 880, 430, { col: '#e0c35a' }); carriage(ctx, 1740, 880, 430, { col: '#c9d7e3' });
   };
   P[34] = function (ctx) {
     seed(34); ground(ctx, 980);
@@ -1624,9 +1665,9 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[35] = function (ctx) {
     seed(35); ground(ctx, 740); rails(ctx, 900);
-    carriage(ctx, 960, 900, 760, { open: true, col: '#e0c35a', inside: function (bt, bb) { for (var i = 0; i < 4; i++) mini(ctx, 1060 + i * 150, bb - 120, 3.1, [C.coatN, C.coatK, C.coatR, C.coatT][i], { hat: 'top', hair: C.hairB }); } });
-    sign(ctx, 320, 940, 340, ['PLEASE STAY', 'ON THE TRAIN']);
-    [[900, 930, 3.2], [720, 1010, 3.5], [540, 1070, 3.6], [960, 1075, 3.6], [1150, 1080, 3.7]].forEach(function (m, i) { mini(ctx, m[0], m[1], m[2], [C.coatK, C.coatN, C.coatG, C.coatR, C.coatT][i], { hat: 'top', hair: C.hairB, open: i % 2 === 0 }); });
+    carriage(ctx, 1080, 900, 600, { open: true, col: '#e0c35a', inside: function (bt, bb) { for (var i = 0; i < 3; i++) mini(ctx, 1210 + i * 170, bb + 20, 6.6, [C.coatN, C.coatK, C.coatR][i], { hat: 'top', hair: C.hairB }); } });
+    sign(ctx, 250, 980, 340, ['PLEASE STAY', 'ON THE TRAIN']);
+    [[1000, 960, 7.4], [820, 1000, 7.6], [640, 1040, 7.8], [920, 1075, 8], [1120, 1080, 8]].forEach(function (m, i) { mini(ctx, m[0], m[1], m[2], [C.coatK, C.coatN, C.coatG, C.coatR, C.coatT][i], { hat: 'top', hair: C.hairB, open: i % 2 === 0 }); });
   };
   P[36] = function (ctx) {
     seed(36);
@@ -1653,40 +1694,43 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[38] = function (ctx) {
     seed(38); ground(ctx, 640); rails(ctx, FAR); rails(ctx, NEAR);
-    grand(ctx, 1050, FAR, 690, function (st) { person(ctx, wellington({ x: 1400, y: st + 105, s: 0.62, expr: 'smug', pose: { l: [80, 90, 'open'] } })); }, { noFlag: true });
-    person(ctx, huskisson({ x: 1000, y: NEAR, s: 0.95, expr: 'grin', look: [1, -0.5], pose: { r: { to: [1120, 540], type: 'open', bend: 1 } } }));
-    loco(ctx, 90, NEAR, 0.55, { flip: true, smoke: true, tender: true });
-    speed(ctx, 60, 860, 200, Math.PI, 4, 34);
+    grand(ctx, 1150, FAR, 690, function (st) { person(ctx, wellington({ x: 1500, y: st + 105, s: 0.62, expr: 'smug', pose: { l: [80, 90, 'open'] } })); }, { noFlag: true });
+    person(ctx, huskisson({ x: 1060, y: 880, s: 0.62, expr: 'grin', look: [1, -0.5], pose: { r: { to: [1170, 660], type: 'open', bend: 1 } } }));
+    /* Rocket, to scale, coming along the near track behind him */
+    loco(ctx, -5, NEAR, 1.45, { flip: true, smoke: false, tender: true });
+    for (var i = 0; i < 4; i++) Ln(ctx, -20, 520 + i * 90, 120, 520 + i * 90, { w: 6 });
   };
   P[39] = function (ctx) { seed(39); ground(ctx, 1010); rails(ctx, 1010); loco(ctx, 180, 1010, 2.2, { plate: true, smoke: false }); };
   P[40] = function (ctx) {
     seed(40); ground(ctx, 900); rails(ctx, 1060);
-    grand(ctx, 560, 1060, 1000, null, { door: 0.12 });
-    Rc(ctx, 670, 896, 140, 16, { fill: '#6b6b6b', w: 4 });
-    person(ctx, huskisson({ x: 600, y: 1070, s: 1.15, expr: 'shock', look: [-1, 0], legs: { l: [0, 0], r: { to: [735, 892] } }, pose: { l: { to: [668, 760], type: 'fist', bend: 1 }, r: { to: [752, 470], type: 'fist', bend: 1 } } }));
+    grand(ctx, 560, 1060, 1070, null, { door: 0.12 });
+    Rc(ctx, 650, 890, 170, 16, { fill: '#6b6b6b', w: 4 });
+    person(ctx, huskisson({ x: 600, y: 1060, s: 0.8, expr: 'shock', look: [-1, 0], legs: { l: [0, 0], r: { to: [705, 886] } }, pose: { l: { to: [582, 640], type: 'fist', bend: 1 }, r: { to: [706, 792], type: 'fist', bend: 1 } } }));
   };
   P[41] = function (ctx) {
     seed(41);
-    /* from above: the carriage on one track, its door swung right out over the other, him hanging off the end */
+    /* from above, at one scale: the Duke's carriage on its track, its door swung open toward the next track,
+       Huskisson hanging off the end of it with his legs over the rail, Rocket coming along that track */
     Rc(ctx, -20, -20, W + 40, H + 40, { fill: C.grass, w: 0, j: 0 });
-    [[320, 440], [700, 820]].forEach(function (tr) { for (var x = -20; x < W + 20; x += 70) Rc(ctx, x, tr[0] - 26, 34, tr[1] - tr[0] + 52, { fill: C.woodL, w: 3, j: 0.6 }); Ln(ctx, -20, tr[0], W + 20, tr[0], { w: 10 }); Ln(ctx, -20, tr[1], W + 20, tr[1], { w: 10 }); });
-    S(ctx, [[520, 230], [1500, 230], [1500, 530], [520, 530]], { closed: true, smooth: false, fill: C.grand });
-    Rc(ctx, 560, 262, 900, 236, { w: 5, color: C.gold });
-    for (var i = 0; i < 6; i++) E(ctx, 600 + i * 164, 380, 16, 16, { fill: C.gold, w: 3 });
-    Rc(ctx, 900, 526, 150, 16, { fill: '#3a1a1a', w: 3 });
-    polyR(ctx, 924, 700, 44, 340, 0, { fill: C.grand, w: 5 });
-    E(ctx, 924, 532, 12, 12, { fill: C.gold, w: 3 });
-    personTop(ctx, 924, 930, 1.9, { rot: Math.PI, coat: C.coatN, hair: C.hairB, legs: true, hands: [[900, 866], [950, 866]] });
-    /* Rocket from above: boiler, chimney, firebox and tender, coming along the lower track */
-    var ly = 760;
-    Rc(ctx, -220, ly - 70, 200, 140, { fill: C.wood }); E(ctx, -120, ly, 70, 40, { fill: C.woodL });
-    Rc(ctx, -10, ly - 60, 80, 120, { fill: C.copper });
-    Rc(ctx, 70, ly - 50, 300, 100, { fill: C.locoY });
-    [150, 240, 330].forEach(function (bx) { Ln(ctx, bx, ly - 50, bx, ly + 50, { w: 4 }); });
-    E(ctx, 330, ly, 28, 28, { fill: C.ink, w: 4 });
-    [[100, -76], [100, 76], [300, -70], [300, 70]].forEach(function (w) { Rc(ctx, w[0] - 40, ly + w[1] - 10, 80, 20, { fill: '#caa05a', w: 3 }); });
-    for (var k = 0; k < 4; k++) Ln(ctx, -20, ly - 90 + k * 60, -200, ly - 90 + k * 60, { w: 5 });
-    puff(ctx, 400, ly - 20, 44, '#eef2f5');
+    Rc(ctx, -20, 230, W + 40, 830, { fill: '#c9c3b3', w: 0, j: 0 });
+    [400, 885].forEach(function (cy) { for (var x = -20; x < W + 20; x += 90) Rc(ctx, x, cy - 150, 44, 300, { fill: C.woodL, w: 3, j: 0.6 }); Ln(ctx, -20, cy - 108, W + 20, cy - 108, { w: 12 }); Ln(ctx, -20, cy + 108, W + 20, cy + 108, { w: 12 }); });
+    S(ctx, [[560, 220], [1460, 220], [1460, 580], [560, 580]], { closed: true, smooth: false, fill: C.grand });
+    Rc(ctx, 600, 250, 820, 300, { w: 5, color: C.gold });
+    for (var i = 0; i < 6; i++) E(ctx, 640 + i * 148, 400, 16, 16, { fill: C.gold, w: 3 });
+    Rc(ctx, 850, 574, 150, 14, { fill: '#3a1a1a', w: 3 });
+    polyR(ctx, 864, 648, 22, 136, 0, { fill: C.grand, w: 5 });
+    E(ctx, 864, 582, 10, 10, { fill: C.gold, w: 3 });
+    personTop(ctx, 872, 752, 0.9, { coat: C.coatN, hair: C.hairB, legs: true, hands: [[856, 712], [880, 712]] });
+    /* Rocket from above: tender, copper firebox, yellow boiler, chimney at the front, wheels on the rails */
+    var cy = 885;
+    Rc(ctx, -420, cy - 150, 360, 300, { fill: C.wood }); E(ctx, -240, cy, 120, 80, { fill: C.woodL });
+    Rc(ctx, -40, cy - 105, 150, 210, { fill: C.copper });
+    [[40, 120], [300, 215]].forEach(function (w) { [-1, 1].forEach(function (sd) { Rc(ctx, w[0] - w[1] / 2, cy + sd * 108 - 11, w[1], 22, { fill: '#caa05a', w: 3 }); }); });
+    Rc(ctx, 110, cy - 75, 320, 150, { fill: C.locoY });
+    [190, 270, 350].forEach(function (bx) { Ln(ctx, bx, cy - 75, bx, cy + 75, { w: 4 }); });
+    E(ctx, 400, cy, 36, 36, { fill: C.ink, w: 4 }); E(ctx, 400, cy, 18, 18, { fill: '#3a3a3a', stroke: false });
+    for (var k = 0; k < 4; k++) Ln(ctx, -20, cy - 120 + k * 80, -200, cy - 120 + k * 80, { w: 5 });
+    puff(ctx, 470, cy - 20, 40, '#eef2f5');
   };
   P[42] = function (ctx) {
     seed(42);
@@ -1705,17 +1749,19 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     for (var k = 0; k < 10; k++) { var b = k / 10 * 6.283; Ln(ctx, 960 + Math.cos(b) * 560, 560 + Math.sin(b) * 460, 960 + Math.cos(b) * 760, 560 + Math.sin(b) * 620, { w: 5 }); }
   };
   P[43] = function (ctx) {
-    seed(43);
-    /* just the wheels going past and the dust they throw up */
-    ground(ctx, 640);
-    Rc(ctx, -20, 990, W + 40, 100, { fill: '#b9b3a3', w: 0, j: 0 });
-    for (var x = -20; x < W; x += 150) Rc(ctx, x, 985, 90, 26, { fill: C.woodL, w: 3, j: 0.6 });
-    Ln(ctx, -20, 980, W + 20, 980, { w: 14 });
-    Rc(ctx, -20, 330, W + 40, 90, { fill: C.steel });
-    [[420, 680, 300], [1420, 680, 300]].forEach(function (wv) { wheel(ctx, wv[0], wv[1], wv[2], '#caa05a'); for (var k = 0; k < 3; k++) S(ctx, [[wv[0] + Math.cos(-2.4 + k * 0.35) * (wv[2] + 30), wv[1] + Math.sin(-2.4 + k * 0.35) * (wv[2] + 30)], [wv[0] + Math.cos(-2.1 + k * 0.35) * (wv[2] + 34), wv[1] + Math.sin(-2.1 + k * 0.35) * (wv[2] + 34)]], { w: 6 }); });
-    Ln(ctx, 420, 680, 1420, 680, { w: 18 }); Ln(ctx, 420, 680, 1420, 680, { w: 8, color: '#8a8a8a', j: 0 });
-    for (var i = 0; i < 7; i++) Ln(ctx, 1760, 460 + i * 70, 1920, 460 + i * 70, { w: 6 });
-    [[160, 960, 90], [460, 1000, 110], [820, 990, 100], [1160, 1000, 120], [1580, 980, 100], [1820, 960, 80]].forEach(function (p) { puff(ctx, p[0], p[1], p[2], '#d8cfbf'); });
+    seed(43); ground(ctx, 560);
+    /* Rocket's wheels rolling past on the rail, and Huskisson on the ground beside it, his leg crushed */
+    Rc(ctx, -20, 846, W + 40, 44, { fill: '#b9b3a3', w: 0, j: 0 });
+    for (var x = -20; x < W; x += 110) Rc(ctx, x, 846, 70, 22, { fill: C.woodL, w: 3, j: 0.6 });
+    Ln(ctx, -20, 840, W + 20, 840, { w: 14 });
+    Rc(ctx, -20, 420, W + 40, 90, { fill: C.steel });
+    [430, 1030].forEach(function (wx) { wheel(ctx, wx, 680, 160, '#caa05a'); for (var k = 0; k < 3; k++) S(ctx, [[wx + Math.cos(-2.4 + k * 0.35) * 190, 680 + Math.sin(-2.4 + k * 0.35) * 190], [wx + Math.cos(-2.1 + k * 0.35) * 194, 680 + Math.sin(-2.1 + k * 0.35) * 194]], { w: 6 }); });
+    Ln(ctx, 430, 680, 1030, 680, { w: 18 }); Ln(ctx, 430, 680, 1030, 680, { w: 8, color: '#8a8a8a', j: 0 });
+    for (var i = 0; i < 6; i++) Ln(ctx, 1260, 470 + i * 60, 1480, 470 + i * 60, { w: 6 });
+    [[200, 830, 60], [720, 836, 70], [1240, 830, 60]].forEach(function (p) { puff(ctx, p[0], p[1], p[2], '#d8cfbf'); });
+    blood(ctx, 1080, 1004, 90, 22);
+    lying(ctx, huskisson({ x: 1300, y: 1052, s: 0.75, dir: 1, expr: 'out', pose: { l: [150, 170, 'open'], r: [30, 12, 'open'] }, legs: { l: [8, -2], r: [-10, 12] } }));
+    censor(ctx, 1080, 1000, 130, 52);
   };
   P[44] = function (ctx) {
     seed(44);
@@ -1724,7 +1770,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     Rc(ctx, -20, 1000, W + 40, 100, { fill: C.woodL, w: 0, j: 0 }); Ln(ctx, -10, 1000, W + 10, 1000, { w: 5 });
     Rc(ctx, 760, 250, 300, 300, { fill: '#2c3e63', w: 7 }); Ln(ctx, 910, 255, 910, 545, { w: 6 }); Ln(ctx, 765, 400, 1055, 400, { w: 6 });
     E(ctx, 985, 320, 34, 34, { fill: '#f4ebc2', w: 4 });
-    sickbed(ctx, { x: 860, y: 1000, len: 1100, frame: '#8a5a3a', empty: true });
+    sickbed(ctx, { x: 860, y: 1000, len: 1100, frame: '#8a5a3a', shirt: '#eef0f3', patient: huskisson({ expr: 'dead' }) });
     Rc(ctx, 1480, 790, 180, 210, { fill: C.woodL }); Rc(ctx, 1480, 790, 180, 26, { fill: shade(C.woodL, 0.85) });
     Rc(ctx, 1552, 700, 36, 90, { fill: '#fbf5dc' }); Ln(ctx, 1570, 700, 1570, 686, { w: 4 }); fire(ctx, 1570, 672, 30);
     alpha(ctx, 0.22, function () { E(ctx, 1570, 690, 130, 110, { fill: C.fireY, w: 0 }); });
@@ -1801,12 +1847,17 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   P[57] = function (ctx) { seed(57); planSheet(ctx, 960, 640, 900, -0.03); T(ctx, '35 YEARS LATER', 960, 250, 96); };
   P[58] = function (ctx) {
     seed(58); ground(ctx, 960);
-    var h = person(ctx, cocking({ x: 760, y: 1060, s: 1.2, expr: 'determined', pose: { l: [16, 6, 'open'], r: [28, 14, 'open'] } }));
-    Ln(ctx, h.r[0] + 6, h.r[1], h.r[0] + 40, 1058, { w: 11, color: '#6b4a2b' });
-    /* his cone parachute, ready on its frame, with the basket resting on the grass */
-    Ln(ctx, 1150, 1000, 1180, 520, { w: 10, color: '#6b4a2b' }); Ln(ctx, 1690, 1000, 1660, 520, { w: 10, color: '#6b4a2b' }); Ln(ctx, 1160, 520, 1680, 520, { w: 10, color: '#6b4a2b' });
-    coneChute(ctx, 1420, 560, 230, { basket: true, person: false });
-    T(ctx, 'AGED 61', 420, 420, 100);
+    var h = person(ctx, cocking({ x: 560, y: 1060, s: 1.0, expr: 'determined', look: [1, 0], pose: { l: [16, 6, 'open'], r: [28, 14, 'open'] } }));
+    Ln(ctx, h.r[0] + 6, h.r[1], h.r[0] + 34, 1058, { w: 10, color: '#6b4a2b' });
+    /* the cone, folded and bundled on the grass: it is about ten metres across when open */
+    var heap = [[860, 1060], [880, 760], [990, 560], [1200, 430], [1470, 420], [1700, 540], [1820, 780], [1850, 1060]];
+    S(ctx, heap, { closed: true, fill: C.cream, stroke: false });
+    [[[930, 1060], [940, 760], [1010, 610], [1060, 1060]], [[1160, 1060], [1190, 460], [1300, 430], [1280, 1060]], [[1440, 1060], [1460, 420], [1560, 440], [1540, 1060]], [[1680, 1060], [1700, 540], [1770, 640], [1760, 1060]]].forEach(function (q) { S(ctx, q, { closed: true, smooth: false, fill: '#d6574f', stroke: false }); });
+    S(ctx, heap, { closed: true });
+    [[[900, 900], [1350, 960], [1830, 900]], [[950, 700], [1350, 760], [1780, 690]]].forEach(function (hp) { S(ctx, hp, { w: 14, color: '#6b4a2b' }); S(ctx, hp, { w: 6, color: '#9a6a43', j: 0 }); });
+    [[1100, 500, 1060, 1060], [1600, 480, 1640, 1060]].forEach(function (r) { Ln(ctx, r[0], r[1], r[2], r[3], { w: 5 }); });
+    wicker(ctx, 1560, 950, 220, 110);
+    T(ctx, 'AGED 61', 420, 330, 100);
   };
   P[59] = function (ctx) {
     seed(59); ground(ctx, 960);
@@ -1857,10 +1908,10 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   P[63] = function (ctx) {
     seed(63);
     /* the balloon's car above, with Spencer and Green looking down */
-    Ln(ctx, 1262, 300, 1292, -20, { w: 4 }); Ln(ctx, 1548, 300, 1518, -20, { w: 4 });
-    mini(ctx, 1330, 318, 3, C.coatK, { hat: 'top', hair: C.hairB });
-    mini(ctx, 1480, 318, 3, C.coatN, { hat: 'top', hair: C.hairB });
-    wicker(ctx, 1240, 300, 330, 100);
+    Ln(ctx, 1330, 250, 1350, -20, { w: 4 }); Ln(ctx, 1520, 250, 1500, -20, { w: 4 });
+    mini(ctx, 1380, 300, 3.2, C.coatK, { hat: 'top', hair: C.hairB });
+    mini(ctx, 1470, 300, 3.2, C.coatN, { hat: 'top', hair: C.hairB });
+    wicker(ctx, 1320, 250, 210, 70);
     /* the tip of his cone overhead, and the cords down to his basket */
     S(ctx, [[560, 220], [1060, 220], [850, 470], [770, 470]], { closed: true, smooth: false, fill: C.cream });
     [[0.2, 0.4], [0.6, 0.8]].forEach(function (b) { var a0 = 560 + 500 * b[0], a1 = 560 + 500 * b[1], c0 = 770 + 80 * b[0], c1 = 770 + 80 * b[1]; S(ctx, [[a0, 220], [a1, 220], [c1, 470], [c0, 470]], { closed: true, smooth: false, fill: '#d6574f', stroke: false }); });
@@ -1868,9 +1919,9 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     E(ctx, 810, 220, 250, 36, { fill: '#e9dcbc' });
     Ln(ctx, 772, 470, 626, 760, { w: 3.5 }); Ln(ctx, 848, 470, 994, 760, { w: 3.5 });
     /* the rope holding his parachute to the balloon's car, and the release cord hanging by his basket */
-    Ln(ctx, 1360, 400, 1030, 230, { w: 4 }); Ln(ctx, 1030, 232, 1000, 700, { w: 3 });
-    var ck = cocking({ x: 810, y: 1100, s: 1.15, expr: 'happy', look: [0.8, -1] });
-    rider(ctx, Object.assign({ pose: { l: { to: [700, 758], type: 'fist', bend: 1 }, r: { to: [1000, 470], type: 'open', bend: 1 } } }, ck), null, function () { wicker(ctx, 610, 760, 400, 260); });
+    Ln(ctx, 1400, 320, 1030, 230, { w: 4 }); Ln(ctx, 1030, 232, 1000, 700, { w: 3 });
+    var ck = cocking({ x: 810, y: 1010, s: 1.0, expr: 'happy', look: [0.8, -1] });
+    rider(ctx, Object.assign({ pose: { l: { to: [700, 758], type: 'fist', bend: 1 }, r: { to: [960, 490], type: 'open', bend: 1 } } }, ck), null, function () { wicker(ctx, 610, 760, 400, 260); });
   };
   P[64] = function (ctx) {
     seed(64);
@@ -1917,6 +1968,9 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     [[560, 880, 180, 0.2, 2.6], [980, 930, 220, 3.4, 5.6], [1320, 860, 150, 0.9, 3.1]].forEach(function (h) { var pts = []; for (var k = 0; k <= 10; k++) { var a = h[3] + (h[4] - h[3]) * k / 10; pts.push([h[0] + Math.cos(a) * h[2], h[1] + Math.sin(a) * h[2] * 0.35]); } S(ctx, pts, { w: 12, color: '#6b4a2b' }); S(ctx, pts, { w: 5, color: '#9a6a43', j: 0 }); });
     [[760, 960, 0.3, '#d6574f'], [1160, 1000, -0.4, C.cream], [420, 1000, 0.8, C.cream]].forEach(function (f) { polyR(ctx, f[0], f[1], 170, 70, f[2], { fill: f[3] }); });
     polyR(ctx, 1560, 1000, 200, 110, 0.4, { fill: C.wicker });
+    blood(ctx, 750, 1030, 64, 18);
+    lying(ctx, cocking({ x: 1010, y: 1040, s: 0.8, dir: -1, expr: 'dead', pose: { l: [150, 170, 'open'], r: [30, 12, 'open'] }, legs: { l: [14, -4], r: [-10, 10] } }));
+    censor(ctx, 730, 1030, 70, 34);
   };
   P[69] = function (ctx) {
     seed(69);
@@ -1967,39 +2021,28 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
 
   /* ---------- item 4: the car ---------- */
   P[77] = function (ctx) {
-    seed(77); terrace(ctx, 800, -40, W + 40); street(ctx, 800);
-    Rc(ctx, -20, 800, W + 40, 50, { fill: '#cfcac0', w: 4 });
-    lampPost(ctx, 250, 830, 380); lampPost(ctx, 1700, 830, 380);
-    person(ctx, driscoll({ x: 1480, y: 850, s: 0.7, dress: '#6b4a6e', hatCol: '#3a2a3e', expr: 'neutral', look: [-1, 0] }));
-    person(ctx, { x: 420, y: 850, s: 0.72, coat: C.coatK, hairStyle: 'short', hair: C.hairB, hat: 'top', trousers: true, pants: C.trou, collar: true, vest: '#f3efe6', expr: 'shock', look: [1, 0] });
-    motorCar(ctx, 560, 1050, 1.45, { driver: {} });
+    seed(77); terrace(ctx, 640, -40, W + 40, 1.25); street(ctx, 640);
+    Rc(ctx, -20, 640, W + 40, 40, { fill: '#cfcac0', w: 4 });
+    lampPost(ctx, 250, 670, 420); lampPost(ctx, 1700, 670, 420);
+    person(ctx, driscoll({ x: 1480, y: 680, s: 0.3, dress: '#6b4a6e', hatCol: '#3a2a3e', expr: 'neutral', look: [-1, 0] }));
+    person(ctx, { x: 420, y: 680, s: 0.3, coat: C.coatK, hairStyle: 'short', hair: C.hairB, hat: 'top', trousers: true, pants: C.trou, collar: true, vest: '#f3efe6', expr: 'shock', look: [1, 0] });
+    motorCar(ctx, 560, 1050, 1.1, { driver: {} });
   };
   P[78] = function (ctx) { seed(78); ground(ctx, 940); person(ctx, driscoll({ x: 960, y: 1060, s: 1.3, expr: 'happy', pose: { l: [16, 6, 'open'], r: [16, 6, 'open'] } })); };
   P[79] = function (ctx) {
-    seed(79); terrace(ctx, 770, -40, W + 40); street(ctx, 770);
-    Rc(ctx, -20, 770, W + 40, 50, { fill: '#cfcac0', w: 4 });
-    person(ctx, driscoll({ x: 620, y: 1010, s: 0.92, expr: 'neutral', look: [1, 0], pose: { l: [-12, -6, 'open'], r: [14, 6, 'open'] } }));
-    motorCar(ctx, 1050, 1040, 1.5, { driver: {} });
-    T(ctx, '1896', 250, 175, 88);
+    seed(79); terrace(ctx, 640, -40, W + 40, 1.25); street(ctx, 640);
+    Rc(ctx, -20, 640, W + 40, 40, { fill: '#cfcac0', w: 4 });
+    person(ctx, driscoll({ x: 700, y: 890, s: 0.5, expr: 'neutral', look: [1, 0], pose: { l: [-12, -6, 'open'], r: [14, 6, 'open'] } }));
+    motorCar(ctx, 1150, 1010, 1.0, { driver: {} });
+    T(ctx, '1896', 250, 250, 88);
   };
   P[80] = function (ctx) {
-    seed(80);
-    /* over the driver's shoulder: the dashboard, the speed dial barely off zero */
-    street(ctx, 520); terrace(ctx, 520, -40, W + 40);
-    person(ctx, driscoll({ x: 1380, y: 700, s: 0.34, look: [-1, 0] }));
-    Rc(ctx, -20, 600, W + 40, 520, { fill: '#5a3a24' });
-    Rc(ctx, -20, 600, W + 40, 40, { fill: '#7a5230' });
-    for (var g = 0; g < 4; g++) Ln(ctx, -20, 700 + g * 90, W + 20, 704 + g * 90, { w: 3, color: '#4a2e1c' });
-    var cx = 760, cy = 720, r = 230;
-    E(ctx, cx, cy, r + 26, r + 26, { fill: C.gold, w: 6 });
-    E(ctx, cx, cy, r, r, { fill: '#f4f1ea', w: 5 });
-    for (var i = 0; i <= 10; i++) { var a = Math.PI * (0.8 + i * 0.14); Ln(ctx, cx + Math.cos(a) * r * 0.78, cy + Math.sin(a) * r * 0.78, cx + Math.cos(a) * r * (i % 5 ? 0.88 : 0.94), cy + Math.sin(a) * r * (i % 5 ? 0.88 : 0.94), { w: i % 5 ? 4 : 7 }); }
-    var na = Math.PI * 0.86; Ln(ctx, cx, cy, cx + Math.cos(na) * r * 0.72, cy + Math.sin(na) * r * 0.72, { w: 10, color: C.red });
-    E(ctx, cx, cy, 22, 22, { fill: C.ink, stroke: false });
-    T(ctx, 'MPH', cx, cy + r * 0.45, 44, { obj: true });
-    Ln(ctx, 1500, 1100, 1350, 640, { w: 26, color: '#2b2b2b' }); E(ctx, 1345, 624, 30, 22, { fill: '#2b2b2b', w: 4 });
-    closeArm(ctx, [[1940, 1140], [1640, 880], [1370, 660]], 130, C.coatK, 'fist');
-    T(ctx, '4 MPH', 1300, 300, 130);
+    seed(80); street(ctx, 900);
+    motorCar(ctx, 760, 1040, 1.5, { driver: {}, puff: true });
+    person(ctx, { x: 520, y: 1045, s: 0.9, coat: C.coatK, hairStyle: 'short', hair: C.hairB, hat: 'top', trousers: true, pants: C.trou, collar: true, vest: '#f3efe6', expr: 'smug', look: [-1, 0], legs: { l: [-18, -6], r: [20, 8] }, pose: { l: [-20, -10, 'open'], r: [24, 8, 'open'] } });
+    for (var i = 0; i < 3; i++) { Ln(ctx, 1500, 700 + i * 60, 1680, 700 + i * 60, { w: 5 }); Ln(ctx, 700, 700 + i * 60, 780, 700 + i * 60, { w: 5 }); }
+    T(ctx, '4 MPH', 1560, 380, 110);
+    T(ctx, 'walking pace', 1560, 500, 50, { weight: 400 });
   };
   P[81] = function (ctx) {
     seed(81);
@@ -2037,7 +2080,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   P[85] = function (ctx) {
     seed(85); ground(ctx, 860);
     Rc(ctx, -20, 940, W + 40, 90, { fill: '#c9b99a', w: 0, j: 0 });
-    irishHouse(ctx, 1480, 880, 300);
+    irishHouse(ctx, 1360, 900, 300, 2.0);
     steamCar(ctx, 480, 1040, 1.45, { smoke: false, seats: [{ col: C.dressP, hat: 'bonnet', hair: C.hairD, bonnetCol: '#e9d7a8' }, { col: C.coatN, hair: C.hairB }, { col: C.coatB, hair: C.hairB }, null] });
   };
   P[86] = function (ctx) {
@@ -2048,10 +2091,10 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   function wardBend(ctx) {
     Rc(ctx, -20, 760, W + 40, 340, { fill: C.grass, w: 0, j: 0 });
-    church(ctx, 1250, 760, 0.8);
+    church(ctx, 1180, 800, 1.2);
     S(ctx, [[-20, 1100], [300, 950], [800, 860], [1150, 800], [1500, 790], [1950, 800], [1950, 900], [1520, 880], [1180, 900], [880, 980], [520, 1100]], { closed: true, fill: '#c9b99a' });
   }
-  var WARD_CAR = { cx: 620, cy: 1000, x: 330, y: 1050, s: 1.3, rot: -0.1 };
+  var WARD_CAR = { cx: 560, cy: 1000, x: 330, y: 1050, s: 0.9, rot: -0.1 };
   function wardCar(ctx, o) {
     ctx.save(); ctx.translate(WARD_CAR.cx, WARD_CAR.cy); ctx.rotate(WARD_CAR.rot); ctx.translate(-WARD_CAR.cx, -WARD_CAR.cy);
     steamCar(ctx, WARD_CAR.x, WARD_CAR.y, WARD_CAR.s, o);
@@ -2060,7 +2103,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   P[87] = function (ctx) {
     seed(87); wardBend(ctx);
     wardCar(ctx, { smoke: false, seats: [{ col: C.dressP, hat: 'bonnet', hair: C.hairD }, { col: C.coatN, hair: C.hairB }, { col: C.coatB, hair: C.hairB }] });
-    speed(ctx, 290, 720, 120, Math.PI * 0.95, 4, 36);
+    speed(ctx, 770, 880, 110, -0.1, 4, 30);
   };
   P[88] = function (ctx) {
     seed(88);
@@ -2082,18 +2125,24 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[89] = function (ctx) {
     seed(89);
-    /* just the heavy iron wheel and the dust it throws up */
-    Rc(ctx, -20, -20, W + 40, 800, { fill: C.bg, w: 0, j: 0 });
-    Rc(ctx, -20, 780, W + 40, 340, { fill: '#c9b99a', w: 0, j: 0 }); Ln(ctx, -10, 780, W + 10, 780, { w: 5 });
-    Rc(ctx, -20, 160, W + 40, 90, { fill: C.iron });
-    wheel(ctx, 960, 560, 420, C.iron); E(ctx, 960, 560, 60, 60, { fill: C.gold, w: 4 });
-    for (var k = 0; k < 4; k++) S(ctx, [[960 + Math.cos(-2.5 + k * 0.3) * 470, 560 + Math.sin(-2.5 + k * 0.3) * 470], [960 + Math.cos(-2.2 + k * 0.3) * 480, 560 + Math.sin(-2.2 + k * 0.3) * 480]], { w: 7 });
-    [[300, 950, 120], [620, 1000, 140], [980, 1000, 150], [1340, 990, 140], [1660, 950, 120], [180, 850, 80], [1780, 860, 80]].forEach(function (p) { puff(ctx, p[0], p[1], p[2], '#d8cfbf'); });
+    /* road level: the steam car has just gone over her; she lies behind the big rear wheel. everything at one scale */
+    Rc(ctx, -20, 880, W + 40, 240, { fill: '#c9b99a', w: 0, j: 0 }); Ln(ctx, -10, 880, W + 10, 880, { w: 5 });
+    steamCar(ctx, 160, 1060, 1.6, { seats: [null, { col: C.coatN, hair: C.hairB, open: true }, { col: C.coatB, hair: C.hairB, open: true }] });
+    [[830, 1046, 44], [560, 1050, 36]].forEach(function (p) { puff(ctx, p[0], p[1], p[2], '#d8cfbf'); });
+    blood(ctx, 1110, 1046, 70, 16);
+    lying(ctx, mward({ x: 1080, y: 1066, s: 0.8, dir: -1, expr: 'dead', hat: 'bonnet', hatCol: '#e9d7a8', pose: { l: [150, 170, 'open'], r: [30, 12, 'open'] } }));
+    censor(ctx, 1110, 1042, 96, 38);
   };
   P[90] = function (ctx) {
-    seed(90); wardBend(ctx);
-    /* the church corner afterwards: empty, just the marks in the road where the car turned */
-    [[420, 1010, 860, 900], [470, 1040, 900, 930]].forEach(function (m) { S(ctx, [[m[0], m[1]], [(m[0] + m[2]) / 2, (m[1] + m[3]) / 2 + 20], [m[2], m[3]]], { w: 5, color: '#9a8a6a' }); });
+    seed(90);
+    /* the corner by the church: her cousins reach her */
+    church(ctx, 980, 810, 1.3);
+    Rc(ctx, -20, 810, W + 40, 300, { fill: '#c9b99a', w: 0, j: 0 }); Ln(ctx, -10, 810, W + 10, 810, { w: 5 });
+    blood(ctx, 1110, 1014, 70, 18);
+    lying(ctx, mward({ x: 1080, y: 1034, s: 0.8, dir: -1, expr: 'dead', hat: 'bonnet', hatCol: '#e9d7a8', pose: { l: [150, 170, 'open'], r: [30, 12, 'open'] } }));
+    censor(ctx, 1110, 1010, 96, 40);
+    person(ctx, { x: 1560, y: 1060, s: 0.8, coat: C.coatN, hairStyle: 'short', hair: C.hairB, trousers: true, pants: C.trou, collar: true, vest: '#f3efe6', expr: 'shock', look: [-1, 0.6], legs: { l: [-18, -6], r: [20, 8] }, pose: { l: [150, 170, 'open'], r: [150, 170, 'open'] } });
+    person(ctx, { x: 640, y: 1060, s: 0.8, coat: C.coatB, hairStyle: 'short', hair: C.hairD, trousers: true, pants: C.trou, collar: true, vest: '#f3efe6', expr: 'worried', look: [1, 0.8], pose: { l: [14, 6, 'open'], r: { to: [800, 880], type: 'open', bend: 1 } } });
   };
   P[91] = function (ctx) {
     seed(91);
@@ -2124,14 +2173,14 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     crowdRow(ctx, 40, 1900, 815, 1.9, ['bowler', 'boater', 'bighat', 'cap'], [C.coatN, C.coatR, C.coatT, C.coatG, C.coatB, '#6b7d4f', '#b56d8a'], { up: false });
     S(ctx, [[-20, 830], [960, 842], [1940, 830]], { w: 5 });
     flyer(ctx, 560, 1000, 1.7, {});
-    person(ctx, orville({ x: 1440, y: 1060, s: 0.66, hat: 'cap', capCol: '#6b6150', expr: 'happy', look: [-1, 0] }));
-    person(ctx, selfridge({ x: 1600, y: 1062, s: 0.66, hat: 'cap', capCol: C.olive, expr: 'neutral', look: [-1, 0] }));
+    person(ctx, orville({ x: 1440, y: 1060, s: 0.52, hat: 'cap', capCol: '#6b6150', expr: 'happy', look: [-1, 0] }));
+    person(ctx, selfridge({ x: 1580, y: 1062, s: 0.52, hat: 'cap', capCol: C.olive, expr: 'neutral', look: [-1, 0] }));
   };
   P[96] = function (ctx) {
     seed(96); ground(ctx, 760);
     flyer(ctx, 470, 950, 1.8, {});
-    person(ctx, orville({ x: 1300, y: 1050, s: 0.72, expr: 'happy', hat: 'cap', capCol: '#6b6150', look: [-1, 0], pose: { l: [80, 88, 'point'], r: [16, 6, 'open'] } }));
-    [1480, 1630, 1780].forEach(function (x, i) { var h = person(ctx, selfridge({ x: x, y: 1050 + i * 6, s: 0.7, hair: [C.hairD, C.hairB, C.greyH][i], hat: 'cap', capCol: C.olive, expr: 'neutral', look: [-1, 0], pose: { l: [30, -60, 'open'], r: [16, 6, 'open'] } })); clipboard(ctx, h.l[0] + 14, h.l[1] - 8, -0.2); });
+    person(ctx, orville({ x: 1250, y: 1050, s: 0.5, expr: 'happy', hat: 'cap', capCol: '#6b6150', look: [-1, 0], pose: { l: [80, 88, 'point'], r: [16, 6, 'open'] } }));
+    [1440, 1580, 1720].forEach(function (x, i) { var h = person(ctx, selfridge({ x: x, y: 1050 + i * 6, s: 0.5, hair: [C.hairD, C.hairB, C.greyH][i], hat: 'cap', capCol: C.olive, expr: 'neutral', look: [-1, 0], pose: { l: [30, -60, 'open'], r: [16, 6, 'open'] } })); clipboard(ctx, h.l[0] + 10, h.l[1] - 6, -0.2, 0.7); });
   };
   P[97] = function (ctx) {
     seed(97); ground(ctx, 640, C.grass);
@@ -2152,10 +2201,10 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   P[99] = function (ctx) {
     seed(99); ground(ctx, 760);
     flyer(ctx, 1020, 960, 1.6, {});
-    var sf = selfridge({ x: 330, y: 1050, s: 0.8, expr: 'determined', look: [1, 0], pose: { l: [30, -60, 'open'], r: { to: [352, 828], type: 'pencil', bend: -1 } } });
+    var sf = selfridge({ x: 380, y: 1050, s: 0.5, expr: 'determined', look: [1, 0], pose: { l: [30, -60, 'open'], r: { to: [394, 912], type: 'pencil', bend: -1 } } });
     var h = person(ctx, Object.assign({ noArms: true }, sf));
     personArms(ctx, Object.assign({ only: 'l' }, sf));
-    clipboard(ctx, 333, 824, -0.15);
+    clipboard(ctx, 382, 908, -0.15, 0.62);
     personArms(ctx, Object.assign({ only: 'r' }, sf));
   };
   P[100] = function (ctx) {
@@ -2167,7 +2216,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     Ln(ctx, 270, 520, 1370, 500, { w: 4 }); arrowHead(ctx, 270, 520, Math.PI, 26, { w: 4 }); arrowHead(ctx, 1370, 500, 0, 26, { w: 4 });
     T(ctx, '6 INCHES LONGER', 820, 440, 70);
     if (!TEXT_ON) Rc(ctx, 230, 480, 1180, 70, { fill: C.bg, w: 0, j: 0 });
-    person(ctx, orville({ x: 1560, y: 1150, s: 1.15, expr: 'determined', look: [-1, 0.5], pose: { l: [60, 80, 'open'], r: [16, 6, 'open'] }, noLegs: true }));
+    person(ctx, orville({ x: 1540, y: 1040, s: 1.3, expr: 'determined', look: [-1, 0.5], pose: { l: { to: [1400, 720], type: 'fist', bend: -1 }, r: [16, 6, 'open'] } }));
   };
   P[101] = function (ctx) {
     seed(101);
@@ -2245,24 +2294,26 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[108] = function (ctx) {
     seed(108); ground(ctx, 700);
-    /* the wreck: torn cloth wings, snapped struts, a broken propeller, dust still settling */
+    /* the wreck: torn cloth wings, snapped struts, a broken propeller. Selfridge lies in it; two soldiers run over */
     polyR(ctx, 520, 760, 1500, 80, 0.12, { fill: C.cloth }); polyR(ctx, 1450, 700, 1000, 70, -0.3, { fill: C.cloth });
-    [[300, 640, 0.9], [640, 620, -0.4], [1000, 590, 0.3], [1300, 600, -1.0], [1650, 820, 0.6], [820, 900, 1.3], [1180, 880, -0.2]].forEach(function (b) { polyR(ctx, b[0], b[1], 300, 18, b[2], { fill: '#c9a063', w: 4 }); });
-    [[700, 960], [760, 1000], [1000, 980], [1100, 1010]].forEach(function (p) { S(ctx, [[p[0], p[1]], [p[0] + 30, p[1] + 8], [p[0] + 8, p[1] + 26]], { closed: true, smooth: false, fill: '#c9a063', w: 3 }); });
+    [[300, 640, 0.9], [640, 620, -0.4], [1000, 590, 0.3], [1300, 600, -1.0], [1650, 820, 0.6], [1180, 880, -0.2]].forEach(function (b) { polyR(ctx, b[0], b[1], 300, 18, b[2], { fill: '#c9a063', w: 4 }); });
     blade(ctx, 1560, 960, 520, 0.9, { broken: true });
-    puff(ctx, 300, 950, 80, '#d8cfbf'); puff(ctx, 1260, 980, 90, '#d8cfbf'); puff(ctx, 860, 1010, 70, '#d8cfbf');
+    puff(ctx, 300, 950, 80, '#d8cfbf'); puff(ctx, 1260, 980, 90, '#d8cfbf');
+    blood(ctx, 610, 1022, 60, 16);
+    lying(ctx, selfridge({ x: 880, y: 1040, s: 0.7, dir: -1, expr: 'out', pose: { l: [150, 170, 'open'], r: [30, 12, 'open'] }, legs: { l: [14, -4], r: [-10, 10] } }));
+    censor(ctx, 610, 1018, 78, 38);
+    [1640, 1790].forEach(function (x, i) { person(ctx, selfridge({ x: x, y: 1060 - i * 20, s: 0.7, hair: [C.hairB, C.hairD][i], hat: 'cap', capCol: C.olive, expr: 'shock', look: [-1, 0.4], pose: { l: [60, 30, 'open'], r: [-30, -20, 'open'] }, legs: { l: [-24, -6], r: [26, 10] } })); });
   };
   P[109] = function (ctx) {
-    seed(109); ground(ctx, 640);
-    /* an officer's cap lying alone on the grass */
-    for (var i = 0; i < 40; i++) { var gx = rr(20, W - 20), gy = rr(700, H - 10); Ln(ctx, gx, gy, gx + rr(-6, 6), gy - 22, { w: 3, color: '#8faa5a' }); }
-    var cx = 960, cy = 840;
-    E(ctx, cx + 30, cy + 70, 330, 50, { fill: '#9fbf7a', w: 0 });
-    S(ctx, [[cx - 280, cy + 20], [cx - 250, cy - 90], [cx - 120, cy - 170], [cx + 110, cy - 180], [cx + 270, cy - 100], [cx + 300, cy + 10], [cx + 200, cy + 60], [cx - 180, cy + 60]], { closed: true, fill: C.olive });
-    S(ctx, [[cx - 280, cy + 10], [cx + 300, cy], [cx + 290, cy + 50], [cx - 270, cy + 60]], { closed: true, smooth: false, fill: shade(C.olive, 0.8) });
-    S(ctx, [[cx - 90, cy + 50], [cx + 330, cy + 30], [cx + 390, cy + 80], [cx + 300, cy + 120], [cx - 60, cy + 110]], { closed: true, fill: '#2b2b2b' });
-    E(ctx, cx, cy - 70, 50, 50, { fill: C.gold, w: 5 }); E(ctx, cx, cy - 70, 22, 22, { fill: shade(C.gold, 0.8), w: 3 });
-    T(ctx, 'FIRST · 1908', 960, 420, 120);
+    seed(109);
+    /* that evening: Selfridge dead in the hospital bed, his officer's cap on the table beside him */
+    Rc(ctx, -20, -20, W + 40, 1020, { fill: '#e9eef3', w: 0, j: 0 });
+    Rc(ctx, -20, 1000, W + 40, 100, { fill: '#c9d1d9', w: 0, j: 0 }); Ln(ctx, -10, 1000, W + 10, 1000, { w: 5 });
+    Rc(ctx, 700, 250, 300, 260, { fill: '#e79a5c', w: 7 }); Ln(ctx, 850, 255, 850, 505, { w: 6 }); Ln(ctx, 705, 380, 995, 380, { w: 6 });
+    sickbed(ctx, { x: 820, y: 1000, len: 1100, metal: true, frame: '#9aa4ad', shirt: '#e9eef3', patient: selfridge({ expr: 'dead' }) });
+    Rc(ctx, 1480, 790, 200, 210, { fill: C.woodL }); Rc(ctx, 1480, 790, 200, 26, { fill: shade(C.woodL, 0.85) });
+    officerCap(ctx, 1580, 760, 0.3);
+    T(ctx, 'FIRST · 1908', 1650, 560, 76);
   };
   P[110] = function (ctx) {
     seed(110);
@@ -2327,7 +2378,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     seed(119);
     clock(ctx, 1450, 380, 90, 11, 0);
     person(ctx, daghlian({ x: 560, y: 1150, s: 1.1, expr: 'neutral', look: [0.8, 0.6], noLegs: true, pose: { l: { to: [384, 852], type: 'open', bend: -1 }, r: { to: [736, 852], type: 'open', bend: 1 } } }));
-    labTable(ctx, 860); brickWall(ctx, 900, 860, 0.5, 0.8); core(ctx, 900, 810, 50);
+    labTable(ctx, 860); brickWall(ctx, 900, 860, 0.5, 0.5); core(ctx, 900, 832, 28);
     /* two empty chairs by the wall: everyone else has gone home */
     [1690, 1830].forEach(function (x) { Rc(ctx, x - 55, 890, 110, 22, { fill: '#6b4a2b' }); Ln(ctx, x - 45, 912, x - 45, 1060, { w: 8 }); Ln(ctx, x + 45, 912, x + 45, 1060, { w: 8 }); Ln(ctx, x + 45, 890, x + 45, 740, { w: 8 }); Ln(ctx, x + 45, 760, x - 20, 760, { w: 8 }); });
     alpha(ctx, 0.42, function () { ctx.fillStyle = '#0e1a33'; ctx.fillRect(0, 0, W, H); });
@@ -2348,10 +2399,10 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   P[123] = function (ctx) {
     seed(123);
     /* he stands behind the bench, lowering the last brick onto the stack */
-    var hd = daghlian({ x: 1080, y: 1300, s: 1.35, expr: 'nervous', look: [-1, 0.5], noLegs: true, pose: { l: { to: [872, 708], type: 'fist', bend: -1 }, r: { to: [1370, 852], type: 'open', bend: 1 } } });
+    var hd = daghlian({ x: 1080, y: 1300, s: 1.35, expr: 'nervous', look: [-1, 0.5], noLegs: true, pose: { l: { to: [788, 698], type: 'fist', bend: -1 }, r: { to: [1370, 852], type: 'open', bend: 1 } } });
     person(ctx, Object.assign({ noArms: true }, hd));
-    labTable(ctx, 860); brickWall(ctx, 700, 860, 0.9, 0.8); core(ctx, 700, 810, 50);
-    brick(ctx, 762, 682, 110, 52);
+    labTable(ctx, 860); brickWall(ctx, 700, 860, 0.9, 0.55); core(ctx, 700, 826, 34);
+    brick(ctx, 740, 690, 43, 20);
     personArms(ctx, hd);
   };
   P[124] = function (ctx) { seed(124); dial(ctx, 900, 640, 300, 0.88, true); };
@@ -2376,11 +2427,11 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[128] = function (ctx) {
     seed(128);
-    var hd = daghlian({ x: 1300, y: 1250, s: 1.3, expr: 'worried', look: [-1, 0.7], noLegs: true, pose: { l: { to: [1096, 806], type: 'fist', bend: -1 }, r: { to: [1560, 852], type: 'open', bend: 1 } } });
+    var hd = daghlian({ x: 1300, y: 1250, s: 1.3, expr: 'worried', look: [-1, 0.7], noLegs: true, pose: { l: { to: [1110, 810], type: 'fist', bend: -1 }, r: { to: [1560, 852], type: 'open', bend: 1 } } });
     person(ctx, Object.assign({ noArms: true }, hd));
-    labTable(ctx, 860); core(ctx, 800, 810, 50);
-    [[520, 812, 0.4], [640, 812, -0.2], [880, 812, 0.3], [700, 766, -0.1]].forEach(function (b) { brick(ctx, b[0], b[1], 100, 48, b[2]); });
-    brick(ctx, 990, 784, 100, 48, 0);
+    labTable(ctx, 860); core(ctx, 800, 826, 34);
+    [[560, 830, 0.4], [650, 834, -0.2], [880, 832, 0.3], [700, 800, -0.1], [960, 836, 0.9]].forEach(function (b) { brick(ctx, b[0], b[1], 60, 28, b[2]); });
+    brick(ctx, 1070, 800, 60, 28, 0);
     personArms(ctx, hd);
   };
   P[129] = function (ctx) {
@@ -2392,19 +2443,20 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[130] = function (ctx) {
     seed(130);
-    /* a calendar on the wall, twenty-five days crossed off */
-    Rc(ctx, -20, -20, W + 40, H + 40, { fill: '#e6e2d6', w: 0, j: 0 });
-    ctx.save(); ctx.translate(960 - 330, 600 - 319); ctx.scale(2.2, 2.2); calendarWall(ctx, 0, 0, 25, 28); ctx.restore();
-    E(ctx, 960, 290, 16, 16, { fill: C.red });
+    /* he dies twenty-five days later: in the hospital bed, the calendar on the wall */
+    Rc(ctx, -20, -20, W + 40, 1020, { fill: '#e6e2d6', w: 0, j: 0 });
+    Rc(ctx, -20, 1000, W + 40, 100, { fill: '#b9b3a3', w: 0, j: 0 }); Ln(ctx, -10, 1000, W + 10, 1000, { w: 5 });
+    calendarWall(ctx, 1420, 330, 25, 28);
+    sickbed(ctx, { x: 720, y: 1000, len: 1100, metal: true, frame: '#9aa4ad', shirt: '#e9eef3', patient: daghlian({ expr: 'dead' }) });
   };
-  P[131] = function (ctx) { P[130](ctx); seed(13101); T(ctx, 'FIRST', 960, 640, 220, { color: C.red, rot: -0.12 }); };
+  P[131] = function (ctx) { P[130](ctx); seed(13101); T(ctx, 'FIRST', 1570, 470, 110, { color: C.red, rot: -0.12 }); };
   P[132] = function (ctx) { seed(132); Rc(ctx, -20, -20, W + 40, 1120, { fill: '#e6e2d6', w: 0, j: 0 }); polyR(ctx, 960, 620, 760, 660, 0.02, { fill: C.paper }); E(ctx, 960, 310, 16, 16, { fill: C.red }); T(ctx, 'NEW RULES', 960, 420, 96, { obj: true }); };
   P[133] = function (ctx) { P[132](ctx); seed(13301); T(ctx, 'TWO PEOPLE', 960, 600, 80, { obj: true }); T(ctx, 'ALARMS ON', 960, 740, 80, { obj: true }); };
   P[134] = function (ctx) {
     seed(134);
-    var sl = slotin({ x: 1080, y: 1250, s: 1.3, expr: 'smug', look: [-1, 0.6], noLegs: true, pose: { l: { to: [842, 708], type: 'open', bend: -1 }, r: { to: [1350, 852], type: 'open', bend: 1 } } });
+    var sl = slotin({ x: 1080, y: 1250, s: 1.3, expr: 'smug', look: [-1, 0.6], noLegs: true, pose: { l: { to: [846, 736], type: 'open', bend: -1 }, r: { to: [1350, 852], type: 'open', bend: 1 } } });
     person(ctx, Object.assign({ noArms: true }, sl));
-    labTable(ctx, 860); core(ctx, 800, 820, 50); dome(ctx, 800, 800, 110, -0.25);
+    labTable(ctx, 860); core(ctx, 800, 826, 34); dome(ctx, 800, 812, 86, -0.25);
     personArms(ctx, sl);
   };
   P[135] = function (ctx) { seed(135); labTable(ctx, 800); core(ctx, 960, 680, 120); arrowAlong(ctx, [[1300, 360], [1210, 480], [1110, 600]], { w: 8, head: 40 }); T(ctx, 'SAME ONE', 1280, 290, 80); };
@@ -2417,9 +2469,9 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
       if (i === 5) o.dress = cols[i]; else { o.coat = cols[i]; o.trousers = true; o.pants = '#5a5d62'; o.collar = true; o.vest = '#f3efe6'; o.tie = i % 2 ? '#3f5a7a' : null; }
       person(ctx, o);
     });
-    var sl = slotin({ x: 1180, y: 1250, s: 1.25, expr: 'smug', look: [-1, 0.8], noLegs: true, pose: { l: { to: [1004, 716], type: 'open', bend: -1 }, r: { to: [1430, 852], type: 'open', bend: 1 } } });
+    var sl = slotin({ x: 1180, y: 1250, s: 1.25, expr: 'smug', look: [-1, 0.8], noLegs: true, pose: { l: { to: [1000, 744], type: 'open', bend: -1 }, r: { to: [1430, 852], type: 'open', bend: 1 } } });
     person(ctx, Object.assign({ noArms: true }, sl));
-    labTable(ctx, 860); core(ctx, 960, 820, 44); dome(ctx, 960, 800, 96, -0.2);
+    labTable(ctx, 860); core(ctx, 960, 828, 32); dome(ctx, 960, 814, 80, -0.2);
     personArms(ctx, sl);
   };
   P[137] = function (ctx) {
@@ -2435,15 +2487,12 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[139] = function (ctx) {
     seed(139);
-    /* the screwdriver lying on the lab floor */
-    Rc(ctx, -20, -20, W + 40, 420, { fill: '#e6e2d6', w: 0, j: 0 });
-    Rc(ctx, -20, 400, W + 40, 720, { fill: '#b9b3a3', w: 0, j: 0 }); Ln(ctx, -10, 400, W + 10, 400, { w: 5 });
-    for (var i = 0; i < 8; i++) Ln(ctx, 960 + (i - 3.5) * 120, 400, 960 + (i - 3.5) * 520, 1100, { w: 3, color: '#a39d8e' });
-    [520, 680, 900].forEach(function (y) { Ln(ctx, -20, y, W + 20, y, { w: 3, color: '#a39d8e' }); });
-    Rc(ctx, 300, 220, 1320, 180, { fill: '#a9aeb4' }); Rc(ctx, 300, 200, 1320, 30, { fill: '#8a8f96' });
-    E(ctx, 900, 820, 380, 40, { fill: '#a39d8e', w: 0 });
-    screwdriver(ctx, 620, 790, 620, 0.08);
-    T(ctx, '9 DAYS', 960, 560, 130);
+    /* nine days later: Slotin in the hospital bed, the calendar on the wall */
+    Rc(ctx, -20, -20, W + 40, 1020, { fill: '#e6e2d6', w: 0, j: 0 });
+    Rc(ctx, -20, 1000, W + 40, 100, { fill: '#b9b3a3', w: 0, j: 0 }); Ln(ctx, -10, 1000, W + 10, 1000, { w: 5 });
+    calendarWall(ctx, 1420, 330, 9, 14);
+    sickbed(ctx, { x: 720, y: 1000, len: 1100, metal: true, frame: '#9aa4ad', shirt: '#e9eef3', patient: slotin({ expr: 'dead' }) });
+    T(ctx, '9 DAYS', 1570, 720, 96);
   };
   P[140] = function (ctx) { seed(140); lamp(ctx, 960, 470); alpha(ctx, 0.2, function () { E(ctx, 960, 700, 380, 230, { fill: '#fff4b0', w: 0 }); }); labTable(ctx, 820); core(ctx, 960, 740, 80); };
   P[141] = function (ctx) { P[140](ctx); seed(14101); Ln(ctx, 1100, 820, 1180, 900, { w: 4 }); polyR(ctx, 1320, 950, 360, 120, 0.1, { fill: C.paper }); T(ctx, 'DEMON CORE', 1320, 952, 56, { obj: true, rot: 0.1, color: C.red, maxW: 310 }); };
@@ -2456,25 +2505,25 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   function crewRow(ctx, x0, y, s, opts, look) { return [0, 1, 2].map(function (i) { return person(ctx, Object.assign({}, CREW3[i], { x: x0 + i * 170 * s, y: y, s: s, expr: 'neutral', look: look || [0, 0] }, opts || {}, opts && opts.each ? opts.each[i] : {})); }); }
   var ORIG = [cosmonaut({ hair: '#8a7a6a', coat: '#6f5f4f', vest: '#6f5f4f' }), cosmonaut({ hair: C.hairB, coat: '#7a6a52', vest: '#7a6a52' }), cosmonaut({ hair: '#3a2a20', coat: '#6b5a3e', vest: '#6b5a3e', mous: true })];
   P[146] = function (ctx) {
-    seed(146); steppe(ctx, 820); rocket(ctx, 960, 900, 620);
-    [0, 1, 2].forEach(function (i) { person(ctx, Object.assign({}, ORIG[i], { x: 260 + i * 150, y: 1040, s: 0.8, expr: 'worried', look: [0.4, 0] })); person(ctx, Object.assign({}, CREW3[i], { x: 1360 + i * 150, y: 1040, s: 0.8, expr: 'neutral', look: [-0.4, 0] })); });
-    T(ctx, 'ORIGINAL CREW', 410, 560, 50, { maxW: 480 }); T(ctx, 'BACKUP CREW', 1510, 560, 50, { maxW: 480 });
+    seed(146); steppe(ctx, 820); rocket(ctx, 960, 822, 760);
+    [0, 1, 2].forEach(function (i) { person(ctx, Object.assign({}, ORIG[i], { x: 250 + i * 120, y: 1050, s: 0.45, expr: 'worried', look: [0.4, 0] })); person(ctx, Object.assign({}, CREW3[i], { x: 1430 + i * 120, y: 1050, s: 0.45, expr: 'neutral', look: [-0.4, 0] })); });
+    T(ctx, 'ORIGINAL CREW', 370, 720, 50, { maxW: 420 }); T(ctx, 'BACKUP CREW', 1550, 720, 50, { maxW: 420 });
     /* the swap: the backup crew sent up to the rocket, the original crew stood down */
-    arrowAlong(ctx, [[1510, 470], [1300, 330], [1080, 330]], { w: 7, head: 34, color: C.red });
-    arrowAlong(ctx, [[840, 330], [620, 330], [410, 470]], { w: 7, head: 34, dashed: true });
+    arrowAlong(ctx, [[1550, 660], [1400, 420], [1080, 380]], { w: 7, head: 34, color: C.red });
+    arrowAlong(ctx, [[840, 380], [520, 420], [370, 660]], { w: 7, head: 34, dashed: true });
   };
   P[147] = function (ctx) {
     seed(147); steppe(ctx, 860); sign(ctx, 960, 900, 520, ['BACKUP', 'CREW']);
     [0, 1, 2].forEach(function (i) { person(ctx, Object.assign({}, CREW3[i], { x: 640 + i * 320, y: 1060, s: 1.05, expr: i === 1 ? 'smug' : 'neutral' })); });
   };
   P[148] = function (ctx) {
-    seed(148); steppe(ctx, 800); rocket(ctx, 1500, 880, 640);
+    seed(148); steppe(ctx, 800); rocket(ctx, 1500, 802, 740);
     [0, 1, 2].forEach(function (i) {
-      var x = 400 + i * 250, o = Object.assign({}, ORIG[i], { x: x, y: 1060, s: 0.95, expr: 'worried', look: [-0.6, 0.4], legs: { l: [-16, -6], r: [18, 8] }, noArms: true });
+      var x = 380 + i * 220, y = 1060, u = 5.5, o = Object.assign({}, ORIG[i], { x: x, y: y, s: 0.55, expr: 'worried', look: [-0.6, 0.4], legs: { l: [-16, -6], r: [18, 8] }, noArms: true });
       person(ctx, o);
-      var bagX = x + 70, bagY = 1060 - 18 * 9.5;
-      Rc(ctx, bagX - 40, bagY, 80, 70, { fill: '#6b4a2b' }); S(ctx, [[bagX - 22, bagY], [bagX, bagY - 22], [bagX + 22, bagY]], { w: 5 });
-      personArms(ctx, Object.assign({}, o, { pose: { l: { to: [x - 55, 1060 - 22 * 9.5], type: 'open', bend: 1 }, r: { to: [bagX, bagY - 18], type: 'fist', bend: -1 } } }));
+      var bagX = x + 7.4 * u, bagY = y - 18 * u;
+      Rc(ctx, bagX - 23, bagY, 46, 40, { fill: '#6b4a2b' }); S(ctx, [[bagX - 13, bagY], [bagX, bagY - 13], [bagX + 13, bagY]], { w: 4 });
+      personArms(ctx, Object.assign({}, o, { pose: { l: { to: [x - 5.8 * u, y - 22 * u], type: 'open', bend: 1 }, r: { to: [bagX, bagY - 10], type: 'fist', bend: -1 } } }));
     });
   };
   P[149] = function (ctx) {
@@ -2550,28 +2599,40 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     puff(ctx, 520, 990, 60, '#e3dccb'); puff(ctx, 930, 1000, 50, '#e3dccb');
   };
   P[162] = function (ctx) {
-    seed(162); steppe(ctx, 880);
-    /* from outside: the capsule on the grass, the hatch open, a recovery man at it with a hand on his hat. we don't see in */
-    var cx = 900, cy = 850, R = 190;
-    S(ctx, [[1150, 990], [1290, 920], [1520, 900], [1760, 940], [1840, 1010], [1640, 1040], [1340, 1045]], { closed: true, fill: '#f08a24' });
+    seed(162); steppe(ctx, 820);
+    /* the recovery team has opened the hatch and laid the crew out on the grass. capsule and people at one scale */
+    var cx = 700, cy = 770, R = 170;
+    S(ctx, [[1420, 990], [1540, 930], [1740, 915], [1940, 950], [1960, 1010], [1840, 1040], [1580, 1045]], { closed: true, fill: '#f08a24' });
     descentModule(ctx, cx, cy, R, {});
     E(ctx, cx, cy - 1.02 * R, 0.3 * R, 0.09 * R, { fill: '#10141c', w: 5 });
     polyR(ctx, cx - 0.52 * R, cy - 1.22 * R, 0.62 * R, 0.14 * R, -1.1, { fill: '#6b6f5e', w: 5 });
-    var x = 1150, y = 1010, sc = 1.15, u = sc * 10, hy = y - 47.4 * u, Rh = HEAD_R * u;
-    person(ctx, { x: x, y: y, s: sc, coat: '#4a5a3a', pants: '#4a5a3a', noCravat: true, hairStyle: 'short', hair: C.hairB, hat: 'cap', capCol: '#3a4a2e', expr: 'worried', look: [-1, 0.4],
-      legs: { l: [-6, -2], r: [8, 2] }, pose: { l: { to: [cx + 0.3 * R, cy - 1.0 * R], type: 'fist', bend: -1 }, r: { to: [x + 0.45 * Rh, hy - 0.95 * Rh], type: 'open', bend: 1 } } });
+    [0, 1, 2].forEach(function (i) { lying(ctx, Object.assign({}, CREW3[i], { x: 1110 + i * 30, y: 930 + i * 62, s: 0.5, dir: -1, expr: 'dead', pose: { l: [12, 6, 'open'], r: [12, 6, 'open'] }, legs: { l: [2, 0], r: [-2, 0] } })); });
+    var rec = { coat: '#4a5a3a', pants: '#4a5a3a', noCravat: true, trousers: true, hairStyle: 'short', hair: C.hairB, hat: 'cap', capCol: '#3a4a2e' };
+    var x = 940, y = 950, u = 5.2, hy = y - 47.4 * u, Rh = HEAD_R * u;
+    person(ctx, Object.assign({}, rec, { x: x, y: y, s: 0.52, expr: 'worried', look: [1, 0.6], pose: { l: [14, 6, 'open'], r: { to: [x + 0.45 * Rh, hy - 0.95 * Rh], type: 'open', bend: 1 } } }));
+    person(ctx, Object.assign({}, rec, { x: 1440, y: 1070, s: 0.56, hair: C.hairD, expr: 'shock', look: [-1, 0.6], pose: { l: { to: [1330, 960], type: 'open', bend: -1 }, r: [14, 6, 'open'] } }));
   };
   P[163] = function (ctx) { seed(163); spaceBg(ctx); earth(ctx, 960, 2100, 1300); T(ctx, 'FIRST AND ONLY', 960, 430, 120, { color: '#f4f1ea', maxW: 1400 }); T(ctx, 'people ever to die in space', 960, 560, 56, { color: '#f4f1ea', weight: 400 }); };
   P[164] = function (ctx) {
-    seed(164); steppe(ctx, 860); rocket(ctx, 1560, 960, 760);
-    [0, 1, 2].forEach(function (i) { suited(ctx, { x: 420 + i * 260, y: 1060, s: 0.95, expr: 'determined', look: [1, 0], legs: { l: [-18, -6], r: [20, 8] }, pose: { l: [14, 6, 'open'], r: [14, 6, 'open'] }, hair: [C.hairB, C.hairD, '#6b4a2b'][i] }); });
+    seed(164); steppe(ctx, 860); rocket(ctx, 1560, 862, 760);
+    [0, 1, 2].forEach(function (i) { suited(ctx, { x: 420 + i * 170, y: 1060, s: 0.5, expr: 'determined', look: [1, 0], legs: { l: [-18, -6], r: [20, 8] }, pose: { l: [14, 6, 'open'], r: [14, 6, 'open'] }, hair: [C.hairB, C.hairD, '#6b4a2b'][i] }); });
   };
   P[165] = function (ctx) { seed(165); capsuleInside(ctx, [suitP({ suit: true, expr: 'neutral' }), suitP({ suit: true, hair: C.hairD, expr: 'neutral' })]); T(ctx, '2 SEATS', 1600, 560, 70); };
   P[166] = function (ctx) {
-    seed(166); steppe(ctx, 980); rocket(ctx, 700, 1080, 820);
-    Rc(ctx, 760, 640, 700, 26, { fill: '#6b6b6b' }); Ln(ctx, 1450, 640, 1450, 1080, { w: 14, color: '#6b6b6b' });
-    for (var i = 0; i < 7; i++) Ln(ctx, 1450, 680 + i * 58, 1390, 720 + i * 58, { w: 4, color: '#6b6b6b' });
-    [0, 1].forEach(function (i) { suited(ctx, { x: 980 + i * 220, y: 640, s: 0.72, expr: 'happy', hair: [C.hairB, C.hairD][i], pose: { l: [16, 6, 'open'], r: [160, 175, 'open'] } }); });
+    seed(166);
+    /* up at the top of the rocket, at the crew's scale: the gantry arm and two suited cosmonauts waving from beside the hatch */
+    var rx = 700, rw = 420;
+    Rc(ctx, rx - rw / 2, 520, rw, 620, { fill: '#e9ecef' });
+    S(ctx, [[rx - rw / 2, 522], [rx - rw * 0.4, 360], [rx - rw * 0.16, 220], [rx, 196], [rx + rw * 0.16, 220], [rx + rw * 0.4, 360], [rx + rw / 2, 522]], { closed: true, fill: '#e9ecef' });
+    Ln(ctx, rx - rw / 2, 522, rx + rw / 2, 522, { w: 4 });
+    Rc(ctx, rx - rw / 2, 820, rw, 36, { fill: C.red, w: 3 });
+    E(ctx, rx + rw * 0.28, 610, 46, 56, { fill: '#2b2b30', w: 5 });
+    polyR(ctx, rx + rw * 0.28 + 62, 606, 16, 110, 0.2, { fill: '#c9ccd1', w: 4 });
+    Rc(ctx, rx + rw / 2 - 6, 690, 1300, 26, { fill: '#6b6b6b' });
+    for (var i = 0; i < 14; i++) Ln(ctx, rx + rw / 2 + 20 + i * 90, 716, rx + rw / 2 + 65 + i * 90, 800, { w: 5, color: '#6b6b6b' });
+    Ln(ctx, rx + rw / 2, 800, W + 20, 800, { w: 8, color: '#6b6b6b' });
+    Ln(ctx, rx + rw / 2 + 60, 690, rx + rw / 2 + 60, 560, { w: 5, color: '#6b6b6b' }); Ln(ctx, rx + rw / 2 + 60, 590, W + 20, 590, { w: 5, color: '#6b6b6b' });
+    [0, 1].forEach(function (i) { suited(ctx, { x: 1060 + i * 190, y: 690, s: 0.5, expr: 'happy', hair: [C.hairB, C.hairD][i], pose: { l: [16, 6, 'open'], r: [160, 175, 'open'] } }); });
   };
 
 
@@ -2581,7 +2642,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   P[169] = function (ctx) { seed(169); wideFactory(ctx, 616, 150, { crate: true }); T(ctx, '1979', 250, 420, 96); };
   P[170] = function (ctx) {
     seed(170); wideFactory(ctx, 400, 150, { crate: true });
-    person(ctx, Object.assign({}, WILL, { x: 620, y: 1000, s: 0.24, expr: 'happy' }));
+    person(ctx, Object.assign({}, WILL, { x: 620, y: 1000, s: 0.18, expr: 'happy' }));
     Ln(ctx, 300, RK.floor, 300, RK.top - 30, { w: 5 }); arrowHead(ctx, 300, RK.top - 30, -Math.PI / 2, 26, { w: 5 }); arrowHead(ctx, 300, RK.floor, Math.PI / 2, 26, { w: 5 });
     T(ctx, '5 STOREYS', 300, 700, 56, { rot: -Math.PI / 2 });
   };
@@ -2590,7 +2651,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     console2(ctx, 360, 380, 1200, 640, { stop: false, screen: function (x, y, w, h) { T(ctx, 'ERROR', x + w / 2, y + h * 0.36, h * 0.3, { obj: true, color: '#7dffb0' }); T(ctx, 'count wrong', x + w / 2, y + h * 0.72, h * 0.14, { obj: true, color: '#7dffb0', weight: 400 }); } });
     T(ctx, '?', 1660, 520, 170);
   };
-  P[172] = function (ctx) { seed(172); factoryBg(ctx); rack(ctx, { x0: 1300, x1: 1880, top: 360, floor: 1000, n: 5 }); person(ctx, Object.assign({}, WILL, { x: 860, y: 1050, s: 1.2, expr: 'happy' })); };
+  P[172] = function (ctx) { seed(172); factoryBg(ctx); rack(ctx, { x0: 1150, x1: 2750, top: -150, floor: 1000, n: 2 }); person(ctx, Object.assign({}, WILL, { x: 760, y: 1050, s: 1.2, expr: 'happy' })); };
   P[173] = function (ctx) {
     seed(173); factoryBg(ctx);
     var w = Object.assign({}, WILL, { x: 1250, y: 1060, s: 1.1, expr: 'neutral', look: [0.5, 0.8] });
@@ -2599,7 +2660,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     personArms(ctx, Object.assign({}, w, { pose: { l: { to: [1150, 700], type: 'open', bend: 1 }, r: { to: [c.sw[0] + 4, c.sw[1] - 6], type: 'fist', bend: -1 } } }));
   };
   P[174] = function (ctx) {
-    seed(174); factoryBg(ctx); rack(ctx, { x0: 600, x1: 1880, top: 360, floor: 1000, n: 5 });
+    seed(174); factoryBg(ctx); rack(ctx, { x0: 600, x1: 1880, top: 360, floor: 1000, n: 3 });
     ladder(ctx, 960, 1060, 330, 130);
     var w = Object.assign({}, WILL, { x: 960, y: 900, s: 0.62, back: true, noCravat: true, legs: { l: [0, 0], r: [0, 0] } });
     person(ctx, Object.assign({ noArms: true }, w));
@@ -2620,17 +2681,18 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     roboArm(ctx, 820, 640, { moving: true, label: true });
   };
   function fallenWilliams(ctx) {
-    blood(ctx, 1320, BAY.walk - 30, 60, 22);
-    lying(ctx, bayWorker({ x: 1180, y: BAY.walk - 8, s: 0.9, dir: 1, expr: 'dead', pose: { l: [100, 140, 'open'], r: [40, 10, 'open'] }, legs: { l: [20, -10], r: [-10, 20] } }));
+    blood(ctx, 1080, BAY.walk - 24, 62, 16);
+    lying(ctx, bayWorker({ x: 1350, y: BAY.walk - 8, s: 0.98, dir: -1, expr: 'dead', pose: { l: [150, 170, 'open'], r: [30, 12, 'open'] }, legs: { l: [14, -4], r: [-10, 10] } }));
+    censor(ctx, 1070, BAY.walk - 26, 82, 40);
   }
   P[177] = function (ctx) {
-    seed(177); walkwayBay(ctx);
-    /* just the arm, stopped dead in the rack, and a cloud of dust */
+    seed(177); walkwayBay(ctx); fallenWilliams(ctx);
+    /* the arm stopped where it hit him, dust still hanging */
     roboArm(ctx, 1080, 640, {});
     [[1110, 520], [1150, 560], [1110, 760]].forEach(function (p) { Ln(ctx, p[0], p[1], p[0] + 50, p[1] - 30, { w: 6 }); });
-    [[1140, 700, 90], [1260, 640, 110], [1220, 790, 100], [1380, 720, 80]].forEach(function (p) { puff(ctx, p[0], p[1], p[2], '#d8cfbf'); });
+    [[1200, 650, 70], [1300, 600, 60], [1260, 720, 60]].forEach(function (p) { puff(ctx, p[0], p[1], p[2], '#d8cfbf'); });
   };
-  P[178] = function (ctx) { seed(178); walkwayBay(ctx); roboArm(ctx, 1160, 470, { crate: true, moving: true }); };
+  P[178] = function (ctx) { seed(178); walkwayBay(ctx); fallenWilliams(ctx); roboArm(ctx, 1160, 470, { crate: true, moving: true }); };
   P[179] = function (ctx) {
     seed(179);
     Rc(ctx, 160, 220, 1600, 840, { fill: '#2b2b2b', w: 8 }); Rc(ctx, 200, 260, 1520, 760, { fill: '#0c2a22', w: 3 });
@@ -2654,10 +2716,14 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[181] = function (ctx) {
     seed(181); factoryBg(ctx); rack(ctx, { x0: 800, x1: 1880, top: 360, floor: 1000, n: 5 });
+    /* high on the third level, where the arm left him */
+    blood(ctx, 1206, 602, 26, 7);
+    lying(ctx, bayWorker({ x: 1290, y: 608, s: 0.22, dir: -1, expr: 'dead' }));
+    censor(ctx, 1206, 600, 34, 18);
     /* two co-workers at the foot of the racks, looking up, worried */
-    var a = { x: 600, y: 1050, s: 1.0, coat: '#6b7f93', pants: '#6b7f93', noCravat: true, trousers: true, hairStyle: 'short', hair: C.hairB, hat: 'cap', capCol: '#4a5a6a', expr: 'shock', look: [0.6, -1] };
-    person(ctx, Object.assign({}, a, { x: 380, coat: '#5a6b3e', pants: '#5a6b3e', hair: '#6b4a2b', capCol: '#3a4a2e', expr: 'worried', look: [0.8, -1], pose: { l: [16, 6, 'open'], r: [16, 6, 'open'] } }));
-    person(ctx, Object.assign({}, a, { pose: { l: [14, 6, 'open'], r: { to: [900, 330], type: 'point', bend: 1 } } }));
+    var a = { y: 1050, s: 0.3, coat: '#6b7f93', pants: '#6b7f93', noCravat: true, trousers: true, hairStyle: 'short', hair: C.hairB, hat: 'cap', capCol: '#4a5a6a', expr: 'shock', look: [0.6, -1] };
+    person(ctx, Object.assign({}, a, { x: 440, coat: '#5a6b3e', pants: '#5a6b3e', hair: '#6b4a2b', capCol: '#3a4a2e', expr: 'worried', look: [0.8, -1], pose: { l: [16, 6, 'open'], r: [16, 6, 'open'] } }));
+    person(ctx, Object.assign({}, a, { x: 560, pose: { l: [14, 6, 'open'], r: { to: [640, 830], type: 'point', bend: 1 } } }));
   };
   P[182] = function (ctx) {
     seed(182); factoryBg(ctx);
@@ -2669,9 +2735,9 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   P[184] = function (ctx) {
     seed(184);
     Rc(ctx, -20, -20, W + 40, 1120, { fill: '#8a5a3a', w: 0, j: 0 }); for (var i = 0; i < 8; i++) Rc(ctx, 40 + i * 240, 240, 200, 420, { fill: '#9a6a43', w: 4 });
-    person(ctx, { x: 1300, y: 1180, s: 1.0, coat: '#1e1e22', vest: '#1e1e22', noCravat: false, hairStyle: 'short', hair: C.greyH, trousers: true, noLegs: true, expr: 'determined', pose: { l: [16, 6, 'open'], r: [16, 6, 'open'] } });
+    person(ctx, { x: 1300, y: 935, s: 0.75, coat: '#1e1e22', vest: '#1e1e22', noCravat: false, hairStyle: 'short', hair: C.greyH, trousers: true, noLegs: true, expr: 'determined', pose: { l: [16, 6, 'open'], r: [16, 6, 'open'] } });
     Rc(ctx, 980, 760, 700, 330, { fill: C.wood }); Rc(ctx, 960, 740, 740, 40, { fill: C.woodL });
-    for (var r = 0; r < 2; r++) for (var c = 0; c < 4; c++) mini(ctx, 150 + c * 150 + r * 50, 800 + r * 110, 3.2, [C.coatN, C.coatR, C.coatT, C.coatG, C.coatK, '#6b7d4f', '#b56d8a', C.coatB][r * 4 + c], { hair: (r + c) % 2 ? C.hairB : C.hairD, hat: (r + c) % 3 === 0 ? 'bonnet' : '' });
+    for (var r = 0; r < 2; r++) for (var c = 0; c < 4; c++) mini(ctx, 190 + c * 150 + r * 60, 850 + r * 80, 6.5, [C.coatN, C.coatR, C.coatT, C.coatG, C.coatK, '#6b7d4f', '#b56d8a', C.coatB][r * 4 + c], { hair: (r + c) % 2 ? C.hairB : C.hairD, hat: (r + c) % 3 === 0 ? 'bonnet' : '' });
     Rc(ctx, 100, 860, 760, 240, { fill: C.wood }); T(ctx, 'JURY', 480, 980, 54, { color: '#f4ebd4' });
     T(ctx, '$10,000,000', 1330, 380, 110, { maxW: 760 }); T(ctx, 'a Michigan record', 1330, 490, 46, { weight: 400 });
   };
@@ -2683,12 +2749,12 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   /* ---------- item 9: the self-driving car ---------- */
   P[190] = function (ctx) {
     seed(190); nightSky(ctx); nightRoad(ctx, 860, 220);
-    streetLight(ctx, 260, 820, 420, 1); streetLight(ctx, 1500, 820, 420, -1);
-    suv(ctx, 760, 1010, 1.9, { beams: true });
-    T(ctx, '2018', 250, 300, 96, { color: '#f4f1ea' });
+    streetLight(ctx, 280, 820, 560, 1); streetLight(ctx, 1560, 820, 560, -1);
+    suv(ctx, 700, 1010, 1.35, { beams: true });
+    T(ctx, '2018', 150, 250, 96, { color: '#f4f1ea' });
   };
   P[191] = function (ctx) {
-    seed(191); nightSky(ctx); nightRoad(ctx, 900, 180); streetLight(ctx, 1500, 860, 460, -1);
+    seed(191); nightSky(ctx); nightRoad(ctx, 900, 180); streetLight(ctx, 1500, 860, 640, -1);
     var o = herz({ x: 900, y: 1010, s: 1.05, expr: 'neutral', look: [1, 0], legs: { l: [-12, -4], r: [14, 6] } });
     person(ctx, Object.assign({ noArms: true }, o));
     var b = bike(ctx, 760, 1040, 3.2, {});
@@ -2783,6 +2849,9 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[205] = function (ctx) {
     seed(205); crossing(ctx, 0, { fallen: true, noPerson: true });
+    blood(ctx, 1566, 692, 40, 16);
+    personTop(ctx, 1630, 700, 0.8, { rot: -1.5, coat: '#9a8aaa', hair: '#5a4a3a', legs: true, lc: '#c9ced6', hands: [[1680, 640], [1690, 764]] });
+    censor(ctx, 1560, 690, 50, 28);
     suvTop(ctx, 420, (RDT.top + RDT.bot) / 2 - 75, {});
     for (var i = 0; i < 2; i++) Ln(ctx, 560, 560 + i * 60, 1100, 575 + i * 60, { w: 8, color: '#10141c' });
     T(ctx, '40 MPH', 1500, 1010, 70, { color: '#f4f1ea' });
@@ -2822,14 +2891,14 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   }
   /* ---------- outro: the second grid ---------- */
   var G2 = [
-    function (ctx) { ground(ctx, 900); montgolfier(ctx, 1200, 170, 240, { basket: true }); person(ctx, { x: 560, y: 1040, s: 1.3, coat: C.coatB, expr: 'happy', look: [1, -0.5], pose: { l: [14, 6, 'open'], r: [120, 110, 'point'] } }); },
-    function (ctx) { ground(ctx, 760); rails(ctx, 960); loco(ctx, 800, 960, 1.9, { smoke: false }); person(ctx, huskisson({ x: 420, y: 1040, s: 1.3, expr: 'happy', look: [1, 0] })); },
-    function (ctx) { ground(ctx, 940); coneChute(ctx, 1250, 260, 300, { basket: true }); person(ctx, cocking({ x: 560, y: 1040, s: 1.3, expr: 'determined', look: [1, -0.3] })); },
-    function (ctx) { ground(ctx, 820); steamCar(ctx, 820, 1030, 2.0, { seats: [] }); person(ctx, mward({ x: 480, y: 1040, s: 1.25, expr: 'happy', hat: 'bonnet', hatCol: '#e9d7a8' })); },
-    function (ctx) { ground(ctx, 760); flyer(ctx, 1080, 960, 2.0, {}); person(ctx, selfridge({ x: 330, y: 1050, s: 1.2, expr: 'determined', look: [1, 0] })); },
-    function (ctx) { Rc(ctx, -20, -20, W + 40, 1120, { fill: '#e6e2d6', w: 0, j: 0 }); var d = daghlian({ x: 1250, y: 1330, s: 1.4, noLegs: true, expr: 'neutral', look: [-1, 0.5] }); person(ctx, d); labTable(ctx, 860); brickWall(ctx, 760, 860, 0.8, 1.0); core(ctx, 760, 790, 70); },
-    function (ctx) { ground(ctx, 900, '#cdd9a3'); descentModule(ctx, 1350, 720, 240, {}); [0, 1, 2].forEach(function (i) { person(ctx, Object.assign({}, CREW3[i], { x: 330 + i * 230, y: 1050, s: 1.05, expr: 'neutral', look: [1, 0] })); }); },
-    function (ctx) { factoryBg(ctx); rack(ctx, { x0: 900, x1: 1880, top: 360, floor: 1000, n: 5 }); stacker(ctx, 800, 600, 120, { crate: true }); person(ctx, Object.assign({}, WILL, { x: 420, y: 1050, s: 1.2, expr: 'neutral', look: [1, 0] })); },
+    function (ctx) { ground(ctx, 900); montgolfier(ctx, 1150, 60, 330, { basket: true }); person(ctx, { x: 560, y: 1040, s: 0.6, coat: C.coatB, expr: 'happy', look: [1, -0.5], pose: { l: [14, 6, 'open'], r: [120, 110, 'point'] } }); },
+    function (ctx) { ground(ctx, 760); rails(ctx, 960); loco(ctx, 800, 960, 1.9, { smoke: false }); person(ctx, huskisson({ x: 480, y: 1040, s: 0.75, expr: 'happy', look: [1, 0] })); },
+    function (ctx) { ground(ctx, 940); coneChute(ctx, 1250, 200, 380, { basket: true }); person(ctx, cocking({ x: 560, y: 1040, s: 0.55, expr: 'determined', look: [1, -0.3] })); },
+    function (ctx) { ground(ctx, 820); steamCar(ctx, 820, 1030, 2.0, { seats: [] }); person(ctx, mward({ x: 520, y: 1040, s: 1.0, expr: 'happy', hat: 'bonnet', hatCol: '#e9d7a8' })); },
+    function (ctx) { ground(ctx, 760); flyer(ctx, 1080, 960, 2.0, {}); person(ctx, selfridge({ x: 330, y: 1050, s: 0.6, expr: 'determined', look: [1, 0] })); },
+    function (ctx) { Rc(ctx, -20, -20, W + 40, 1120, { fill: '#e6e2d6', w: 0, j: 0 }); var d = daghlian({ x: 1250, y: 1330, s: 1.4, noLegs: true, expr: 'neutral', look: [-1, 0.5] }); person(ctx, d); labTable(ctx, 860); brickWall(ctx, 760, 860, 0.8, 0.55); core(ctx, 760, 826, 34); },
+    function (ctx) { ground(ctx, 900, '#cdd9a3'); descentModule(ctx, 1350, 720, 240, {}); [0, 1, 2].forEach(function (i) { person(ctx, Object.assign({}, CREW3[i], { x: 400 + i * 200, y: 1050, s: 0.72, expr: 'neutral', look: [1, 0] })); }); },
+    function (ctx) { factoryBg(ctx); rack(ctx, { x0: 1000, x1: 2600, top: -150, floor: 1000, n: 2 }); person(ctx, Object.assign({}, WILL, { x: 560, y: 1050, s: 1.2, expr: 'neutral', look: [1, 0] })); },
     function (ctx) { ground(ctx, 700); Rc(ctx, -20, 760, W + 40, 300, { fill: '#8c8c88', w: 0, j: 0 }); for (var x = 0; x < W; x += 200) Ln(ctx, x, 910, x + 100, 910, { w: 6, color: '#fff' }); var o = herz({ x: 980, y: 1010, s: 1.1, expr: 'neutral', look: [1, 0], legs: { l: [-12, -4], r: [14, 6] } }); person(ctx, Object.assign({ noArms: true }, o)); var b = bike(ctx, 830, 1040, 3.3, {}); personArms(ctx, Object.assign({}, o, { pose: { l: { to: [b.seat[0] + 4, b.seat[1] + 6], type: 'fist', bend: 1 }, r: { to: [b.grip[0] + 6, b.grip[1] + 4], type: 'fist', bend: 1 } } })); }
   ];
   var g2cache = {};
@@ -3066,7 +3135,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     [216, 'A physicist who worked on the bomb.', 10],
     [217, 'Cosmonauts.', 10],
     [218, 'The man whose job was to run the robot.', 10],
-    [219, 'Eight of the nine people in this video were close to the thing that killed them — the people who built it, tested it, flew it, or believed in it.', 10],
+    [219, 'Eight of the nine firsts in this video were close to the thing that killed them — the people who built it, tested it, flew it, or believed in it.', 10],
     [220, 'Then, in 2018, it was a woman crossing the road.', 10, { push: true }],
     [221, 'Subscribe, and tell me which first I missed in the comments.', 10]
   ];
@@ -3093,7 +3162,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   function bar(ctx, n) {
     var it = ITEM_OF[n]; if (!it || it === 10) return;
     var k = barItem(n);
-    if (!bars[k]) { var c = makeCanvas(W, BAR_H + 12), x = c.getContext('2d'); x.lineJoin = 'round'; x.lineCap = 'round'; chrome(x, k); bars[k] = c; }
+    if (!bars[k]) { var c = makeCanvas(W, BADGE.y + BADGE.r + 12), x = c.getContext('2d'); x.lineJoin = 'round'; x.lineCap = 'round'; chrome(x, k); bars[k] = c; }
     ctx.drawImage(bars[k], 0, 0);
   }
   function setText(on) { TEXT_ON = !!on; thumbs = {}; g2cache = {}; }
