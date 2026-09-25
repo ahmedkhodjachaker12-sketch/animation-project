@@ -63,6 +63,21 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
 .help ol, .help ul{ margin:0 0 12px; padding-left:1.4em; line-height:1.5; }
 .help p{ margin:0 0 10px; line-height:1.5; max-width:80ch; }
 .help kbd{ font:inherit; font-weight:700; border:1px solid var(--line); border-radius:4px; padding:0 4px; }
+.scrub span.wob{ box-shadow:0 4px 0 -1px #e0892a; }
+.tl{ padding:0 16px 16px; display:flex; flex-direction:column; gap:10px; }
+.tl h3{ margin:0; }
+.tl-wrap{ max-height:460px; overflow:auto; border:2px solid var(--line); border-radius:8px; }
+.tl table{ border-collapse:collapse; width:100%; font-size:0.95rem; }
+.tl th, .tl td{ padding:3px 8px; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap; }
+.tl thead th{ position:sticky; top:0; z-index:1; background:var(--panel); }
+.tl td.tl-nar{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:28em; color:var(--muted); }
+.tl tbody tr.cur{ background:var(--line); }
+.tl tbody tr.wob td:first-child{ box-shadow:inset 4px 0 0 #e0892a; }
+.editor .tl td select, .editor .tl td input[type=number]{ min-height:34px; padding:2px 6px; font-size:0.95rem; }
+.editor .tl td input[type=number]{ width:5em; }
+.tl-go{ min-height:34px; padding:2px 10px; font-size:0.95rem; border-width:1px; }
+.vh{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+@media (max-width:700px){ .tl .tl-nar{ display:none; } }
 [hidden]{ display:none !important; }
 </style>
 </head>
@@ -91,53 +106,84 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
       <fieldset>
         <legend>This panel: <span id="edPanel"></span></legend>
         <label>Length <input type="number" id="edDur" min="0.3" max="60" step="0.1" inputmode="decimal"> seconds</label>
-        <label>Wobble <select id="edWob"><option value="off">Off (still)</option><option value="lines">Lines wobble, people still</option><option value="all">Everything wobbles</option></select></label>
-        <label>Zoom <select id="edZoom"><option value="none">None</option><option value="in">Push in</option><option value="out">Pull out</option></select></label>
+        <label>Wobble <select id="edWob"></select></label>
+        <label>Zoom <select id="edZoom"></select></label>
         <label>Zoom amount <input type="range" id="edAmt" min="2" max="40" step="1"> <output id="edAmtOut"></output></label>
-        <p class="hint">To choose where the zoom goes, pause and click that spot on the picture. Press Play to watch it.</p>
+        <p class="hint">To choose where the zoom goes, pause and click that spot on the picture. Press Play to watch it, wobble included.</p>
         <label><input type="checkbox" id="edGuide"> Show where the zoom ends (red dashed frame, only here, never in exports)</label>
         <label>Written text <select id="edText"><option value="default">Follow the switch above</option><option value="on">On</option><option value="off">Off</option></select></label>
         <div class="row"><button id="edItem" type="button">Use for this whole item</button><button id="edAll" type="button">Use for every panel</button><button id="edReset" type="button">Reset this panel</button></div>
       </fieldset>
       <fieldset>
         <legend>Export</legend>
-        <label>What <select id="exWhat"><option value="all">Whole video</option><option value="item">This item</option><option value="panel">This panel</option><option value="range">Panels from … to …</option></select></label>
+        <label>What <select id="exWhat"><option value="all">Whole video</option><option value="item">This item</option><option value="panel">This panel</option><option value="ticked">Panels ticked in the list below</option><option value="range">Panels from … to …</option></select></label>
         <label id="exRange" hidden>From panel <input type="number" id="exFrom" value="3" min="1" max="221"> to <input type="number" id="exTo" value="23" min="1" max="221"></label>
         <label>Size <select id="exRes"><option value="1">1080p (1920×1080)</option><option value="1.3333">1440p (2560×1440)</option><option value="2">4K (3840×2160)</option></select></label>
         <label>Frame rate <select id="exFps"><option value="24">24 fps</option><option value="25">25 fps</option><option value="30">30 fps</option><option value="60">60 fps</option></select></label>
         <label>Video quality <select id="exQ"><option value="1">Good (smaller file)</option><option value="2">High</option><option value="3">Best (biggest file)</option></select></label>
-        <label>Pictures <select id="exLayersMode"><option value="flat">Everything in one picture</option><option value="twopart">Title bar separate</option><option value="split">Drawing, text and title bar all separate</option></select></label>
         <label><input type="checkbox" id="exBar"> Title bar in videos</label>
+        <label>Pictures and wobble loops <select id="exLayersMode"><option value="flat">Everything in one picture</option><option value="twopart">Title bar separate</option><option value="split">Drawing, text and title bar all separate</option></select></label>
         <label>Wobble speed <select id="exBoil"><option value="6">Slow</option><option value="8">Normal</option><option value="12">Fast</option></select></label>
         <label>Wobble frames per loop <select id="exFrames"><option value="3">3</option><option value="4">4</option><option value="6">6</option><option value="8">8</option></select></label>
         <label>Wobble strength <input type="range" id="exAmp" min="0.5" max="3" step="0.1"></label>
+        <label>Wobble loops as <select id="exWobFmt"><option value="mp4">MP4, already wobbling for the panel's length</option><option value="png">PNG frames, to loop yourself</option></select></label>
         <h3>Video</h3>
         <div class="row">
           <button id="exMp4" class="play ex-btn" type="button">One MP4</button>
           <button id="exClips" class="ex-btn" type="button">One MP4 per panel</button>
+          <button id="exWobble" class="ex-btn" type="button">Wobble loops</button>
         </div>
         <h3>Pictures</h3>
         <div class="row">
           <button id="exPics" class="ex-btn" type="button">Pictures (PNG)</button>
-          <button id="exWobble" class="ex-btn" type="button">Wobble loops (PNG frames)</button>
           <button id="exFrames2" class="ex-btn" type="button">Every frame as PNG (best quality)</button>
         </div>
+        <p class="hint">Wobble shows in the videos only on panels whose Wobble is on. Set it here for one panel, or tick panels in the list below and set them all at once.</p>
         <div class="row"><button id="exSave" type="button">Save settings</button><label class="filebtn">Load settings<input type="file" id="exLoad" accept=".json,application/json"></label></div>
         <div class="row"><progress id="exProg" max="1" value="0" hidden></progress><button id="exCancel" type="button" hidden>Cancel</button></div>
         <p id="exMsg" class="hint" role="status" aria-live="polite"></p>
       </fieldset>
     </div>
+    <section class="tl" aria-labelledby="tlHead">
+      <h3 id="tlHead">All panels</h3>
+      <p class="hint">Set each panel's wobble, zoom and length right in the list, or tick several and set them together. Shift-click a tick box to tick every panel in between. Click a number to show that panel.</p>
+      <div class="row">Tick: <button id="tlAll" type="button">All</button><button id="tlNone" type="button">None</button><button id="tlItem" type="button">This item</button><button id="tlWobbling" type="button">Ones that wobble</button></div>
+      <div class="row">For the <b id="tlCount">0 panels</b> ticked:
+        <label>Wobble <select id="tlWob"></select></label><button id="tlWobGo" type="button">Set</button>
+        <label>Zoom <select id="tlZoom"></select></label><button id="tlZoomGo" type="button">Set</button>
+        <label>Length <input type="number" id="tlLen" min="0.3" max="60" step="0.1" value="3" inputmode="decimal"> s</label><button id="tlLenGo" type="button">Set</button>
+      </div>
+      <div class="tl-wrap">
+        <table>
+          <thead><tr><th scope="col"><span class="vh">Tick</span></th><th scope="col">#</th><th scope="col">Item</th><th scope="col" class="tl-nar">Narration</th><th scope="col">Length (s)</th><th scope="col">Wobble</th><th scope="col">Zoom</th></tr></thead>
+          <tbody id="tlBody"></tbody>
+        </table>
+      </div>
+    </section>
     <div class="help">
       <details>
         <summary>Which export do I want?</summary>
         <ul>
           <li><b>One MP4:</b> the finished video, with your lengths, wobble and zooms baked in. Nothing left to do in the editor.</li>
           <li><b>One MP4 per panel:</b> the same, cut into one clip per panel, so you can swap, trim or retime panels. Each comes with <i>timing.csv</i>.</li>
+          <li><b>Wobble loops:</b> each panel wobbling on its own, with no zoom, so you can zoom it yourself. As MP4 it already wobbles for the panel's whole length; as PNG you get a few frames to loop. With one panel chosen you get that panel; with more, you get the panels whose Wobble is on.</li>
           <li><b>Pictures (PNG):</b> one still per panel, with no wobble or zoom. You do the movement yourself in the editor.</li>
-          <li><b>Wobble loops:</b> a few frames of each panel that play on repeat, for the hand-drawn wobble. With one panel chosen you get that panel; with more, you get the panels whose Wobble is on.</li>
-          <li><b>Every frame as PNG:</b> the whole video as numbered, lossless pictures. The sharpest option, but many files: use it for a section, not the whole video.</li>
+          <li><b>Every frame as PNG:</b> the video as numbered, lossless pictures. The sharpest option, but a lot of files. In Chrome or Edge they go straight into a folder you pick; in other browsers they come as ZIP files of up to 1.5 GB each.</li>
         </ul>
         <p>For the sharpest result pick <b>4K</b>, even for a 1080p video: your editor shrinks it, and zooms stay crisp. <b>High</b> quality is plenty for YouTube; <b>Best</b> makes bigger files.</p>
+        <p>A long export (the whole video is thousands of frames) takes a while. The bar shows how long is left. It keeps going if you switch to another tab, but keep this tab open and the computer awake.</p>
+      </details>
+      <details>
+        <summary>Wobble on only some parts</summary>
+        <p>Wobble is set per panel, and the videos only wobble where you turned it on. Four choices:</p>
+        <ul>
+          <li><b>Off:</b> still.</li>
+          <li><b>Lines wobble, people still:</b> the background and objects wobble, the people stay steady.</li>
+          <li><b>People wobble, the rest still:</b> only the people wobble.</li>
+          <li><b>Everything wobbles.</b></li>
+        </ul>
+        <p>To do many at once, tick them in <b>All panels</b> (shift-click ticks a run), pick the wobble and press <b>Set</b>. Then export <b>One MP4</b>: those panels wobble and the rest stay still. Or export only the wobbling ones with <b>Wobble loops</b>.</p>
+        <p>With <b>Wobble loops as PNG frames</b>: in After Effects import the first frame as a PNG Sequence, right-click it &gt; <b>Interpret Footage &gt; Main</b>, set the frame rate to 8 (6 if Wobble speed is Slow, 12 if Fast) and <b>Loop</b> to 99. Premiere Pro can't loop a clip, so there the MP4 version is easier.</p>
       </details>
       <details>
         <summary>Together or separate: what's the difference?</summary>
@@ -147,7 +193,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
       </details>
       <details>
         <summary>Zoom-ins</summary>
-        <p><b>Here:</b> choose <b>Push in</b> (or Pull out), set the amount, pause and click where it should zoom to, then press Play to check. Every MP4 export includes it.</p>
+        <p><b>Here:</b> choose <b>Push in</b> (or Pull out), set the amount, pause and click where it should zoom to, then press Play to check. The One MP4 exports include it.</p>
         <p><b>Yourself, in Premiere Pro or After Effects:</b> every export comes with <i>timing.csv</i> (opens in Excel). For each panel it gives the numbers to type:</p>
         <ol>
           <li>Select the drawing. Premiere Pro: <b>Effect Controls &gt; Motion</b>. After Effects: open <b>Transform</b>.</li>
@@ -156,15 +202,6 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
           <li>On its last frame, type <i>scale_end</i>.</li>
           <li>Smooth it: Premiere Pro, right-click the keyframes &gt; <b>Temporal Interpolation &gt; Ease In / Ease Out</b>. After Effects, select both and press <kbd>F9</kbd>.</li>
         </ol>
-      </details>
-      <details>
-        <summary>Wobble on only some things</summary>
-        <p>Wobble is set per panel. Turn it on only for the panels you want (<b>Lines wobble, people still</b> keeps the people steady), then either:</p>
-        <ul>
-          <li>export <b>One MP4 per panel</b>: those clips already wobble for the whole panel, or</li>
-          <li>export <b>Wobble loops</b> and loop them. After Effects: import the first frame as a PNG Sequence, right-click it &gt; <b>Interpret Footage &gt; Main</b>, set the frame rate to 8 (6 if Wobble speed is Slow, 12 if Fast) and <b>Loop</b> to 99. Premiere Pro: import with <b>Image Sequence</b> ticked, then <b>Modify &gt; Interpret Footage</b> to the same frame rate, and Alt-drag copies end to end (Premiere can't loop a clip).</li>
-        </ul>
-        <p>More frames per loop (6 or 8) makes the wobble look less repetitive.</p>
       </details>
       <details>
         <summary>Putting it into Premiere Pro or After Effects</summary>
@@ -195,21 +232,23 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     smoke: '#9aa0a7', burnt: '#5c4a3e', burnt2: '#7a6454', paper: '#fbf8f1',
     wicker: '#c9a063', wickerD: '#a37c45', sepia: '#d8c6a1', ruler: '#f1d36a', coatN: '#2f3a4f', coatK: '#2e2e30', trou: '#8b8f96', locoY: '#e7c13a', locoG: '#3f6b4a', copper: '#c07a3a', steel: '#3a3a3a', grand: '#8e2323', grass: '#d4e5b4', greyH: '#b9b9b9', olive: '#7d7248', straw: '#e8cf8a', cloth: '#f1e8d0', dressN: '#3b4a6b', dressP: '#5e4a6e', hairD: '#3e2e24', slate: '#58606b', whitewash: '#f3f0e8', stone: '#bdb6a8', iron: '#4a4d52', brick: '#b5654a', road: '#a7a7a3'
   };
-  var J = 1.3, LW = 5, BOIL = 0, WOB_PEOPLE = false, TEXT_LAYER = null, TEXT_ON = true, BAR_NAME = true, BAR_H = 150, BADGE = { x: 1792, y: 140, r: 116 };
+  var J = 1.3, JW = 1.3, LW = 5, BOIL = 0, WOB_PEOPLE = false, WOB_LINES = true, TEXT_LAYER = null, TEXT_ON = true, BAR_NAME = true, BAR_H = 150, BADGE = { x: 1792, y: 140, r: 116 };
 
   /* ---------- seeded randomness ---------- */
-  /* two streams: _s places things (never changes between wobble frames), _w only jiggles the lines */
-  var _s = 1, _w = 1, _p = 1, PEOPLE = 0, LABELS = 0;
+  /* _s places things (never changes between wobble frames), _w jiggles the lines, _p keeps people still, _q wobbles people alone */
+  var _s = 1, _w = 1, _p = 1, _q = 1, PEOPLE = 0, LABELS = 0;
   function seed(n) {
     _s = (n * 2654435761) >>> 0; if (!_s) _s = 1; for (var i = 0; i < 4; i++) rnd();
-    _w = ((n + BOIL * 9973 + 17) * 2246822519) >>> 0; if (!_w) _w = 1; for (i = 0; i < 4; i++) rw(0, 1);
+    _w = ((n + (WOB_LINES ? BOIL : (BOIL ? 1 : 0)) * 9973 + 17) * 2246822519) >>> 0; if (!_w) _w = 1; for (i = 0; i < 4; i++) rw(0, 1);
     _p = ((n + 31) * 3266489917) >>> 0; if (!_p) _p = 1;
+    _q = ((n + BOIL * 7919 + 53) * 3432918353) >>> 0; if (!_q) _q = 1;
   }
   function rnd() { _s ^= _s << 13; _s >>>= 0; _s ^= _s >>> 17; _s ^= _s << 5; _s >>>= 0; return _s / 4294967296; }
   function rr(a, b) { return a + (b - a) * rnd(); }
   /* people stay perfectly still between wobble frames unless people wobble is on */
   function rp(a, b) { _p ^= _p << 13; _p >>>= 0; _p ^= _p >>> 17; _p ^= _p << 5; _p >>>= 0; return a + (b - a) * (_p / 4294967296); }
-  function rw(a, b) { if (PEOPLE && !(BOIL && WOB_PEOPLE)) return rp(a, b); _w ^= _w << 13; _w >>>= 0; _w ^= _w >>> 17; _w ^= _w << 5; _w >>>= 0; return a + (b - a) * (_w / 4294967296); }
+  function rq(a, b) { _q ^= _q << 13; _q >>>= 0; _q ^= _q >>> 17; _q ^= _q << 5; _q >>>= 0; return a + (b - a) * (_q / 4294967296); }
+  function rw(a, b) { if (PEOPLE) { if (!(BOIL && WOB_PEOPLE)) return rp(a, b); if (!WOB_LINES) return rq(a, b); } _w ^= _w << 13; _w >>>= 0; _w ^= _w >>> 17; _w ^= _w << 5; _w >>>= 0; return a + (b - a) * (_w / 4294967296); }
 
   /* ---------- geometry ---------- */
   function catmull(p, closed, seg) {
@@ -550,7 +589,11 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     if (o.hat && o.hat !== 'bonnet') hatOn(ctx, o.hat, x, hy, R, o, lw);
   }
   var HEAD_R = 6.0, SH_X = 1.1, SH_Y = -39.4;
-  function person(ctx, o) { var j0 = J; J = (BOIL && WOB_PEOPLE ? j0 * 0.7 : 0); PEOPLE++; try { return personRaw(ctx, o); } finally { J = j0; PEOPLE--; } }
+  /* how much a person's lines jiggle: nothing unless people wobble */
+  function pj(j0) { return BOIL && WOB_PEOPLE ? (WOB_LINES ? j0 : JW) * 0.7 : 0; }
+  /* draw part of a person (a hand, a head, a patient in bed) so it wobbles, or stays still, with the people */
+  function body(fn) { var j0 = J; J = pj(j0); PEOPLE++; try { return fn(); } finally { J = j0; PEOPLE--; } }
+  function person(ctx, o) { var j0 = J; J = pj(j0); PEOPLE++; try { return personRaw(ctx, o); } finally { J = j0; PEOPLE--; } }
   function personRaw(ctx, o) {
     var u = (o.s || 1) * 10, x = o.x, y = o.y, coat = o.dress || o.coat || C.coatB, lw = pen(u), hy = y - 47.4 * u, R = HEAD_R * u;
     function P(dx, dy) { return [x + dx * u, y + dy * u]; }
@@ -586,7 +629,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   }
   /* arms on their own, for someone whose hands rest on something drawn in front of their body */
   function personArms(ctx, o) {
-    var j0 = J; J = (BOIL && WOB_PEOPLE ? j0 * 0.7 : 0); PEOPLE++;
+    var j0 = J; J = pj(j0); PEOPLE++;
     try {
       var u = (o.s || 1) * 10, pose = o.pose || {}, coat = o.dress || o.coat || C.coatB;
       return { l: o.only === 'r' ? null : armP(ctx, pose.l, [o.x - SH_X * u, o.y + SH_Y * u], -1, u, coat), r: o.only === 'l' ? null : armP(ctx, pose.r, [o.x + SH_X * u, o.y + SH_Y * u], 1, u, coat) };
@@ -600,13 +643,14 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     return personArms(ctx, Object.assign({}, o, { pose: { l: pl || { to: hands[0], type: 'fist', bend: 1 }, r: pr || { to: hands[1], type: 'fist', bend: -1 } } }));
   }
   /* a close-up arm coming in from the edge of the frame, ending in a big cartoon hand */
-  function closeArm(ctx, pts, w, sleeve, type) {
+  function closeArm(ctx, pts, w, sleeve, type) { return body(function () { closeArmRaw(ctx, pts, w, sleeve, type); }); }
+  function closeArmRaw(ctx, pts, w, sleeve, type) {
     var n = pts.length, a = pts[n - 2], b = pts[n - 1], ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
     limb(ctx, pts.slice(0, n - 1).concat([[b[0] - Math.cos(ang) * w * 0.3, b[1] - Math.sin(ang) * w * 0.3]]), w * 0.62, sleeve || C.skin);
     bigHand(ctx, b[0], b[1], ang, w * 0.5, type || 'fist', 6);
   }
   /* head and shoulders only */
-  function bust(ctx, o) { var j0 = J; J = (BOIL && WOB_PEOPLE ? j0 * 0.7 : 0); PEOPLE++; try { return bustRaw(ctx, o); } finally { J = j0; PEOPLE--; } }
+  function bust(ctx, o) { var j0 = J; J = pj(j0); PEOPLE++; try { return bustRaw(ctx, o); } finally { J = j0; PEOPLE--; } }
   function bustRaw(ctx, o) {
     var u = (o.s || 1) * 10, x = o.x, cy = o.y, coat = o.dress || o.coat || C.coatB, lw = pen(u), R = HEAD_R * u;
     [-1, 1].forEach(function (s) { ln2(ctx, [[x + s * 1.1 * u, cy + 7.8 * u], [x + s * 3.2 * u, cy + 13 * u], [x + s * 3.8 * u, cy + 19 * u]], lw * 1.05); });
@@ -616,7 +660,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     head(ctx, x, cy, R, o);
   }
   /* a small stick figure for crowds, baskets and seats: head centre 27u above y, feet 4u below it */
-  function mini(ctx, x, y, s, col, o) { var j0 = J; J = (BOIL && WOB_PEOPLE ? j0 * 0.7 : 0); PEOPLE++; try { return miniRaw(ctx, x, y, s, col, o); } finally { J = j0; PEOPLE--; } }
+  function mini(ctx, x, y, s, col, o) { var j0 = J; J = pj(j0); PEOPLE++; try { return miniRaw(ctx, x, y, s, col, o); } finally { J = j0; PEOPLE--; } }
   function miniRaw(ctx, x, y, s, col, o) {
     o = o || {}; var u = s, lw = Math.max(2.4, 0.62 * u), R = 5.8 * u, hy = y - 27 * u;
     [-1, 1].forEach(function (sg) { ln2(ctx, [[x + sg * 0.6 * u, y - 9 * u], [x + sg * 1.4 * u, y + 3.6 * u], [x + sg * 3 * u, y + 4 * u]], lw); });
@@ -640,7 +684,8 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   }
 
   /* a person seen from straight above: hair on top of the head, shoulders, arms to two points */
-  function personTop(ctx, x, y, s, o) {
+  function personTop(ctx, x, y, s, o) { return body(function () { personTopRaw(ctx, x, y, s, o); }); }
+  function personTopRaw(ctx, x, y, s, o) {
     o = o || {}; var u = s * 10, lw = pen(u), rot = o.rot || 0, c = Math.cos(rot), sn = Math.sin(rot);
     function L(p) { var dx = p[0] - x, dy = p[1] - y; return [dx * c + dy * sn, -dx * sn + dy * c]; }
     ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
@@ -1139,14 +1184,14 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
         hx = x0 + 170 * k; hy = mTop - 118 * k; tilt = -0.22;
       }
       var bu = hu, plw = pen(bu);
-      if (!o.empty) {
+      if (!o.empty) body(function () {
         ctx.save(); ctx.translate(hx, hy); ctx.rotate(tilt);
         /* a stick-figure body: narrow chest (bandaged if hurt) under the head */
         S(ctx, [[-1.9 * bu, 6 * bu], [1.9 * bu, 6 * bu], [2.1 * bu, 12 * bu], [-2.1 * bu, 12 * bu]], { closed: true, fill: shirt, w: plw });
         if (o.bandage) for (var bb = 0; bb < 3; bb++) Ln(ctx, -2.1 * bu, (10 + bb * 3) * bu, 2.1 * bu, (10.6 + bb * 3) * bu, { w: 1.6 * bu, color: '#f7f7f2' });
         head(ctx, 0, 0, HEAD_R * bu, Object.assign({}, pat, { hat: '' }));
         ctx.restore();
-      }
+      });
       /* the blanket: pulled up to the chest, a lump over the feet, hanging over the side (made flat on an empty bed) */
       var bl = o.blanket || '#9fb7d4', top0 = o.empty ? mTop - 40 * k : o.propped ? mTop - 130 * k : mTop - 62 * k, bx0 = x0 + (o.empty ? 330 : o.propped ? 250 : 215) * k;
       var feet = o.empty ? [[x0 + 820 * k, mTop - 40 * k]] : o.noFeet ? [[x0 + 820 * k, mTop - 62 * k], [x0 + 900 * k, mTop - 58 * k]] : [[x0 + 790 * k, mTop - 66 * k], [x0 + 846 * k, mTop - 100 * k], [x0 + 892 * k, mTop - 104 * k], [x0 + 930 * k, mTop - 74 * k]];
@@ -1155,11 +1200,11 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
       S(ctx, [[bx0 - 4 * k, top0 - 2 * k], [bx0 + 40 * k, top0 + 2 * k], [bx0 + 34 * k, top0 + 26 * k], [bx0 - 10 * k, top0 + 24 * k]], { closed: true, fill: '#fff', w: 4 });
       Ln(ctx, bx0 + 60 * k, mTop + 10 * k, x1 - 60 * k, mTop + 14 * k, { w: 2.6, color: shade(bl, 0.8) });
       /* the near arm resting on top of the blanket */
-      if (o.arm) {
+      if (o.arm) body(function () {
         var sh = o.propped ? [x0 + 250 * k, mTop - 200 * k] : [x0 + 230 * k, mTop - 80 * k], hd = o.propped ? [x0 + 390 * k, mTop - 108 * k] : [x0 + 430 * k, mTop - 96 * k];
         ln2(ctx, [sh, [(sh[0] + hd[0]) / 2, (sh[1] + hd[1]) / 2 - 6 * k], hd], plw * 1.05);
         stickHand(ctx, hd[0], hd[1], Math.atan2(hd[1] - sh[1], hd[0] - sh[0]), 0.95 * bu, 'open', plw);
-      }
+      });
       if (o.over) o.over({ x0: x0, x1: x1, k: k, mTop: mTop, mBot: mBot, hx: hx, hy: hy });
       return { x0: x0, x1: x1, k: k, mTop: mTop, mBot: mBot };
     } finally { J = j0; }
@@ -1571,9 +1616,9 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     for (var r = 1; r < 5; r++) { var yy = 470 + r * 62; Ln(ctx, 620 - r * 8, yy, 1300 + r * 8, yy, { w: 3, color: C.wickerD }); }
     for (var c = 1; c < 9; c++) { var t = c / 9; Ln(ctx, 620 + 680 * t, 480, 580 + 760 * t, 772, { w: 3, color: C.wickerD }); }
     var pl = { x: 960, s: 1.65, coat: C.coatB, expr: 'nervous', look: [0, 1], hair: C.wig };
-    head(ctx, 960, 368, HEAD_R * 16.5, pl);
+    body(function () { head(ctx, 960, 368, HEAD_R * 16.5, pl); });
     Rc(ctx, 600, 440, 720, 40, { fill: C.wickerD });
-    [[790, 452], [1130, 452]].forEach(function (h) { ln2(ctx, [[h[0] + (h[0] < 960 ? 30 : -30), 430], h], pen(16.5) * 1.05); stickHand(ctx, h[0], h[1], Math.PI / 2, 16, 'fist', pen(16.5)); });
+    body(function () { [[790, 452], [1130, 452]].forEach(function (h) { ln2(ctx, [[h[0] + (h[0] < 960 ? 30 : -30), 430], h], pen(16.5) * 1.05); stickHand(ctx, h[0], h[1], Math.PI / 2, 16, 'fist', pen(16.5)); }); });
   };
   P[5] = function (ctx) {
     seed(5);
@@ -3325,12 +3370,12 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     opts = opts || {};
     var t0 = TEXT_ON, j0 = J;
     try {
-      BOIL = boil || 0; WOB_PEOPLE = !!opts.wobPeople; TEXT_LAYER = opts.textLayer || null;
+      BOIL = boil || 0; WOB_PEOPLE = !!opts.wobPeople; WOB_LINES = opts.wobLines !== false; TEXT_LAYER = opts.textLayer || null;
       if (opts.text !== undefined) TEXT_ON = !!opts.text;
-      J = BOIL ? 1.3 + 2.4 * (opts.wobAmp === undefined ? 1 : opts.wobAmp) : 1.3; PEOPLE = 0; LABELS = 0;
+      JW = BOIL ? 1.3 + 2.4 * (opts.wobAmp === undefined ? 1 : opts.wobAmp) : 1.3; J = WOB_LINES ? JW : 1.3; PEOPLE = 0; LABELS = 0;
       renderRaw(ctx, n, opts);
       return { labels: LABELS };
-    } finally { TEXT_ON = t0; J = j0; BOIL = 0; WOB_PEOPLE = false; TEXT_LAYER = null; }
+    } finally { TEXT_ON = t0; J = j0; JW = 1.3; BOIL = 0; WOB_PEOPLE = false; WOB_LINES = true; TEXT_LAYER = null; }
   }
   function renderRaw(ctx, n, opts) {
     ctx.save(); if (opts.scale) ctx.setTransform(opts.scale, 0, 0, opts.scale, 0, 0);
@@ -5246,17 +5291,20 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
   var optCap = $('optCap'), optText = $('optText'), optName = $('optName'), editor = $('editor');
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var NAMES = { 1: 'The balloon', 2: 'The railway', 3: 'The parachute', 4: 'The car', 5: 'The plane', 6: 'The core', 7: 'The capsule', 8: 'The robot', 9: 'The self-driving car', 10: 'Outro' };
+  var WOBBLES = [['off', 'Off (still)'], ['lines', 'Lines wobble, people still'], ['people', 'People wobble, the rest still'], ['all', 'Everything wobbles']];
+  var ZOOMS = [['none', 'None'], ['in', 'Push in'], ['out', 'Pull out']];
   var SIZES = { 1: [1920, 1080], 1.3333: [2560, 1440], 2: [3840, 2160] };
+  var TITLE = document.title;
 
   /* ---------- settings: per panel, plus export-wide ---------- */
   function defaults(p) { return { dur: Math.round(p.dur * 10) / 10, wobble: 'off', zoom: p.push ? 'in' : 'none', amount: p.push ? 6 : 8, fx: 0.5, fy: 0.55, text: 'default' }; }
-  var SET = {}, GLOBAL = { fps: 30, quality: 2, res: 1, boilRate: 8, boilFrames: 3, amp: 1.4, layers: 'flat', barInVideo: 1, guide: 0 };
+  var SET = {}, GLOBAL = { fps: 30, quality: 2, res: 1, boilRate: 8, boilFrames: 3, amp: 1.4, layers: 'flat', barInVideo: 1, guide: 0, wobFmt: 'mp4' };
   P.forEach(function (p) { SET[p.n] = defaults(p); });
   var STORE = 'firsts-drawn-in-code-settings-v1';
   function packSettings() {
     var panels = {};
     P.forEach(function (p) { var d = defaults(p), s = SET[p.n], diff = {}, any = false; Object.keys(s).forEach(function (k) { if (s[k] !== d[k]) { diff[k] = s[k]; any = true; } }); if (any) panels[p.n] = diff; });
-    return { version: 2, global: GLOBAL, text: optText.checked, name: optName.checked, panels: panels };
+    return { version: 3, global: GLOBAL, text: optText.checked, name: optName.checked, panels: panels };
   }
   function unpackSettings(o) {
     if (!o || typeof o !== 'object') return;
@@ -5273,24 +5321,27 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
 
   /* ---------- drawing a frame (the player and every export share this) ---------- */
   var cache = new Map(), cachePx = 0;
-  function art(n, boil, text, wobPeople, amp, scale) {
-    var key = n + '|' + boil + '|' + (text ? 1 : 0) + '|' + (wobPeople ? 1 : 0) + '|' + amp + '|' + scale;
+  /* which parts wobble: people, lines, both. a panel with wobble off uses "lines" when a wobble export asks for it */
+  function wobOf(n, force) { var w = SET[n].wobble; if (w === 'off' && force) w = 'lines'; return { people: w === 'all' || w === 'people', lines: w !== 'people' }; }
+  function art(n, boil, text, wob, amp, scale) {
+    var key = n + '|' + boil + '|' + (text ? 1 : 0) + '|' + (wob.people ? 1 : 0) + (wob.lines ? 1 : 0) + '|' + amp + '|' + scale;
     var c = cache.get(key);
     if (c) { cache.delete(key); cache.set(key, c); return c; }
     c = document.createElement('canvas'); c.width = Math.round(W * scale); c.height = Math.round(H * scale);
-    S.render(c.getContext('2d'), n, boil, { noChrome: true, text: text, wobPeople: wobPeople, wobAmp: amp, scale: scale });
+    S.render(c.getContext('2d'), n, boil, { noChrome: true, text: text, wobPeople: wob.people, wobLines: wob.lines, wobAmp: amp, scale: scale });
     cache.set(key, c); cachePx += c.width * c.height;
     while (cachePx > 70e6 && cache.size > 1) { var k0 = cache.keys().next().value, c0 = cache.get(k0); cachePx -= c0.width * c0.height; c0.width = c0.height = 0; cache.delete(k0); }
     return c;
   }
   function clearCache() { cache.forEach(function (c) { c.width = c.height = 0; }); cache.clear(); cachePx = 0; }
+  var STILL = { people: false, lines: true };
   function textOn(n) { var t = SET[n].text; return t === 'default' ? optText.checked : t === 'on'; }
   function boilAt(n, t) { return SET[n].wobble === 'off' ? 0 : 1 + (Math.floor(t * GLOBAL.boilRate) % GLOBAL.boilFrames); }
   function ease(t) { return t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t); }
   function zoomAt(n, t) { var s = SET[n]; if (s.zoom === 'none') return 1; var e = ease(Math.min(1, Math.max(0, t / s.dur))), a = s.amount / 100; return s.zoom === 'in' ? 1 + a * e : 1 + a * (1 - e); }
   function zoomMax(n) { var s = SET[n]; return s.zoom === 'none' ? 1 : 1 + s.amount / 100; }
   function zoomDraw(g, gridImg, cellIdx, e, K) {
-    var cell = S.gridCell(cellIdx), first = S.firstOfCell(cellIdx), target = art(first, 0, textOn(first), false, 1, K);
+    var cell = S.gridCell(cellIdx), first = S.firstOfCell(cellIdx), target = art(first, 0, textOn(first), STILL, 1, K);
     var z = W / cell.w, vw = W / Math.pow(z, e), vh = vw * 9 / 16, f = (W - vw) / (W - cell.w);
     var cx = W / 2 + (cell.x + cell.w / 2 - W / 2) * f, cy = H / 2 + (cell.y + cell.h / 2 - H / 2) * f, sc = W / vw;
     g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = '#c3e7f8'; g.fillRect(0, 0, W * K, H * K);
@@ -5304,13 +5355,14 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
     var p = P[idx], st = SET[p.n];
     g.setTransform(1, 0, 0, 1, 0, 0);
     if (p.grid) {
-      var gimg = art(p.n, 0, true, false, 1, K), u = still ? 0 : t / st.dur;
+      var gimg = art(p.n, 0, true, STILL, 1, K), u = still ? 0 : t / st.dur;
       if (p.zoomTo !== undefined) return zoomDraw(g, gimg, p.zoomTo, still ? 0 : ease(Math.max(0, (u - 0.1) / 0.9)), K);
       if (p.zoomFrom !== undefined) return zoomDraw(g, gimg, p.zoomFrom, still ? 0 : 1 - ease(Math.min(1, u / 0.9)), K);
       g.drawImage(gimg, 0, 0); return;
     }
     /* zoomed panels are drawn bigger than the frame, so the push-in stays sharp */
-    var zm = still ? 1 : zoomMax(p.n), img = art(p.n, still ? 0 : boilAt(p.n, t), textOn(p.n), st.wobble === 'all', GLOBAL.amp, K * zm);
+    var zm = still ? 1 : zoomMax(p.n), boil = still ? 0 : boilAt(p.n, t);
+    var img = art(p.n, boil, textOn(p.n), boil ? wobOf(p.n) : STILL, GLOBAL.amp, K * zm);
     var z = still ? 1 : zoomAt(p.n, t), fx = st.fx * W * K, fy = st.fy * H * K;
     g.fillStyle = '#c3e7f8'; g.fillRect(0, 0, W * K, H * K);
     g.imageSmoothingQuality = 'high';
@@ -5326,7 +5378,7 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
     cap.textContent = p.line ? '“' + p.line + '”' : '';
     cap.hidden = !optCap.checked;
     count.textContent = (p.grid ? 'Grid' : NAMES[p.item]) + ', panel ' + p.n + '  (' + (idx + 1) + ' of ' + P.length + ')';
-    Array.prototype.forEach.call(scrub.children, function (s, i) { s.className = i === idx ? 'on' : (i < idx ? 'done' : ''); });
+    Array.prototype.forEach.call(scrub.children, function (s, i) { s.className = (i === idx ? 'on' : (i < idx ? 'done' : '')) + (SET[P[i].n].wobble !== 'off' ? ' wob' : ''); });
     playBtn.textContent = playing ? 'Pause' : 'Play';
     edSync();
   }
@@ -5367,7 +5419,9 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
   });
 
   /* ---------- the editor ---------- */
+  function fill(sel, list) { list.forEach(function (o) { var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; sel.appendChild(op); }); }
   var edDur = $('edDur'), edWob = $('edWob'), edZoom = $('edZoom'), edAmt = $('edAmt'), edAmtOut = $('edAmtOut'), edText = $('edText'), edPanel = $('edPanel'), edGuide = $('edGuide');
+  fill(edWob, WOBBLES); fill(edZoom, ZOOMS);
   function edSync() {
     var p = P[idx], s = SET[p.n];
     edPanel.textContent = p.n + (p.grid ? ' (grid)' : '');
@@ -5376,9 +5430,11 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
     edGuide.checked = !!GLOBAL.guide;
     $('exFps').value = String(GLOBAL.fps); $('exQ').value = String(GLOBAL.quality); $('exRes').value = String(GLOBAL.res);
     $('exBoil').value = String(GLOBAL.boilRate); $('exFrames').value = String(GLOBAL.boilFrames); $('exAmp').value = String(GLOBAL.amp);
-    $('exLayersMode').value = GLOBAL.layers; $('exBar').checked = !!GLOBAL.barInVideo;
+    $('exLayersMode').value = GLOBAL.layers; $('exBar').checked = !!GLOBAL.barInVideo; $('exWobFmt').value = GLOBAL.wobFmt;
+    tlSync();
   }
-  function edSet(k, v) { SET[P[idx].n][k] = v; if (k === 'text') clearCache(); persist(); edSync(); draw(performance.now()); }
+  function changed(clear) { if (clear) clearCache(); persist(); ui(); draw(performance.now()); }
+  function edSet(k, v) { SET[P[idx].n][k] = v; changed(k === 'text'); }
   edDur.addEventListener('change', function () { var v = parseFloat(edDur.value); if (v >= 0.3 && v <= 60) edSet('dur', Math.round(v * 10) / 10); else edSync(); });
   edWob.addEventListener('change', function () { edSet('wobble', edWob.value); });
   edZoom.addEventListener('change', function () { edSet('zoom', edZoom.value); });
@@ -5388,18 +5444,18 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
   function copyTo(filter) {
     var src = SET[P[idx].n];
     P.forEach(function (p) { if (!p.grid && filter(p)) { var d = SET[p.n]; d.wobble = src.wobble; d.zoom = src.zoom; d.amount = src.amount; d.text = src.text; } });
-    clearCache(); persist(); edSync(); msg('Copied wobble, zoom and text settings. (Lengths and zoom centres stay per panel.)');
+    changed(true); msg('Copied wobble, zoom and text settings. (Lengths and zoom centres stay per panel.)');
   }
   $('edItem').addEventListener('click', function () { var it = P[idx].item; copyTo(function (p) { return p.item === it; }); });
   $('edAll').addEventListener('click', function () { copyTo(function () { return true; }); });
-  $('edReset').addEventListener('click', function () { SET[P[idx].n] = defaults(P[idx]); clearCache(); persist(); edSync(); draw(performance.now()); });
+  $('edReset').addEventListener('click', function () { SET[P[idx].n] = defaults(P[idx]); changed(true); });
   editor.addEventListener('toggle', function () { draw(performance.now()); });
   cv.addEventListener('click', function (e) {
     if (!editor.open || playing || P[idx].grid) return;
     var r = cv.getBoundingClientRect(), s = SET[P[idx].n];
     s.fx = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)); s.fy = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
     if (s.zoom === 'none') s.zoom = 'in';
-    persist(); edSync(); draw(performance.now());
+    changed(false);
     msg('Zoom centre set for panel ' + P[idx].n + '. Press Play to see it.');
   });
   function onGlobal(id, key, parse, clear) { $(id).addEventListener('change', function () { GLOBAL[key] = parse(this); if (clear) clearCache(); persist(); }); }
@@ -5411,14 +5467,78 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
   onGlobal('exAmp', 'amp', function (el) { return parseFloat(el.value); }, true);
   onGlobal('exLayersMode', 'layers', function (el) { return el.value; });
   onGlobal('exBar', 'barInVideo', function (el) { return el.checked ? 1 : 0; });
+  onGlobal('exWobFmt', 'wobFmt', function (el) { return el.value; });
   $('exWhat').addEventListener('change', function () { $('exRange').hidden = this.value !== 'range'; });
 
-  /* ---------- export ---------- */
-  var exMsg = $('exMsg'), exProg = $('exProg'), exCancel = $('exCancel'), running = false, cancelled = false;
+  /* ---------- the list of every panel ---------- */
+  var tlBody = $('tlBody'), TICK = {}, lastTick = -1, rows = [];
+  fill($('tlWob'), WOBBLES); fill($('tlZoom'), ZOOMS);
+  P.forEach(function (p, i) {
+    var tr = document.createElement('tr'); tr.dataset.i = i;
+    var c0 = document.createElement('td'), tick = document.createElement('input'); tick.type = 'checkbox'; tick.className = 'tl-tick'; tick.setAttribute('aria-label', 'Tick panel ' + p.n); c0.appendChild(tick);
+    var c1 = document.createElement('td'), b = document.createElement('button'); b.type = 'button'; b.className = 'tl-go'; b.textContent = p.n; b.title = 'Show panel ' + p.n; c1.appendChild(b);
+    var c2 = document.createElement('td'); c2.textContent = p.grid ? 'Grid' : NAMES[p.item]; c2.className = 'tl-item';
+    var c3 = document.createElement('td'); c3.textContent = p.line || ''; c3.className = 'tl-nar'; c3.title = p.line || '';
+    var c4 = document.createElement('td'), len = document.createElement('input'); len.type = 'number'; len.min = '0.3'; len.max = '60'; len.step = '0.1'; len.className = 'tl-len'; len.setAttribute('aria-label', 'Length of panel ' + p.n); c4.appendChild(len);
+    var c5 = document.createElement('td'), wob = document.createElement('select'); wob.className = 'tl-wob'; fill(wob, WOBBLES); wob.setAttribute('aria-label', 'Wobble for panel ' + p.n); c5.appendChild(wob);
+    var c6 = document.createElement('td'), zm = document.createElement('select'); zm.className = 'tl-zoom'; fill(zm, ZOOMS); zm.setAttribute('aria-label', 'Zoom for panel ' + p.n); c6.appendChild(zm);
+    if (p.grid) { wob.disabled = zm.disabled = true; }
+    [c0, c1, c2, c3, c4, c5, c6].forEach(function (c) { tr.appendChild(c); });
+    tlBody.appendChild(tr); rows.push({ tr: tr, tick: tick, len: len, wob: wob, zm: zm });
+  });
+  function tlSync() {
+    var n = 0;
+    rows.forEach(function (r, i) {
+      var p = P[i], s = SET[p.n];
+      r.tick.checked = !!TICK[p.n]; if (TICK[p.n]) n++;
+      if (document.activeElement !== r.len) r.len.value = s.dur;
+      r.wob.value = s.wobble; r.zm.value = s.zoom;
+      r.tr.className = (i === idx ? 'cur' : '') + (s.wobble !== 'off' ? ' wob' : '');
+    });
+    $('tlCount').textContent = n + (n === 1 ? ' panel' : ' panels');
+  }
+  function rowOf(el) { var tr = el.closest('tr'); return tr ? parseInt(tr.dataset.i, 10) : -1; }
+  tlBody.addEventListener('click', function (e) {
+    var i = rowOf(e.target); if (i < 0) return;
+    if (e.target.classList.contains('tl-go')) { go(i); return; }
+    if (e.target.classList.contains('tl-tick')) {
+      var on = e.target.checked;
+      if (e.shiftKey && lastTick >= 0) { for (var k = Math.min(lastTick, i); k <= Math.max(lastTick, i); k++) TICK[P[k].n] = on; }
+      else TICK[P[i].n] = on;
+      lastTick = i; tlSync();
+    }
+  });
+  tlBody.addEventListener('change', function (e) {
+    var i = rowOf(e.target); if (i < 0) return; var s = SET[P[i].n], el = e.target;
+    if (el.classList.contains('tl-wob')) s.wobble = el.value;
+    else if (el.classList.contains('tl-zoom')) s.zoom = el.value;
+    else if (el.classList.contains('tl-len')) { var v = parseFloat(el.value); if (v >= 0.3 && v <= 60) s.dur = Math.round(v * 10) / 10; }
+    else return;
+    persist(); ui(); if (i === idx) draw(performance.now());
+  });
+  function tickWhere(f) { P.forEach(function (p, i) { TICK[p.n] = !!f(p, i); }); lastTick = -1; tlSync(); }
+  $('tlAll').addEventListener('click', function () { tickWhere(function (p) { return !p.grid; }); });
+  $('tlNone').addEventListener('click', function () { tickWhere(function () { return false; }); });
+  $('tlItem').addEventListener('click', function () { var it = P[idx].item; tickWhere(function (p) { return !p.grid && p.item === it; }); });
+  $('tlWobbling').addEventListener('click', function () { tickWhere(function (p) { return SET[p.n].wobble !== 'off'; }); });
+  function ticked() { var out = []; P.forEach(function (p, i) { if (TICK[p.n]) out.push(i); }); return out; }
+  function setTicked(k, v, label) {
+    var list = ticked().filter(function (i) { return k === 'dur' || !P[i].grid; });
+    if (!list.length) return msg('Tick some panels in the list first.');
+    list.forEach(function (i) { SET[P[i].n][k] = v; }); changed(false);
+    msg(label + ' for ' + list.length + (list.length === 1 ? ' panel.' : ' panels.'));
+  }
+  $('tlWobGo').addEventListener('click', function () { var v = $('tlWob').value; setTicked('wobble', v, 'Wobble set to "' + $('tlWob').selectedOptions[0].textContent + '"'); });
+  $('tlZoomGo').addEventListener('click', function () { setTicked('zoom', $('tlZoom').value, 'Zoom set to "' + $('tlZoom').selectedOptions[0].textContent + '"'); });
+  $('tlLenGo').addEventListener('click', function () { var v = parseFloat($('tlLen').value); if (!(v >= 0.3 && v <= 60)) return msg('Type a length from 0.3 to 60 seconds.'); setTicked('dur', Math.round(v * 10) / 10, 'Length set to ' + (Math.round(v * 10) / 10) + ' s'); });
+
+  /* ---------- export plumbing ---------- */
+  var exMsg = $('exMsg'), exProg = $('exProg'), exCancel = $('exCancel'), running = false, cancelled = false, t0 = 0, lock = null;
   function msg(t) { exMsg.textContent = t; }
   function chosen() {
     var what = $('exWhat').value;
     if (what === 'panel') return [idx];
+    if (what === 'ticked') return ticked();
     if (what === 'item') {
       /* the item on screen, starting from the grid zooming into it */
       var p0 = P[idx], it = !p0.grid ? p0.item : p0.zoomTo !== undefined ? p0.zoomTo + 1 : p0.zoomFrom !== undefined ? p0.zoomFrom + 1 : 0, list = [];
@@ -5430,18 +5550,39 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
   }
   function K() { return GLOBAL.res; }
   function size() { return SIZES[GLOBAL.res] || [Math.round(W * GLOBAL.res), Math.round(H * GLOBAL.res)]; }
-  function slug(s) { return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+  function slug(s) { return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
   function pad(n, w) { return ('00000' + n).slice(-(w || 3)); }
-  function download(blob, name) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 4000); }
-  function yieldUI() { return new Promise(function (r) { setTimeout(r, 0); }); }
-  function begin(label) { running = true; cancelled = false; exProg.hidden = false; exProg.value = 0; exCancel.hidden = false; msg(label); document.querySelectorAll('.ex-btn').forEach(function (b) { b.disabled = true; }); }
-  function end(text) { running = false; exProg.hidden = true; exCancel.hidden = true; msg(text); clearCache(); document.querySelectorAll('.ex-btn').forEach(function (b) { b.disabled = false; }); }
+  function nfOf(i) { return Math.max(1, Math.round(SET[P[i].n].dur * GLOBAL.fps)); }
+  function framesOf(list) { var n = 0; list.forEach(function (i) { n += nfOf(i); }); return n; }
+  function download(blob, name) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 60000); }
+  /* hand control back to the page. a message channel is not slowed down when the tab is in the background, a timer is */
+  var chan = new MessageChannel(), waiting = [];
+  chan.port1.onmessage = function () { var f = waiting.shift(); if (f) f(); };
+  function yieldUI() { return new Promise(function (r) { waiting.push(r); chan.port2.postMessage(0); }); }
+  function mins(s) { return s < 90 ? Math.max(1, Math.round(s)) + ' s' : Math.round(s / 60) + ' min'; }
+  function progress(done, total, what, unit) {
+    exProg.max = total; exProg.value = done;
+    var el = (performance.now() - t0) / 1000, left = done > 3 && el > 2 ? (total - done) * el / done : 0;
+    msg(what + ': ' + done + ' of ' + total + ' ' + (unit || 'frames') + (left ? ', about ' + mins(left) + ' left' : '') + '. Keep this tab open (it carries on in the background).');
+    document.title = Math.floor(100 * done / total) + '% exporting · ' + TITLE;
+  }
+  async function begin(label) {
+    running = true; cancelled = false; t0 = performance.now(); exProg.hidden = false; exProg.value = 0; exCancel.hidden = false; msg(label);
+    document.querySelectorAll('.ex-btn').forEach(function (b) { b.disabled = true; });
+    try { if (navigator.wakeLock) lock = await navigator.wakeLock.request('screen'); } catch (e) { lock = null; }
+  }
+  function end(text) {
+    running = false; exProg.hidden = true; exCancel.hidden = true; msg(text); clearCache(); document.title = TITLE;
+    document.querySelectorAll('.ex-btn').forEach(function (b) { b.disabled = false; });
+    if (lock) { lock.release().catch(function () {}); lock = null; }
+  }
   function fail(e) { end(e && e.message === 'cancelled' ? 'Cancelled.' : 'Export failed: ' + (e && e.message || e)); }
   exCancel.addEventListener('click', function () { cancelled = true; });
+  document.addEventListener('visibilitychange', function () { if (running && !lock && document.visibilityState === 'visible' && navigator.wakeLock) navigator.wakeLock.request('screen').then(function (l) { lock = l; }, function () {}); });
   function newCanvas(w, h) { var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
-  function png(c) { return new Promise(function (res) { c.toBlob(res, 'image/png'); }); }
+  function png(c) { return new Promise(function (res, rej) { c.toBlob(function (b) { if (b) res(b); else rej(new Error('the browser could not make a PNG (out of memory?)')); }, 'image/png'); }); }
 
-  /* video: H.264 for editing programs (level picked for the size and frame rate), VP9 only as a last resort */
+  /* video: H.264 for editing programs (level picked for the size, frame rate and bitrate), VP9 only as a last resort */
   async function pickCodec(fps, w, h) {
     if (typeof VideoEncoder === 'undefined') return null;
     var px = w * h, hiFps = fps > 30;
@@ -5456,31 +5597,55 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
     }
     return null;
   }
-  function framesOf(list) { var fps = GLOBAL.fps, n = 0; list.forEach(function (i) { n += Math.max(1, Math.round(SET[P[i].n].dur * fps)); }); return n; }
-  async function encode(list, codec, streamTarget, progress) {
-    var fps = GLOBAL.fps, sz = size(), k = K(), target = streamTarget || new Mp4Muxer.ArrayBufferTarget();
-    var muxer = new Mp4Muxer.Muxer({ target: target, video: { codec: codec.kind, width: sz[0], height: sz[1], frameRate: fps }, fastStart: streamTarget ? false : 'in-memory', firstTimestampBehavior: 'offset' });
-    var failure = null, enc = new VideoEncoder({ output: function (chunk, meta) { muxer.addVideoChunk(chunk, meta); }, error: function (e) { failure = e; } });
-    enc.configure(codec.cfg);
-    var off = newCanvas(sz[0], sz[1]), g = off.getContext('2d'), frame = 0;
-    for (var j = 0; j < list.length; j++) {
-      var nf = Math.max(1, Math.round(SET[P[list[j]].n].dur * fps));
-      for (var f = 0; f < nf; f++) {
-        if (cancelled) { try { enc.close(); } catch (e) {} throw new Error('cancelled'); }
-        if (failure) throw failure;
-        drawFrame(g, list[j], f / fps, false, k, !GLOBAL.barInVideo);
-        var vf = new VideoFrame(off, { timestamp: Math.round(frame * 1e6 / fps), duration: Math.round(1e6 / fps) });
-        enc.encode(vf, { keyFrame: frame % (fps * 2) === 0 }); vf.close();
-        frame++;
-        while (enc.encodeQueueSize > 4) await new Promise(function (r) { setTimeout(r, 1); });
-        if (frame % 8 === 0) { progress(frame); await yieldUI(); }
-      }
+  /* where an MP4 goes when there is no file on disk to stream into: pieces kept as Blobs, which the browser can keep on disk,
+     so a long video never has to fit in memory. the muxer goes back once at the end to fill in a size, handled here */
+  function blobTarget() {
+    var parts = [], end = 0;
+    function write(data, pos) {
+      var b = new Blob([data]), stop = pos + data.byteLength;
+      if (pos >= end) { if (pos > end) parts.push({ pos: end, blob: new Blob([new Uint8Array(pos - end)]) }); parts.push({ pos: pos, blob: b }); end = stop; return; }
+      var out = [];
+      parts.forEach(function (p) {
+        var a = p.pos, z = p.pos + p.blob.size;
+        if (z <= pos || a >= stop) { out.push(p); return; }
+        if (a < pos) out.push({ pos: a, blob: p.blob.slice(0, pos - a) });
+        if (z > stop) out.push({ pos: stop, blob: p.blob.slice(stop - a) });
+      });
+      out.push({ pos: pos, blob: b }); out.sort(function (x, y) { return x.pos - y.pos; }); parts = out; end = Math.max(end, stop);
     }
-    await enc.flush(); if (failure) throw failure;
-    enc.close(); muxer.finalize();
-    return streamTarget ? null : target.buffer;
+    return { target: new Mp4Muxer.StreamTarget({ onData: write, chunked: true, chunkSize: 8 * 1024 * 1024 }), blob: function () { return new Blob(parts.map(function (p) { return p.blob; }), { type: 'video/mp4' }); } };
   }
-  /* where files go: a folder the user picks (Chrome/Edge), otherwise one ZIP download. names may contain sub-folders */
+  /* encode `total` frames drawn by drawAt(g, frameNumber) */
+  async function encodeFrames(total, drawAt, codec, target, onProgress) {
+    var fps = GLOBAL.fps, sz = size();
+    var muxer = new Mp4Muxer.Muxer({ target: target, video: { codec: codec.kind, width: sz[0], height: sz[1], frameRate: fps }, fastStart: false, firstTimestampBehavior: 'offset' });
+    var failure = null, wake = null;
+    var enc = new VideoEncoder({ output: function (chunk, meta) { muxer.addVideoChunk(chunk, meta); }, error: function (e) { failure = e; if (wake) wake(); } });
+    enc.configure(codec.cfg);
+    var hasDequeue = 'ondequeue' in enc;
+    function room() { return new Promise(function (r) { var done = false; wake = function () { if (!done) { done = true; wake = null; r(); } }; if (hasDequeue) enc.addEventListener('dequeue', wake, { once: true }); else yieldUI().then(wake); }); }
+    var off = newCanvas(sz[0], sz[1]), g = off.getContext('2d');
+    try {
+      for (var f = 0; f < total; f++) {
+        if (cancelled) throw new Error('cancelled');
+        if (failure) throw failure;
+        drawAt(g, f);
+        var vf = new VideoFrame(off, { timestamp: Math.round(f * 1e6 / fps), duration: Math.round(1e6 / fps) });
+        enc.encode(vf, { keyFrame: f % (fps * 2) === 0 }); vf.close();
+        while (enc.encodeQueueSize > 3 && !failure && !cancelled) await room();
+        if (f % 6 === 5) { onProgress(f + 1); await yieldUI(); }
+      }
+      await enc.flush(); if (failure) throw failure;
+      enc.close(); muxer.finalize(); onProgress(total);
+    } catch (e) { try { enc.close(); } catch (e2) {} throw e; }
+  }
+  /* the chosen panels one after another, as the player shows them */
+  function timeline(list, noBar) {
+    var segs = [], tot = 0, k = 0;
+    list.forEach(function (i) { var nf = nfOf(i); segs.push({ i: i, a: tot, nf: nf }); tot += nf; });
+    return { total: tot, draw: function (g, F) { while (F >= segs[k].a + segs[k].nf) k++; drawFrame(g, segs[k].i, (F - segs[k].a) / GLOBAL.fps, false, K(), noBar); } };
+  }
+  /* where files go: a folder the user picks (Chrome/Edge), otherwise ZIP downloads, split into parts under 1.5 GB */
   async function makeSink(zipName) {
     if (window.showDirectoryPicker) {
       try {
@@ -5495,10 +5660,17 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
         };
       } catch (e) { if (e && e.name === 'AbortError') return null; }
     }
-    var files = {};
+    var base = zipName.replace(/\.zip$/, ''), LIMIT = 1.5e9, part = 0, zip, out, bytes, names = [];
+    function open() { part++; out = []; bytes = 0; var mine = out; zip = new fflate.Zip(function (err, data) { if (err) throw err; mine.push(new Blob([data])); }); }
+    function finish(last) { zip.end(); var name = last && part === 1 ? zipName : base + '-part' + part + '.zip'; download(new Blob(out, { type: 'application/zip' }), name); names.push(name); }
+    open();
     return {
-      put: async function (name, data) { files[name] = data instanceof Uint8Array ? data : new Uint8Array(data instanceof Blob ? await data.arrayBuffer() : data); },
-      close: function () { return new Promise(function (res, rej) { fflate.zip(files, { level: 0 }, function (err, out) { if (err) return rej(err); download(new Blob([out], { type: 'application/zip' }), zipName); res(); }); }); },
+      put: async function (name, data) {
+        var u = data instanceof Uint8Array ? data : new Uint8Array(data instanceof Blob ? await data.arrayBuffer() : data);
+        if (bytes > 0 && bytes + u.byteLength > LIMIT) { finish(false); open(); }
+        var f = new fflate.ZipPassThrough(name); zip.add(f); f.push(u, true); bytes += u.byteLength;
+      },
+      close: async function () { finish(true); await yieldUI(); this.where = names.length === 1 ? names[0] : names.length + ' ZIP files (' + names[0] + ' to ' + names[names.length - 1] + '; if the browser asks, allow it to download several files)'; },
       where: zipName
     };
   }
@@ -5507,7 +5679,7 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
     var sz = size(), fps = GLOBAL.fps, t = 0, fr = 0;
     var rows = ['panel,item,start_seconds,length_seconds,start_frame,length_frames,wobble,zoom,anchor_x,anchor_y,scale_start,scale_end,position_x_in_1080p,position_y_in_1080p,scale_start_in_1080p,scale_end_in_1080p,narration'];
     list.forEach(function (i) {
-      var p = P[i], s = SET[p.n], nf = Math.max(1, Math.round(s.dur * fps)), z = p.grid || s.zoom === 'none' ? 0 : s.amount;
+      var p = P[i], s = SET[p.n], nf = nfOf(i), z = p.grid || s.zoom === 'none' ? 0 : s.amount;
       var s0 = s.zoom === 'out' ? 100 + z : 100, s1 = s.zoom === 'in' ? 100 + z : 100, base = 1920 / sz[0];
       rows.push([p.n, p.grid ? 'grid' : NAMES[p.item], t.toFixed(3), s.dur, fr, nf, p.grid ? '' : s.wobble, p.grid ? 'grid zoom (use the MP4)' : s.zoom,
         Math.round(s.fx * sz[0]), Math.round(s.fy * sz[1]), s0, s1, Math.round(s.fx * 1920), Math.round(s.fy * 1080), +(s0 * base).toFixed(2), +(s1 * base).toFixed(2),
@@ -5517,7 +5689,7 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
     return new Blob([rows.join('\r\n') + '\r\n'], { type: 'text/csv' });
   }
   function readme(kind) {
-    var sz = size(), big = sz[0] !== 1920, R = GLOBAL.boilRate, L = [
+    var sz = size(), big = sz[0] !== 1920, R = GLOBAL.boilRate, split = GLOBAL.layers === 'split', L = [
       'Firsts, drawn in code: how to use this export',
       'Size ' + sz[0] + 'x' + sz[1] + ', ' + GLOBAL.fps + ' fps.',
       '',
@@ -5530,13 +5702,12 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
       '  frames/         every frame of the video as a lossless PNG. Best quality there is.',
       '                  Import the first one as an image sequence (see IMPORTING) and set it to ' + GLOBAL.fps + ' fps.');
     if (kind === 'pictures') L.push(
-      '  pNNN' + (GLOBAL.layers === 'split' ? '_art' : '') + '.png' + (GLOBAL.layers === 'split' ? '' : '    ') + '    the still picture of each panel (no wobble, no zoom: you add those in your editor).');
-    if (kind === 'wobble') L.push(
-      '  pNNN_wobble/    ' + GLOBAL.boilFrames + ' frames of that panel that loop, for the hand-drawn wobble.');
+      '  pNNN' + (split ? '_art' : '') + '.png' + (split ? '' : '    ') + '    the still picture of each panel (no wobble, no zoom: you add those in your editor).');
+    if (kind === 'wobble') L.push(GLOBAL.wobFmt === 'mp4'
+      ? '  pNNN_wobble.mp4  that panel wobbling for its whole length (no zoom, so you can zoom it yourself). Just drop it in.'
+      : '  pNNN_wobble/    ' + GLOBAL.boilFrames + ' frames of that panel that loop, for the hand-drawn wobble.');
     if (kind === 'pictures' || kind === 'wobble') {
-      if (GLOBAL.layers === 'split') L.push(
-        '  pNNN_art.png    the drawing only (in the wobble folders: the drawing only)',
-        '  pNNN_text.png   the dates, labels and arrows on a see-through background (only panels that have any)');
+      if (split) L.push('  pNNN_text.png   the dates, labels and arrows on a see-through background (only panels that have any)');
       if (GLOBAL.layers !== 'flat') L.push('  titlebar_NAME.png  the white title bar and portrait on a see-through background');
     } else if (!GLOBAL.barInVideo) L.push('  titlebar_NAME.png  the white title bar and portrait on a see-through background (left out of the video)');
     L.push('  timing.csv      open in Excel: when each panel starts, how long it lasts, and its zoom as numbers to type in.', '');
@@ -5564,18 +5735,18 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
     if (big) L.push('  These files are ' + sz[0] + 'x' + sz[1] + '. In a 1920x1080 sequence, right-click each clip > "Set to Frame Size" in Premiere, or',
       '    press Ctrl+Alt+F / Cmd+Opt+F in After Effects, so they fit. (Bigger files let you zoom further and stay sharp.)');
     L.push('');
-    if (kind === 'wobble') L.push(
+    if (kind === 'wobble' && GLOBAL.wobFmt !== 'mp4') L.push(
       'WOBBLE LOOPS',
       '  After Effects: import the folder\'s first frame as a PNG Sequence. Right-click it in the Project panel > Interpret Footage > Main.',
       '    Set "Assume this frame rate" to ' + R + ' and, under Other Options, Loop to 99 times. Drag it into your comp: it wobbles',
       '    for as long as you stretch it.',
       '  Premiere Pro: import the first frame with "Image Sequence" ticked. Right-click the clip > Modify > Interpret Footage >',
       '    "Assume this frame rate" = ' + R + '. Premiere cannot loop a clip, so hold Alt (Option on Mac) and drag copies of it end to end.',
-      '    Quicker: in the page, set the panel\'s Wobble to on and use "One MP4 per panel": that clip already wobbles for the whole panel.',
+      '    Quicker: export the wobble loops as MP4 instead (the "Wobble loops as" setting): those already wobble for the whole panel.',
       '  More frames (6 or 8) = a less repetitive wobble. Faster wobble = a higher frame rate above.',
       '');
     if (kind !== 'clips' && kind !== 'frames') L.push(
-      'ZOOM LIKE THE PREVIEW (the MP4 exports already have it; this is for doing it yourself)',
+      'ZOOM LIKE THE PREVIEW (the "One MP4" exports already have it; this is for doing it yourself)',
       '  Select the drawing (or the nest). Premiere Pro: Effect Controls > Motion.   After Effects: twirl open Transform.',
       '  1. Anchor Point = anchor_x, anchor_y from timing.csv.',
       big ? '  2. Position = position_x_in_1080p, position_y_in_1080p in a 1920x1080 sequence, or anchor_x, anchor_y in a ' + sz[0] + 'x' + sz[1] + ' one.'
@@ -5591,123 +5762,134 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
   }
   function codecNote(c) { return c.kind === 'avc' ? '' : ' This browser could only make VP9 video; if your editor won\'t open it, export again from Google Chrome or Microsoft Edge on a computer.'; }
   var NO_CODEC = 'This browser can\'t make video files. Use Google Chrome or Microsoft Edge on a computer, or export pictures instead.';
-  function guard(fn) { return async function () { if (running) return; var list = chosen(); if (!list.length) return msg('Nothing in that range.'); try { await fn(list); } catch (e) { fail(e); } }; }
+  function guard(fn) { return async function () { if (running) return; var list = chosen(); if (!list.length) return msg($('exWhat').value === 'ticked' ? 'Tick some panels in the list below first.' : 'Nothing in that range.'); try { await fn(list); } catch (e) { fail(e); } }; }
+  function span(list) { return $('exWhat').value === 'all' ? 'whole-video' : 'panels-' + P[list[0]].n + '-' + P[list[list.length - 1]].n; }
+  function secs(n) { var s = n / GLOBAL.fps; return s < 90 ? s.toFixed(1) + ' seconds' : Math.floor(s / 60) + ' min ' + Math.round(s % 60) + ' s'; }
 
+  /* ---------- the exports ---------- */
   /* one MP4 */
   $('exMp4').addEventListener('click', guard(async function (list) {
-    var sz = size(), name = 'firsts-' + ($('exWhat').value === 'all' ? 'whole-video' : 'panels-' + P[list[0]].n + '-' + P[list[list.length - 1]].n) + '-' + sz[1] + 'p.mp4', handle = null;
+    var sz = size(), name = 'firsts-' + span(list) + '-' + sz[1] + 'p.mp4', handle = null;
     if (window.showSaveFilePicker) { try { handle = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: 'MP4 video', accept: { 'video/mp4': ['.mp4'] } }] }); } catch (e) { if (e && e.name === 'AbortError') return; } }
     var codec = await pickCodec(GLOBAL.fps, sz[0], sz[1]); if (!codec) return msg(NO_CODEC);
-    var total = framesOf(list); begin('Making the video…'); exProg.max = total;
-    var writable = handle ? await handle.createWritable() : null;
-    var buf = await encode(list, codec, writable ? new Mp4Muxer.FileSystemWritableFileStreamTarget(writable) : null, function (f) { exProg.value = f; msg('Frame ' + f + ' of ' + total + ' (' + codec.label + ', ' + sz[0] + 'x' + sz[1] + ')'); });
-    if (writable) await writable.close(); else download(new Blob([buf], { type: 'video/mp4' }), name);
-    end('Done: ' + name + ', ' + (total / GLOBAL.fps).toFixed(1) + ' seconds.' + codecNote(codec));
+    var tl = timeline(list, !GLOBAL.barInVideo); await begin('Making the video…');
+    var writable = handle ? await handle.createWritable() : null, bt = writable ? null : blobTarget();
+    try {
+      await encodeFrames(tl.total, tl.draw, codec, writable ? new Mp4Muxer.FileSystemWritableFileStreamTarget(writable) : bt.target, function (f) { progress(f, tl.total, 'Making the video (' + codec.label + ', ' + sz[0] + 'x' + sz[1] + ')'); });
+    } catch (e) { if (writable) try { await writable.abort(); } catch (e2) {} throw e; }
+    if (writable) await writable.close(); else download(bt.blob(), name);
+    end('Done: ' + (handle ? handle.name : name) + ', ' + secs(tl.total) + ' (' + tl.total + ' frames).' + codecNote(codec));
   }));
+
+  async function putBar(sink, p, bars, force) {
+    var title = S.barTitle(p.n); if (!title || (GLOBAL.layers === 'flat' && !force) || bars[title]) return;
+    var sz = size(), b = newCanvas(sz[0], sz[1]), bg = b.getContext('2d'); bg.setTransform(K(), 0, 0, K(), 0, 0); S.bar(bg, p.n);
+    await sink.put('titlebar_' + slug(title) + '.png', await png(b)); bars[title] = 1;
+  }
+  async function allBars(sink, list) { var bars = {}; for (var b = 0; b < list.length; b++) await putBar(sink, P[list[b]], bars, true); }
 
   /* one MP4 per panel */
   $('exClips').addEventListener('click', guard(async function (list) {
     var sz = size(), sink = await makeSink('firsts-clips.zip'); if (!sink) return;
     var codec = await pickCodec(GLOBAL.fps, sz[0], sz[1]); if (!codec) return msg(NO_CODEC);
-    var total = framesOf(list), done = 0; begin('Making clips…'); exProg.max = total;
+    var total = framesOf(list), done = 0; await begin('Making clips…');
     for (var j = 0; j < list.length; j++) {
-      var base = done;
-      var buf = await encode([list[j]], codec, null, function (f) { exProg.value = base + f; msg('Clip ' + (j + 1) + ' of ' + list.length + ' (panel ' + P[list[j]].n + ')'); });
-      await sink.put('p' + pad(P[list[j]].n) + '.mp4', new Uint8Array(buf));
-      done += Math.max(1, Math.round(SET[P[list[j]].n].dur * GLOBAL.fps));
+      var base = done, tl = timeline([list[j]], !GLOBAL.barInVideo), bt = blobTarget(), label = 'Clip ' + (j + 1) + ' of ' + list.length + ' (panel ' + P[list[j]].n + ')';
+      await encodeFrames(tl.total, tl.draw, codec, bt.target, function (f) { progress(base + f, total, label); });
+      await sink.put('p' + pad(P[list[j]].n) + '.mp4', bt.blob());
+      done += tl.total;
     }
-    if (!GLOBAL.barInVideo) { var bars = {}; for (var b = 0; b < list.length; b++) await putBar(sink, P[list[b]], bars, true); }
+    if (!GLOBAL.barInVideo) await allBars(sink, list);
     await sink.put('timing.csv', timingCsv(list)); await sink.put('README.txt', readme('clips'));
-    msg('Packing…'); await sink.close();
+    msg('Saving…'); await sink.close();
     end('Done: ' + list.length + ' clips saved to ' + sink.where + '.' + codecNote(codec));
   }));
 
   /* the layers of one panel, drawn with the chosen split. boil 0 is the still picture */
   function layersOf(p, boil) {
     var sz = size(), k = K(), mode = GLOBAL.layers, a = newCanvas(sz[0], sz[1]), t = null, ag = a.getContext('2d');
-    var st = SET[p.n], text = mode === 'split' ? true : textOn(p.n);
+    var text = mode === 'split' ? true : textOn(p.n), wob = wobOf(p.n, true);
     if (mode === 'split' && !p.grid) t = newCanvas(sz[0], sz[1]);
-    var info = S.render(ag, p.n, boil, { noChrome: true, text: text, textLayer: t ? t.getContext('2d') : null, wobPeople: st.wobble === 'all', wobAmp: GLOBAL.amp, scale: k });
+    var info = S.render(ag, p.n, boil, { noChrome: true, text: text, textLayer: t ? t.getContext('2d') : null, wobPeople: wob.people, wobLines: wob.lines, wobAmp: GLOBAL.amp, scale: k });
     if (t && info && !info.labels) { t.width = t.height = 0; t = null; }
     if (mode === 'flat' && !p.grid) { ag.setTransform(k, 0, 0, k, 0, 0); S.bar(ag, p.n); ag.setTransform(1, 0, 0, 1, 0, 0); }
     return { art: a, text: t };
-  }
-  async function putBar(sink, p, bars, force) {
-    var title = S.barTitle(p.n); if (!title || (GLOBAL.layers === 'flat' && !force) || bars[title]) return;
-    var sz = size(), b = newCanvas(sz[0], sz[1]), bg = b.getContext('2d'); bg.setTransform(K(), 0, 0, K(), 0, 0); S.bar(bg, p.n);
-    await sink.put('titlebar_' + slug(title) + '.png', await png(b)); bars[title] = 1;
   }
 
   /* still pictures, one per panel */
   $('exPics').addEventListener('click', guard(async function (list) {
     var sink = await makeSink('firsts-pictures.zip'); if (!sink) return;
-    begin('Drawing pictures…'); exProg.max = list.length; var bars = {}, split = GLOBAL.layers === 'split';
+    await begin('Drawing pictures…'); var bars = {}, split = GLOBAL.layers === 'split';
     for (var j = 0; j < list.length; j++) {
       if (cancelled) throw new Error('cancelled');
       var p = P[list[j]], L = layersOf(p, 0);
       await sink.put('p' + pad(p.n) + (split ? '_art' : '') + '.png', await png(L.art));
       if (L.text) await sink.put('p' + pad(p.n) + '_text.png', await png(L.text));
       await putBar(sink, p, bars);
-      exProg.value = j + 1; msg('Panel ' + p.n + ' (' + (j + 1) + ' of ' + list.length + ')'); await yieldUI();
+      progress(j + 1, list.length, 'Drawing pictures', 'panels'); await yieldUI();
     }
     await sink.put('timing.csv', timingCsv(list)); await sink.put('README.txt', readme('pictures'));
-    msg('Packing…'); await sink.close();
+    msg('Saving…'); await sink.close();
     end('Done: pictures for ' + list.length + ' panels saved to ' + sink.where + '.');
   }));
 
-  /* wobble loops: a few frames per panel that loop, each panel in its own folder */
+  /* wobble loops: each panel wobbling on its own, as a looping MP4 or a few PNG frames */
   $('exWobble').addEventListener('click', guard(async function (list) {
     list = list.filter(function (i) { return !P[i].grid; }); if (!list.length) return msg('Pick drawn panels, not the grid.');
     var marked = list.filter(function (i) { return SET[P[i].n].wobble !== 'off'; });
     if (list.length > 1 && marked.length) list = marked;
+    var mp4 = GLOBAL.wobFmt === 'mp4', sz = size(), codec = null;
+    if (mp4) { codec = await pickCodec(GLOBAL.fps, sz[0], sz[1]); if (!codec) return msg(NO_CODEC); }
     var sink = await makeSink('firsts-wobble-loops.zip'); if (!sink) return;
-    var nfr = GLOBAL.boilFrames; begin('Drawing wobble frames…'); exProg.max = list.length * nfr; var bars = {}, done = 0;
+    var nfr = GLOBAL.boilFrames, total = 0; list.forEach(function (i) { total += nfr + (mp4 ? nfOf(i) : 0); });
+    await begin('Drawing wobble frames…'); var bars = {}, done = 0;
     for (var j = 0; j < list.length; j++) {
-      var p = P[list[j]], dir = 'p' + pad(p.n) + '_wobble/';
+      var p = P[list[j]], id = 'p' + pad(p.n), frames = [];
       for (var f = 1; f <= nfr; f++) {
         if (cancelled) throw new Error('cancelled');
         var L = layersOf(p, f);
-        await sink.put(dir + 'p' + pad(p.n) + '_wobble_' + pad(f, 2) + '.png', await png(L.art));
-        if (f === 1 && L.text) await sink.put('p' + pad(p.n) + '_text.png', await png(L.text));
-        exProg.value = ++done; msg('Panel ' + p.n + ', frame ' + f + ' of ' + nfr); await yieldUI();
+        if (mp4) frames.push(L.art); else await sink.put(id + '_wobble/' + id + '_wobble_' + pad(f, 2) + '.png', await png(L.art));
+        if (f === 1 && L.text) await sink.put(id + '_text.png', await png(L.text));
+        progress(++done, total, 'Panel ' + p.n + ' (' + (j + 1) + ' of ' + list.length + ')', 'steps'); await yieldUI();
+      }
+      if (mp4) {
+        var nf = nfOf(list[j]), bt = blobTarget(), base = done, fps = GLOBAL.fps;
+        await encodeFrames(nf, function (g, F) { g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(frames[Math.floor(F / fps * GLOBAL.boilRate) % nfr], 0, 0); }, codec, bt.target, function (x) { progress(base + x, total, 'Panel ' + p.n + ' (' + (j + 1) + ' of ' + list.length + ')', 'steps'); });
+        await sink.put(id + '_wobble.mp4', bt.blob()); done += nf;
+        frames.forEach(function (c) { c.width = c.height = 0; });
       }
       await putBar(sink, p, bars);
     }
     await sink.put('timing.csv', timingCsv(list)); await sink.put('README.txt', readme('wobble'));
-    msg('Packing…'); await sink.close();
-    end('Done: ' + nfr + ' wobble frames for each of ' + list.length + ' panels saved to ' + sink.where + '.');
+    msg('Saving…'); await sink.close();
+    end('Done: wobble ' + (mp4 ? 'videos' : 'frames') + ' for ' + list.length + (list.length === 1 ? ' panel' : ' panels') + ' saved to ' + sink.where + '.' + (codec ? codecNote(codec) : ''));
   }));
 
   /* every frame as a lossless PNG, numbered as one sequence */
   $('exFrames2').addEventListener('click', guard(async function (list) {
-    var total = framesOf(list);
-    if (total > 3000 && !window.showDirectoryPicker) return msg('That is ' + total + ' frames, too many for one download. Pick fewer panels, or use Chrome or Edge so they can go straight into a folder.');
     var sink = await makeSink('firsts-frames.zip'); if (!sink) return;
-    var sz = size(), k = K(), off = newCanvas(sz[0], sz[1]), g = off.getContext('2d'), fps = GLOBAL.fps, n = 0;
-    begin('Drawing frames…'); exProg.max = total;
-    for (var j = 0; j < list.length; j++) {
-      var nf = Math.max(1, Math.round(SET[P[list[j]].n].dur * fps));
-      for (var f = 0; f < nf; f++) {
-        if (cancelled) throw new Error('cancelled');
-        drawFrame(g, list[j], f / fps, false, k, !GLOBAL.barInVideo);
-        await sink.put('frames/firsts_' + pad(++n, 5) + '.png', await png(off));
-        if (n % 4 === 0) { exProg.value = n; msg('Frame ' + n + ' of ' + total); await yieldUI(); }
-      }
+    var sz = size(), off = newCanvas(sz[0], sz[1]), g = off.getContext('2d'), tl = timeline(list, !GLOBAL.barInVideo);
+    await begin('Drawing frames…');
+    for (var n = 0; n < tl.total; n++) {
+      if (cancelled) throw new Error('cancelled');
+      tl.draw(g, n);
+      await sink.put('frames/firsts_' + pad(n + 1, 5) + '.png', await png(off));
+      if (n % 3 === 2) { progress(n + 1, tl.total, 'Drawing frames'); await yieldUI(); }
     }
-    if (!GLOBAL.barInVideo) { var bars = {}; for (var b = 0; b < list.length; b++) await putBar(sink, P[list[b]], bars, true); }
+    if (!GLOBAL.barInVideo) await allBars(sink, list);
     await sink.put('timing.csv', timingCsv(list)); await sink.put('README.txt', readme('frames'));
-    msg('Packing…'); await sink.close();
-    end('Done: ' + total + ' frames saved to ' + sink.where + '. Import the first one as an image sequence at ' + fps + ' fps.');
+    msg('Saving…'); await sink.close();
+    end('Done: ' + tl.total + ' frames saved to ' + sink.where + '. Import the first one as an image sequence at ' + GLOBAL.fps + ' fps.');
   }));
 
   $('exSave').addEventListener('click', function () { download(new Blob([JSON.stringify(packSettings(), null, 2)], { type: 'application/json' }), 'firsts-settings.json'); msg('Settings saved as firsts-settings.json.'); });
   $('exLoad').addEventListener('change', function () {
     var f = this.files && this.files[0]; if (!f) return;
-    f.text().then(function (txt) { unpackSettings(JSON.parse(txt)); S.setText(optText.checked); S.setBarName(optName.checked); clearCache(); persist(); edSync(); draw(performance.now()); msg('Settings loaded.'); }).catch(function () { msg('That file isn\'t a settings file.'); });
+    f.text().then(function (txt) { unpackSettings(JSON.parse(txt)); S.setText(optText.checked); S.setBarName(optName.checked); changed(true); msg('Settings loaded.'); }).catch(function () { msg('That file isn\'t a settings file.'); });
     this.value = '';
   });
 
-  window.FirstsEditor = { SET: SET, GLOBAL: GLOBAL, chosen: chosen, drawFrame: drawFrame, go: go, framesOf: framesOf };
+  window.FirstsEditor = { SET: SET, GLOBAL: GLOBAL, TICK: TICK, chosen: chosen, drawFrame: drawFrame, go: go, framesOf: framesOf, blobTarget: blobTarget };
   function boot() { clearCache(); S.setText(optText.checked); ui(); draw(performance.now()); requestAnimationFrame(tickLoop); }
   var fontReady = (document.fonts && document.fonts.load) ? document.fonts.load("700 70px 'Comic Neue'") : Promise.resolve();
   Promise.race([fontReady, new Promise(function (r) { setTimeout(r, 2500); })]).then(boot, boot);
