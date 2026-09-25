@@ -40,12 +40,29 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
 .scrub span.on{ background:var(--ink); }
 .scrub span.done{ background:var(--muted); }
 @media (max-width:600px){ .count{ margin-left:0; width:100%; } }
+.editor{ margin-top:22px; border:2px solid var(--ink); border-radius:10px; background:var(--panel); }
+.editor summary{ cursor:pointer; font-weight:700; font-size:1.15rem; padding:12px 16px; min-height:44px; }
+.ed-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr)); gap:16px; padding:0 16px 16px; }
+.editor fieldset{ border:2px solid var(--line); border-radius:8px; padding:12px 14px; margin:0; display:flex; flex-direction:column; gap:12px; min-width:0; }
+.editor legend{ font-weight:700; padding:0 6px; }
+.editor label{ flex-wrap:wrap; }
+.editor select, .editor input[type=number]{ font:inherit; font-size:1rem; color:var(--ink); background:var(--page); border:2px solid var(--line); border-radius:6px; padding:6px 8px; min-height:40px; }
+.editor input[type=number]{ width:6.5em; }
+.editor input[type=range]{ flex:1; min-width:140px; accent-color:var(--accent); }
+.editor .row{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.editor .hint{ margin:0; color:var(--muted); font-size:0.95rem; }
+.editor progress{ flex:1; min-width:160px; height:14px; accent-color:var(--accent); }
+.editor button:disabled{ opacity:0.5; cursor:default; }
+.filebtn{ font-weight:700; border:2px solid var(--ink); border-radius:999px; padding:8px 16px; min-height:44px; background:var(--panel); }
+.filebtn input{ position:absolute; width:1px; height:1px; opacity:0; }
+.filebtn:focus-within{ outline:3px solid var(--accent); outline-offset:2px; }
+[hidden]{ display:none !important; }
 </style>
 </head>
 <body>
 <main>
   <h1>Firsts, drawn in code</h1>
-  <p class="sub">The whole video: the opening grid, all nine firsts, and the closing grid. Written labels sit on white cards so they never clash with the drawing; switch them off below if you'd rather add them in your editor.</p>
+  <p class="sub">The whole video: the opening grid, all nine firsts, and the closing grid. Open <b>Edit &amp; export</b> below to set each panel's length, wobble and zoom, then save it as an MP4 or as layers for your editing program.</p>
   <div class="stage"><canvas id="cv" width="1920" height="1080" aria-label="Current panel"></canvas></div>
   <p class="caption" id="cap" aria-live="polite"></p>
   <div class="bar">
@@ -58,11 +75,41 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   <div class="scrub" id="scrub" aria-hidden="true"></div>
   <div class="opts">
     <label><input type="checkbox" id="optCap" checked> Show narration</label>
-    <label><input type="checkbox" id="optBoil"> Hand-drawn wobble</label>
-    <label><input type="checkbox" id="optPush" checked> Slow push-in on key panels</label>
     <label><input type="checkbox" id="optText" checked> Show written text (dates, labels)</label>
     <label><input type="checkbox" id="optName" checked> Name in the title bar</label>
   </div>
+  <details class="editor" id="editor">
+    <summary>Edit &amp; export</summary>
+    <div class="ed-grid">
+      <fieldset>
+        <legend>This panel: <span id="edPanel"></span></legend>
+        <label>Length <input type="number" id="edDur" min="0.3" max="60" step="0.1" inputmode="decimal"> seconds</label>
+        <label>Wobble <select id="edWob"><option value="off">Off (still)</option><option value="lines">Lines wobble, people still</option><option value="all">Everything wobbles</option></select></label>
+        <label>Zoom <select id="edZoom"><option value="none">None</option><option value="in">Push in</option><option value="out">Pull out</option></select></label>
+        <label>Zoom amount <input type="range" id="edAmt" min="2" max="40" step="1"> <output id="edAmtOut"></output></label>
+        <p class="hint">Pause, then click the picture to choose where the zoom goes. The dashed red frame shows where it ends.</p>
+        <label>Written text <select id="edText"><option value="default">Follow the switch above</option><option value="on">On</option><option value="off">Off</option></select></label>
+        <div class="row"><button id="edItem" type="button">Use for this whole item</button><button id="edAll" type="button">Use for every panel</button><button id="edReset" type="button">Reset this panel</button></div>
+      </fieldset>
+      <fieldset>
+        <legend>Export</legend>
+        <label>What <select id="exWhat"><option value="all">Whole video</option><option value="item">This item</option><option value="panel">This panel</option><option value="range">Panels from … to …</option></select></label>
+        <label id="exRange" hidden>From panel <input type="number" id="exFrom" value="3" min="1" max="221"> to <input type="number" id="exTo" value="23" min="1" max="221"></label>
+        <label>Frame rate <select id="exFps"><option value="24">24 fps</option><option value="25">25 fps</option><option value="30">30 fps</option><option value="60">60 fps</option></select></label>
+        <label>Quality <select id="exQ"><option value="4">Smaller file</option><option value="8">Good</option><option value="16">Best</option></select></label>
+        <label>Wobble speed <select id="exBoil"><option value="6">Slow</option><option value="8">Normal</option><option value="12">Fast</option></select></label>
+        <label>Wobble strength <input type="range" id="exAmp" min="0.5" max="3" step="0.1"></label>
+        <div class="row">
+          <button id="exMp4" class="play ex-btn" type="button">Export MP4</button>
+          <button id="exClips" class="ex-btn" type="button">One MP4 per panel</button>
+          <button id="exLayers" class="ex-btn" type="button">PNG layers (After Effects / Premiere)</button>
+        </div>
+        <div class="row"><button id="exSave" type="button">Save settings</button><label class="filebtn">Load settings<input type="file" id="exLoad" accept=".json,application/json"></label></div>
+        <div class="row"><progress id="exProg" max="1" value="0" hidden></progress><button id="exCancel" type="button" hidden>Cancel</button></div>
+        <p id="exMsg" class="hint" role="status" aria-live="polite"></p>
+      </fieldset>
+    </div>
+  </details>
 </main>
 <script>
 (function (G) {
@@ -80,13 +127,21 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     smoke: '#9aa0a7', burnt: '#5c4a3e', burnt2: '#7a6454', paper: '#fbf8f1',
     wicker: '#c9a063', wickerD: '#a37c45', sepia: '#d8c6a1', ruler: '#f1d36a', coatN: '#2f3a4f', coatK: '#2e2e30', trou: '#8b8f96', locoY: '#e7c13a', locoG: '#3f6b4a', copper: '#c07a3a', steel: '#3a3a3a', grand: '#8e2323', grass: '#d4e5b4', greyH: '#b9b9b9', olive: '#7d7248', straw: '#e8cf8a', cloth: '#f1e8d0', dressN: '#3b4a6b', dressP: '#5e4a6e', hairD: '#3e2e24', slate: '#58606b', whitewash: '#f3f0e8', stone: '#bdb6a8', iron: '#4a4d52', brick: '#b5654a', road: '#a7a7a3'
   };
-  var J = 1.3, LW = 5, BOIL = 0, TEXT_ON = true, BAR_NAME = true, BAR_H = 150, BADGE = { x: 1792, y: 140, r: 116 };
+  var J = 1.3, LW = 5, BOIL = 0, WOB_PEOPLE = false, TEXT_LAYER = null, TEXT_ON = true, BAR_NAME = true, BAR_H = 150, BADGE = { x: 1792, y: 140, r: 116 };
 
   /* ---------- seeded randomness ---------- */
-  var _s = 1;
-  function seed(n) { _s = ((n + BOIL * 9973) * 2654435761) >>> 0; if (!_s) _s = 1; for (var i = 0; i < 4; i++) rnd(); }
+  /* two streams: _s places things (never changes between wobble frames), _w only jiggles the lines */
+  var _s = 1, _w = 1, _p = 1, PEOPLE = 0;
+  function seed(n) {
+    _s = (n * 2654435761) >>> 0; if (!_s) _s = 1; for (var i = 0; i < 4; i++) rnd();
+    _w = ((n + BOIL * 9973 + 17) * 2246822519) >>> 0; if (!_w) _w = 1; for (i = 0; i < 4; i++) rw(0, 1);
+    _p = ((n + 31) * 3266489917) >>> 0; if (!_p) _p = 1;
+  }
   function rnd() { _s ^= _s << 13; _s >>>= 0; _s ^= _s >>> 17; _s ^= _s << 5; _s >>>= 0; return _s / 4294967296; }
   function rr(a, b) { return a + (b - a) * rnd(); }
+  /* people stay perfectly still between wobble frames unless people wobble is on */
+  function rp(a, b) { _p ^= _p << 13; _p >>>= 0; _p ^= _p >>> 17; _p ^= _p << 5; _p >>>= 0; return a + (b - a) * (_p / 4294967296); }
+  function rw(a, b) { if (PEOPLE && !(BOIL && WOB_PEOPLE)) return rp(a, b); _w ^= _w << 13; _w >>>= 0; _w ^= _w >>> 17; _w ^= _w << 5; _w >>>= 0; return a + (b - a) * (_w / 4294967296); }
 
   /* ---------- geometry ---------- */
   function catmull(p, closed, seg) {
@@ -130,12 +185,12 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     if (!amp || d.length < 2) return d;
     var N = normals(d, closed), n = d.length, len = 0;
     for (var q = 1; q < n; q++) len += Math.hypot(d[q][0] - d[q - 1][0], d[q][1] - d[q - 1][1]);
-    amp *= Math.min(1, len / 650);
-    var f1 = closed ? Math.round(rr(2, 3)) : rr(0.8, 1.8), f2 = closed ? Math.round(rr(4, 7)) : rr(2.5, 4.5);
-    var p1 = rr(0, 6.28), p2 = rr(0, 6.28);
+    amp *= Math.min(1, len / (BOIL ? 260 : 650));
+    var f1 = closed ? Math.round(rw(2, 3)) : rw(0.8, 1.8), f2 = closed ? Math.round(rw(4, 7)) : rw(2.5, 4.5);
+    var p1 = rw(0, 6.28), p2 = rw(0, 6.28);
     return d.map(function (q, i) {
       var t = i / (closed ? n : Math.max(1, n - 1));
-      var o = amp * (0.6 * Math.sin(6.283 * f1 * t + p1) + 0.4 * Math.sin(6.283 * f2 * t + p2)) + rr(-0.18, 0.18) * amp;
+      var o = amp * (0.6 * Math.sin(6.283 * f1 * t + p1) + 0.4 * Math.sin(6.283 * f2 * t + p2)) + rw(-0.18, 0.18) * amp;
       return [q[0] + N[i][0] * o, q[1] + N[i][1] * o];
     });
   }
@@ -143,7 +198,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   /* ---------- ink ---------- */
   function ribbon(ctx, d, closed, w, color) {
     var n = d.length; if (n < 2) return;
-    var N = normals(d, closed), fa = rr(0, 6.28), ff = rr(1.5, 3.5), Lp = [], Rp = [];
+    var N = normals(d, closed), fa = rw(0, 6.28), ff = rw(1.5, 3.5), Lp = [], Rp = [];
     for (var i = 0; i < n; i++) {
       var t = i / Math.max(1, n - 1);
       var ww = w * (0.93 + 0.12 * (0.5 + 0.5 * Math.sin(6.283 * ff * t + fa)));
@@ -185,21 +240,40 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     var c = Math.cos(rot), s = Math.sin(rot), pts = [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]].map(function (p) { return [cx + p[0] * c - p[1] * s, cy + p[0] * s + p[1] * c]; });
     return S(ctx, pts, Object.assign({ closed: true, smooth: false }, o));
   }
-  function T(ctx, s, x, y, size, o) {
+  function T(ctx0, s, x, y, size, o) {
     o = o || {}; if (!TEXT_ON && !o.always && !o.obj) return;
-    ctx.save(); ctx.translate(x, y); ctx.rotate(o.rot || 0);
+    var ctx = ctx0;
+    if (TEXT_LAYER && !o.always && !o.obj && TEXT_LAYER !== ctx0) { ctx = TEXT_LAYER; ctx.save(); ctx.setTransform(ctx0.getTransform()); } else ctx.save();
+    ctx.translate(x, y); ctx.rotate(o.rot || 0);
     ctx.font = (o.weight || 700) + ' ' + size + "px 'Comic Neue','Comic Sans MS','Chalkboard SE',cursive";
     if (o.maxW) { var mw = ctx.measureText(s).width; if (mw > o.maxW) { size *= o.maxW / mw; ctx.font = (o.weight || 700) + ' ' + size + "px 'Comic Neue','Comic Sans MS','Chalkboard SE',cursive"; } }
     ctx.textAlign = o.align || 'center'; ctx.textBaseline = 'middle';
     var col = o.color || C.ink;
-    if (!o.obj && !o.always) {
+    if (!o.obj && !o.always && (o.box === true || (o.box !== false && busyBehind(ctx0, s, size, o, ctx)))) {
       var tw = ctx.measureText(s).width, pad = size * 0.28, bx = (o.align === 'left' ? 0 : -tw / 2) - pad;
       ctx.fillStyle = '#fff'; ctx.fillRect(bx, -size * 0.62, tw + pad * 2, size * 1.24);
       ctx.lineWidth = Math.max(3, size * 0.06); ctx.strokeStyle = C.ink; ctx.strokeRect(bx, -size * 0.62, tw + pad * 2, size * 1.24);
       col = col === C.red ? C.red : C.ink;
-    }
+    } else if (!o.obj && !o.always && busyBehind.dark && (!o.color || o.color === C.ink)) col = '#f4f1ea';
     if (o.outline) { ctx.lineWidth = o.outline; ctx.strokeStyle = o.outlineColor || '#fff'; ctx.lineJoin = 'round'; ctx.strokeText(s, 0, 0); }
     ctx.fillStyle = col; ctx.fillText(s, 0, 0); ctx.restore();
+  }
+  /* is the drawing behind this label busy? samples the pixels under the text; flat sky or wall is not */
+  function busyBehind(ctx, s, size, o, tctx) {
+    busyBehind.dark = false;
+    try {
+      tctx = tctx || ctx;
+      var tw = tctx.measureText(s).width, pad = size * 0.3, x0 = (o.align === 'left' ? 0 : -tw / 2) - pad, y0 = -size * 0.62, w = tw + pad * 2, h = size * 1.24;
+      var m = tctx.getTransform(), xs = [], ys = [];
+      [[x0, y0], [x0 + w, y0], [x0, y0 + h], [x0 + w, y0 + h]].forEach(function (p) { xs.push(m.a * p[0] + m.c * p[1] + m.e); ys.push(m.b * p[0] + m.d * p[1] + m.f); });
+      var cw = ctx.canvas.width, ch = ctx.canvas.height;
+      var X0 = Math.max(0, Math.floor(Math.min.apply(null, xs))), Y0 = Math.max(0, Math.floor(Math.min.apply(null, ys))), X1 = Math.min(cw, Math.ceil(Math.max.apply(null, xs))), Y1 = Math.min(ch, Math.ceil(Math.max.apply(null, ys)));
+      if (X1 - X0 < 4 || Y1 - Y0 < 4) return false;
+      var d = ctx.getImageData(X0, Y0, X1 - X0, Y1 - Y0).data, counts = {}, n = 0, top = 0, lum = 0;
+      for (var i = 0; i < d.length; i += 16) { var k = (d[i] >> 4) + ',' + (d[i + 1] >> 4) + ',' + (d[i + 2] >> 4); counts[k] = (counts[k] || 0) + 1; n++; if (counts[k] > top) top = counts[k]; lum += 0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2]; }
+      busyBehind.dark = lum / n < 110;
+      return 1 - top / n > 0.06;
+    } catch (e) { return true; }
   }
   function thick(ctx, d, w, col) {
     ctx.save(); ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = col;
@@ -227,6 +301,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   }
   function arrowAlong(ctx, pts, o) {
     o = o || {}; if (o.label && !TEXT_ON) return;
+    if (o.label && TEXT_LAYER && TEXT_LAYER !== ctx) { var tl = TEXT_LAYER; tl.save(); tl.setTransform(ctx.getTransform()); arrowAlong(tl, pts, Object.assign({}, o, { label: false })); tl.restore(); return; }
     var d = o.dashed ? dashed(ctx, pts, o) : S(ctx, pts, o);
     var a = d[d.length - 1], b = d[Math.max(0, d.length - 4)];
     arrowHead(ctx, a[0], a[1], Math.atan2(a[1] - b[1], a[0] - b[0]), o.head || 34, { w: o.w || 5, color: o.color });
@@ -247,25 +322,27 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
      old figures: feet on o.y, shoulders 39.4u up, head centre 47.4u up (u = s * 10). */
   function shade(hex, f) { var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; function c(v) { return Math.max(0, Math.min(255, Math.round(v * f))); } return '#' + ((1 << 24) + (c(r) << 16) + (c(g) << 8) + c(b)).toString(16).slice(1); }
   function pen(u) { return Math.max(3, 0.52 * u); }
-  function ln2(ctx, pts, w, col) { S(ctx, pts, { w: w, color: col || C.ink, j: 0.35, seg: 6 }); }
+  function ln2(ctx, pts, w, col) { S(ctx, pts, { w: w, color: col || C.ink, j: Math.max(0.35, J), seg: 6 }); }
   /* a round hand; 'point', 'thumb' and 'pencil' add one short stroke, so it can never look back to front */
-  function stickHand(ctx, x, y, ang, r, type, lw) {
-    var dx = Math.cos(ang), dy = Math.sin(ang);
-    if (type === 'point') ln2(ctx, [[x + dx * r * 0.6, y + dy * r * 0.6], [x + dx * r * 2.4, y + dy * r * 2.4]], lw * 0.9);
-    if (type === 'thumb') ln2(ctx, [[x, y - r * 0.4], [x, y - r * 2.1]], lw * 0.9);
-    if (type === 'pencil') ln2(ctx, [[x - dy * r * 1.6 - dx * r * 0.6, y + dx * r * 1.6 - dy * r * 0.6], [x + dy * r * 1.2 + dx * r * 0.6, y - dx * r * 1.2 + dy * r * 0.6]], lw * 1.2, '#6b4a2b');
-    E(ctx, x, y, r * (type === 'fist' ? 1.08 : 1), r * (type === 'fist' ? 1.08 : 0.92), { fill: C.skin, w: lw * 0.8, j: 0, rot: ang });
+  /* one cartoon hand, drawn as a single outline: a mitten-shaped palm with a thumb, the fingers
+     suggested by the scalloped edge. x, y is the wrist end; the fingers point along ang.
+     flip puts the thumb on the other side (so it can face the body). No marks inside the hand. */
+  var HAND = {
+    open: [[-0.5, -0.36], [-0.12, -0.5], [0.14, -0.9], [0.32, -0.86], [0.26, -0.46], [0.62, -0.5], [0.98, -0.36], [0.72, -0.2], [1.06, -0.1], [0.76, 0.03], [1.02, 0.16], [0.74, 0.26], [0.86, 0.42], [0.52, 0.52], [0.05, 0.52], [-0.5, 0.38]],
+    mitt: [[-0.5, -0.36], [-0.12, -0.5], [0.14, -0.86], [0.32, -0.82], [0.28, -0.46], [0.66, -0.46], [0.94, -0.24], [1.0, 0.02], [0.92, 0.3], [0.62, 0.5], [0.05, 0.52], [-0.5, 0.38]],
+    fist: [[-0.5, -0.4], [-0.1, -0.56], [0.3, -0.6], [0.6, -0.46], [0.7, -0.16], [0.7, 0.16], [0.6, 0.44], [0.1, 0.54], [-0.5, 0.42]],
+    point: [[-0.5, -0.4], [-0.1, -0.56], [0.3, -0.58], [0.62, -0.5], [1.42, -0.46], [1.52, -0.34], [1.42, -0.22], [0.7, -0.2], [0.72, 0.14], [0.6, 0.44], [0.1, 0.54], [-0.5, 0.42]]
+  };
+  function handShape(ctx, x, y, ang, r, type, lw, flip) {
+    var key = type === 'fist' || type === 'pencil' || type === 'thumb' ? 'fist' : type === 'point' ? 'point' : r > 30 ? 'open' : 'mitt';
+    var c = Math.cos(ang), s2 = Math.sin(ang), f = flip ? -1 : 1;
+    function W(p) { return [x + (p[0] * c - p[1] * f * s2) * r, y + (p[0] * s2 + p[1] * f * c) * r]; }
+    if (type === 'thumb') S(ctx, [W([0.1, -0.3]), [x + 0.1 * r, y - 1.25 * r], [x + 0.36 * r, y - 1.3 * r], W([0.4, -0.3])], { closed: true, fill: C.skin, w: lw, j: 0 });
+    if (type === 'pencil') { var a = W([0.2, 1.1]), b = W([0.25, -1.1]); ln2(ctx, [a, b], Math.max(lw * 1.4, r * 0.18), '#6b4a2b'); }
+    S(ctx, HAND[key].map(W), { closed: true, fill: C.skin, w: lw, j: 0, seg: 6 });
   }
-  /* a close-up cartoon hand: palm and four fingers, drawn the same whichever way it faces */
-  function bigHand(ctx, x, y, ang, r, type, lw) {
-    ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
-    var f = type === 'fist' ? 0.55 : 1;
-    if (type === 'point') { S(ctx, [[r * 0.5, -r * 0.2], [r * 2.2, -r * 0.18], [r * 2.35, 0], [r * 2.2, r * 0.18], [r * 0.5, r * 0.2]], { closed: true, fill: C.skin, w: lw, j: 0 }); f = 0.55; }
-    if (type !== 'point') [-0.56, -0.19, 0.19, 0.56].forEach(function (o) { E(ctx, r * (0.7 + 0.55 * f), r * o, r * 0.62 * f, r * 0.2, { fill: C.skin, w: lw, j: 0 }); });
-    E(ctx, 0, 0, r, r * 0.95, { fill: C.skin, w: lw, j: 0 });
-    if (type === 'fist') [-0.35, 0, 0.35].forEach(function (o) { S(ctx, [[r * 0.55, r * (o - 0.14)], [r * 0.72, r * o], [r * 0.55, r * (o + 0.14)]], { w: lw * 0.6, j: 0 }); });
-    ctx.restore();
-  }
+  function stickHand(ctx, x, y, ang, r, type, lw, flip) { handShape(ctx, x - Math.cos(ang) * r * 0.2, y - Math.sin(ang) * r * 0.2, ang, r * 1.25, type, lw * 0.85, flip); }
+  function bigHand(ctx, x, y, ang, r, type, lw) { handShape(ctx, x - Math.cos(ang) * r * 0.5, y - Math.sin(ang) * r * 0.5, ang, r * 1.35, type, lw); }
   function ik(A, B, L1, L2, bend) {
     var dx = B[0] - A[0], dy = B[1] - A[1], d = Math.hypot(dx, dy) || 1;
     var reach = Math.min(d, (L1 + L2) * 0.999), th = Math.atan2(dy, dx);
@@ -286,7 +363,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
       el = [S0[0] + d1[0] * L1, S0[1] + d1[1] * L1]; ha = [el[0] + d2[0] * L2, el[1] + d2[1] * L2]; type = pose[2] || 'open';
     }
     ln2(ctx, [S0, el, ha], lw * 1.05);
-    stickHand(ctx, ha[0], ha[1], Math.atan2(ha[1] - el[1], ha[0] - el[0]), 0.95 * u, type, lw);
+    stickHand(ctx, ha[0], ha[1], Math.atan2(ha[1] - el[1], ha[0] - el[0]), 0.95 * u, type, lw, side > 0);
     return ha;
   }
   /* ---- hair and hats, relative to the head centre (x, hy) and radius R ---- */
@@ -340,14 +417,16 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     var lx = look[0] * 0.09 * R, ly = look[1] * 0.07 * R, ey = hy + 0.04 * R + ly, fl = Math.max(2.2, lw * 0.85);
     [-1, 1].forEach(function (s) {
       var ex = x + s * 0.34 * R + lx;
-      if (expr === 'dead') { Ln(ctx, ex - 0.1 * R, ey - 0.1 * R, ex + 0.1 * R, ey + 0.1 * R, { w: fl, j: 0 }); Ln(ctx, ex + 0.1 * R, ey - 0.1 * R, ex - 0.1 * R, ey + 0.1 * R, { w: fl, j: 0 }); }
+      if (expr === 'dead') { Ln(ctx, ex - 0.15 * R, ey - 0.15 * R, ex + 0.15 * R, ey + 0.15 * R, { w: fl * 1.3, j: 0 }); Ln(ctx, ex + 0.15 * R, ey - 0.15 * R, ex - 0.15 * R, ey + 0.15 * R, { w: fl * 1.3, j: 0 }); }
+      else if (expr === 'pain') S(ctx, [[ex - s * 0.14 * R, ey - 0.1 * R], [ex + s * 0.1 * R, ey], [ex - s * 0.14 * R, ey + 0.1 * R]], { w: fl * 1.2, j: 0 });
+      else if (expr === 'sad') S(ctx, [[ex - 0.12 * R, ey - 0.02 * R], [ex, ey + 0.06 * R], [ex + 0.12 * R, ey - 0.02 * R]], { w: fl, j: 0 });
       else if (expr === 'out' || expr === 'sniff') S(ctx, [[ex - 0.12 * R, ey], [ex, ey + 0.05 * R], [ex + 0.12 * R, ey]], { w: fl, j: 0 });
       else if (expr === 'dizzy') S(ctx, [[ex, ey], [ex + 0.06 * R, ey - 0.04 * R], [ex + 0.08 * R, ey + 0.06 * R], [ex - 0.03 * R, ey + 0.1 * R], [ex - 0.1 * R, ey], [ex - 0.04 * R, ey - 0.11 * R], [ex + 0.11 * R, ey - 0.09 * R]], { w: fl * 0.8, j: 0 });
       else if (expr === 'shock') { E(ctx, ex, ey, 0.15 * R, 0.17 * R, { fill: '#fff', w: fl * 0.8, j: 0 }); E(ctx, ex + lx * 0.4, ey + ly * 0.4, 0.055 * R, 0.065 * R, { fill: C.ink, stroke: false, j: 0 }); }
       else E(ctx, ex, ey, 0.07 * R, 0.15 * R, { fill: C.ink, stroke: false, j: 0 });
       var by = hy - 0.3 * R, bi = by, bo = by + 0.02 * R;
       switch (expr) {
-        case 'worried': case 'nervous': case 'shock': case 'dizzy': bi = by - 0.13 * R; bo = by + 0.04 * R; break;
+        case 'worried': case 'nervous': case 'shock': case 'dizzy': case 'pain': case 'sad': bi = by - 0.13 * R; bo = by + 0.04 * R; break;
         case 'determined': case 'smug': bi = by + 0.07 * R; bo = by - 0.07 * R; break;
         case 'confused': bi = s < 0 ? by - 0.14 * R : by; bo = s < 0 ? by - 0.1 * R : by + 0.03 * R; break;
         case 'happy': case 'grin': bi = by - 0.05 * R; bo = by - 0.03 * R; break;
@@ -362,10 +441,13 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
       case 'grin': Rc(ctx, mx - 0.3 * R, my - 0.07 * R, 0.6 * R, 0.2 * R, { fill: '#fff', w: fl, j: 0 }); Ln(ctx, mx - 0.28 * R, my + 0.03 * R, mx + 0.28 * R, my + 0.03 * R, { w: fl * 0.6, j: 0 }); break;
       case 'smug': S(ctx, [[mx - 0.2 * R, my + 0.02 * R], [mx + 0.04 * R, my + 0.07 * R], [mx + 0.23 * R, my - 0.06 * R]], { w: fl, j: 0 }); break;
       case 'shock': E(ctx, mx, my + 0.05 * R, 0.12 * R, 0.15 * R, { fill: '#5a1f1f', w: fl, j: 0 }); break;
+      case 'pain': S(ctx, [[mx - 0.24 * R, my + 0.08 * R], [mx - 0.12 * R, my - 0.04 * R], [mx + 0.12 * R, my - 0.04 * R], [mx + 0.24 * R, my + 0.08 * R], [mx + 0.12 * R, my + 0.16 * R], [mx - 0.12 * R, my + 0.16 * R]], { closed: true, smooth: false, fill: '#fff', w: fl, j: 0 }); Ln(ctx, mx - 0.2 * R, my + 0.06 * R, mx + 0.2 * R, my + 0.06 * R, { w: fl * 0.5, j: 0 }); break;
       case 'worried': case 'nervous': Rc(ctx, mx - 0.22 * R, my - 0.05 * R, 0.44 * R, 0.16 * R, { fill: '#fff', w: fl, j: 0 }); Ln(ctx, mx - 0.2 * R, my + 0.03 * R, mx + 0.2 * R, my + 0.03 * R, { w: fl * 0.55, j: 0 }); break;
       case 'confused': case 'dizzy': S(ctx, [[mx - 0.2 * R, my + 0.02 * R], [mx - 0.07 * R, my - 0.04 * R], [mx + 0.07 * R, my + 0.04 * R], [mx + 0.2 * R, my - 0.02 * R]], { w: fl, j: 0 }); break;
       case 'determined': Ln(ctx, mx - 0.18 * R, my + 0.02 * R, mx + 0.18 * R, my, { w: fl, j: 0 }); break;
-      case 'out': case 'dead': E(ctx, mx, my + 0.03 * R, 0.07 * R, 0.06 * R, { fill: '#5a1f1f', w: fl * 0.8, j: 0 }); break;
+      case 'sad': S(ctx, [[mx - 0.17 * R, my + 0.06 * R], [mx, my - 0.02 * R], [mx + 0.17 * R, my + 0.06 * R]], { w: fl, j: 0 }); break;
+      case 'out': E(ctx, mx, my + 0.03 * R, 0.07 * R, 0.06 * R, { fill: '#5a1f1f', w: fl * 0.8, j: 0 }); break;
+      case 'dead': E(ctx, mx, my + 0.05 * R, 0.1 * R, 0.08 * R, { fill: '#3a2a2a', w: fl * 0.8, j: 0 }); break;
       case 'sniff': Ln(ctx, mx - 0.14 * R, my + 0.02 * R, mx + 0.14 * R, my, { w: fl, j: 0 }); for (var k = 0; k < 2; k++) S(ctx, [[x + (1.15 + k * 0.2) * R, hy - 0.1 * R], [x + (1.3 + k * 0.2) * R, hy + 0.05 * R], [x + (1.18 + k * 0.2) * R, hy + 0.2 * R]], { w: fl * 0.8, j: 0 }); break;
       default: S(ctx, [[mx - 0.16 * R, my], [mx, my + 0.03 * R], [mx + 0.16 * R, my]], { w: fl, j: 0 });
     }
@@ -378,7 +460,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     if (o.hat === 'bonnet' && !o.back) E(ctx, x, hy - 0.12 * R, 1.3 * R, 1.34 * R, { fill: o.hatCol || '#e9d7a8', w: lw, j: 0 });
     if ((o.hairStyle === 'bun' || o.hairStyle === 'long') && o.hat !== 'bonnet') E(ctx, x, hy - 1.02 * R, 0.36 * R, 0.3 * R, { fill: o.hair || C.hairD, w: lw * 0.9, j: 0 });
     if (o.hairStyle === 'long' && !o.back) S(ctx, [[x - 1.05 * R, hy], [x - 1.12 * R, hy + 0.9 * R], [x - 0.6 * R, hy + 1.0 * R], [x + 0.6 * R, hy + 1.0 * R], [x + 1.12 * R, hy + 0.9 * R], [x + 1.05 * R, hy]], { closed: true, fill: o.hair || C.hairD, w: lw * 0.9, j: 0.3 });
-    E(ctx, x, hy, R, R, { fill: C.skin, w: lw, k: 28, j: 0.4 });
+    E(ctx, x, hy, R, R, { fill: o.expr === 'dead' ? '#dfe4e8' : C.skin, w: lw, k: 28, j: 0.4 });
     if (o.back) {
       var Q = onHead(x, hy, R), pts = [], d = Math.PI / 180;
       for (var i = 150; i <= 390; i += 12) pts.push(Q(i * d, 1.03));
@@ -398,7 +480,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     if (o.hat && o.hat !== 'bonnet') hatOn(ctx, o.hat, x, hy, R, o, lw);
   }
   var HEAD_R = 6.0, SH_X = 1.1, SH_Y = -39.4;
-  function person(ctx, o) { var j0 = J; J = 0; try { return personRaw(ctx, o); } finally { J = j0; } }
+  function person(ctx, o) { var j0 = J; J = (BOIL && WOB_PEOPLE ? j0 * 0.7 : 0); PEOPLE++; try { return personRaw(ctx, o); } finally { J = j0; PEOPLE--; } }
   function personRaw(ctx, o) {
     var u = (o.s || 1) * 10, x = o.x, y = o.y, coat = o.dress || o.coat || C.coatB, lw = pen(u), hy = y - 47.4 * u, R = HEAD_R * u;
     function P(dx, dy) { return [x + dx * u, y + dy * u]; }
@@ -434,11 +516,11 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   }
   /* arms on their own, for someone whose hands rest on something drawn in front of their body */
   function personArms(ctx, o) {
-    var j0 = J; J = 0;
+    var j0 = J; J = (BOIL && WOB_PEOPLE ? j0 * 0.7 : 0); PEOPLE++;
     try {
       var u = (o.s || 1) * 10, pose = o.pose || {}, coat = o.dress || o.coat || C.coatB;
       return { l: o.only === 'r' ? null : armP(ctx, pose.l, [o.x - SH_X * u, o.y + SH_Y * u], -1, u, coat), r: o.only === 'l' ? null : armP(ctx, pose.r, [o.x + SH_X * u, o.y + SH_Y * u], 1, u, coat) };
-    } finally { J = j0; }
+    } finally { J = j0; PEOPLE--; }
   }
   /* someone standing in a basket: body behind the wicker, forearms and hands over the rim */
   function rider(ctx, o, hands, basket) {
@@ -454,7 +536,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     bigHand(ctx, b[0], b[1], ang, w * 0.5, type || 'fist', 6);
   }
   /* head and shoulders only */
-  function bust(ctx, o) { var j0 = J; J = 0; try { return bustRaw(ctx, o); } finally { J = j0; } }
+  function bust(ctx, o) { var j0 = J; J = (BOIL && WOB_PEOPLE ? j0 * 0.7 : 0); PEOPLE++; try { return bustRaw(ctx, o); } finally { J = j0; PEOPLE--; } }
   function bustRaw(ctx, o) {
     var u = (o.s || 1) * 10, x = o.x, cy = o.y, coat = o.dress || o.coat || C.coatB, lw = pen(u), R = HEAD_R * u;
     [-1, 1].forEach(function (s) { ln2(ctx, [[x + s * 1.1 * u, cy + 7.8 * u], [x + s * 3.2 * u, cy + 13 * u], [x + s * 3.8 * u, cy + 19 * u]], lw * 1.05); });
@@ -464,7 +546,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     head(ctx, x, cy, R, o);
   }
   /* a small stick figure for crowds, baskets and seats: head centre 27u above y, feet 4u below it */
-  function mini(ctx, x, y, s, col, o) { var j0 = J; J = 0; try { return miniRaw(ctx, x, y, s, col, o); } finally { J = j0; } }
+  function mini(ctx, x, y, s, col, o) { var j0 = J; J = (BOIL && WOB_PEOPLE ? j0 * 0.7 : 0); PEOPLE++; try { return miniRaw(ctx, x, y, s, col, o); } finally { J = j0; PEOPLE--; } }
   function miniRaw(ctx, x, y, s, col, o) {
     o = o || {}; var u = s, lw = Math.max(2.4, 0.62 * u), R = 5.8 * u, hy = y - 27 * u;
     [-1, 1].forEach(function (sg) { ln2(ctx, [[x + sg * 0.6 * u, y - 9 * u], [x + sg * 1.4 * u, y + 3.6 * u], [x + sg * 3 * u, y + 4 * u]], lw); });
@@ -937,7 +1019,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   /* ---------- falls, bodies, beds ---------- */
   function lying(ctx, o) {
     var u = (o.s || 1) * 10, dir = o.dir || -1;
-    ctx.save(); ctx.translate(o.x - dir * 25 * u, o.y - 6.5 * u); ctx.rotate(dir * Math.PI / 2);
+    ctx.save(); ctx.translate(o.x - dir * 25 * u, o.y - 6.5 * u); ctx.rotate(dir * Math.PI / 2 + (o.tilt || 0));
     var r = person(ctx, Object.assign({ expr: 'out', pose: { l: [60, 95, 'open'], r: [25, 10, 'open'] }, legs: { l: [12, -4], r: [-6, 30] } }, o, { x: 0, y: 0 }));
     ctx.restore(); return r;
   }
@@ -955,7 +1037,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     try {
       var len = o.len || 1100, k = len / 1000, x0 = o.x - len / 2, x1 = o.x + len / 2, y = o.y;
       var mTop = y - 330 * k, mBot = mTop + 64 * k, fc = o.frame || '#8a5a3a', metal = !!o.metal;
-      var pat = o.patient || {}, hu = 11.2 * k, shirt = o.shirt || pat.coat || '#dfe8ef';
+      var pat = o.patient || {}, hu = 14 * k, shirt = o.shirt || pat.coat || '#dfe8ef';
       function post(px, top) {
         if (metal) { Ln(ctx, px, y, px, top, { w: 16 * k + 6, color: fc }); Ln(ctx, px, y, px, top, { w: 16 * k, color: '#eef2f5', j: 0 }); }
         else Rc(ctx, px - 20 * k, top, 40 * k, y - top, { fill: fc });
@@ -984,7 +1066,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
         hx = x0 + 175 * k; hy = mTop - 250 * k; tilt = -0.28;
       } else {
         E(ctx, px, mTop - 36 * k, 125 * k, 44 * k, { fill: '#fff' });
-        hx = x0 + 160 * k; hy = mTop - 104 * k; tilt = -0.22;
+        hx = x0 + 170 * k; hy = mTop - 118 * k; tilt = -0.22;
       }
       var bu = hu, plw = pen(bu);
       if (!o.empty) {
@@ -1014,6 +1096,12 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   }
 
 
+  function mourner(ctx, o) {
+    var p = Object.assign({ expr: 'sad', look: [0, 1] }, o);
+    var u = p.s * 10;
+    if (!p.pose) p.pose = { l: { to: [p.x - 0.5 * u, p.y - 24.2 * u], type: 'fist', bend: 1 }, r: { to: [p.x + 0.5 * u, p.y - 24.2 * u], type: 'fist', bend: -1 } };
+    return person(ctx, p);
+  }
   /* ---------- core kit ---------- */
   function core(ctx, x, y, r) { E(ctx, x, y, r, r, { fill: '#aeb3b9' }); E(ctx, x - r * 0.35, y - r * 0.35, r * 0.28, r * 0.2, { fill: '#e6e9ec', w: 0 }); }
   function brick(ctx, x, y, w, h, rot) { if (rot) polyR(ctx, x + w / 2, y + h / 2, w, h, rot, { fill: '#5f6469' }); else Rc(ctx, x, y, w, h, { fill: '#5f6469' }); }
@@ -1609,14 +1697,29 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     for (var i = 0; i < 11; i++) mini(ctx, 90 + i * 175 + rr(-20, 20), 1060 + (i % 2) * 18, 6.0, cols[i % 5], { hat: i % 3 === 0 ? 'top' : '', open: true, up: false, wave: i % 2 ? 1 : -1, hair: C.hairB });
   };
   P[28] = function (ctx) {
-    seed(28); ground(ctx, 700); rails(ctx, 880);
-    Ln(ctx, 520, 880, 525, 400, { w: 10, color: '#6b4a2b' }); Ln(ctx, 1400, 880, 1395, 400, { w: 10, color: '#6b4a2b' });
-    S(ctx, [[500, 400], [960, 440], [1420, 400], [1410, 560], [960, 590], [510, 560]], { closed: true, fill: '#fff' });
-    T(ctx, 'FIRST', 960, 500, 110, { obj: true, color: C.red });
-    var cols = [C.coatR, C.coatN, C.coatR, C.coatN, C.coatR];
-    for (var i = 0; i < 5; i++) mini(ctx, 600 + i * 180, 1050, 3.4, cols[i], { hat: 'top', trumpet: i !== 2, hair: C.hairB });
-    E(ctx, 960, 1024, 46, 32, { fill: '#fff' }); Ln(ctx, 918, 1024, 1002, 1024, { w: 3, color: C.red });
-    [[700, 760], [860, 700], [1150, 740], [1280, 690]].forEach(function (n) { E(ctx, n[0], n[1], 16, 12, { fill: C.ink, stroke: false }); Ln(ctx, n[0] + 14, n[1], n[0] + 14, n[1] - 55, { w: 5 }); });
+    seed(28); ground(ctx, 700); rails(ctx, 860);
+    Ln(ctx, 420, 860, 425, 380, { w: 10, color: '#6b4a2b' }); Ln(ctx, 1500, 860, 1495, 380, { w: 10, color: '#6b4a2b' });
+    S(ctx, [[400, 380], [960, 420], [1520, 380], [1510, 540], [960, 570], [410, 540]], { closed: true, fill: '#fff' });
+    T(ctx, 'FIRST', 960, 480, 110, { obj: true, color: C.red });
+    /* the band marches under the banner: trumpets and a bass drum, people at the same scale as the banner and track */
+    var cols = [C.coatR, C.coatN, C.coatR, C.coatN, C.coatR], sc = 0.44, u = sc * 10;
+    for (var i = 0; i < 5; i++) {
+      var x = 560 + i * 200, y = 1055, hy = y - 47.4 * u, R = HEAD_R * u;
+      if (i === 2) {
+        var p = { x: x, y: y, s: sc, coat: cols[i], trousers: true, pants: C.coatK, hairStyle: 'short', hair: C.hairB, hat: 'top', expr: 'determined', look: [0, 0], pose: { l: { to: [x - 3.2 * u, y - 31 * u], type: 'fist', bend: -1 }, r: { to: [x + 3.4 * u, y - 31.5 * u], type: 'fist', bend: 1 } } };
+        person(ctx, Object.assign({ noArms: true }, p));
+        Rc(ctx, x - 5.2 * u, y - 29.5 * u, 10.4 * u, 9 * u, { fill: '#f4f1ea' });
+        Rc(ctx, x - 5.2 * u, y - 29.5 * u, 10.4 * u, 1.4 * u, { fill: C.red, w: 3 }); Rc(ctx, x - 5.2 * u, y - 21.9 * u, 10.4 * u, 1.4 * u, { fill: C.red, w: 3 });
+        for (var z = 0; z < 4; z++) Ln(ctx, x - 5.2 * u + z * 3.4 * u, y - 28.1 * u, x - 3.5 * u + z * 3.4 * u, y - 21.9 * u, { w: 2.5 });
+        personArms(ctx, p);
+        Ln(ctx, x - 3.2 * u, y - 31 * u, x - 1.2 * u, y - 36 * u, { w: 5, color: '#6b4a2b' }); Ln(ctx, x + 3.4 * u, y - 31.5 * u, x + 5.6 * u, y - 36 * u, { w: 5, color: '#6b4a2b' });
+      } else {
+        var mx = x + 0.2 * R, my = hy + 0.5 * R;
+        person(ctx, { x: x, y: y, s: sc, coat: cols[i], trousers: true, pants: C.coatK, hairStyle: 'short', hair: C.hairB, hat: 'top', expr: 'neutral', look: [1, 0], pose: { l: { to: [mx + 1.0 * R, my + 0.5 * R], type: 'fist', bend: -1 }, r: { to: [mx + 1.9 * R, my + 0.3 * R], type: 'fist', bend: 1 } } });
+        S(ctx, [[mx + 0.3 * R, my - 0.1 * R], [mx + 2.4 * R, my - 0.14 * R], [mx + 3.0 * R, my - 0.6 * R], [mx + 3.0 * R, my + 0.5 * R], [mx + 2.4 * R, my + 0.1 * R], [mx + 0.3 * R, my + 0.1 * R]], { closed: true, smooth: false, fill: C.gold, w: 3 });
+      }
+    }
+    [[700, 740], [860, 680], [1150, 720], [1280, 670]].forEach(function (n) { E(ctx, n[0], n[1], 16, 12, { fill: C.ink, stroke: false }); Ln(ctx, n[0] + 14, n[1], n[0] + 14, n[1] - 55, { w: 5 }); });
   };
   P[29] = function (ctx) {
     seed(29); ground(ctx, 780); rails(ctx, 960);
@@ -1749,31 +1852,30 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     for (var k = 0; k < 10; k++) { var b = k / 10 * 6.283; Ln(ctx, 960 + Math.cos(b) * 560, 560 + Math.sin(b) * 460, 960 + Math.cos(b) * 760, 560 + Math.sin(b) * 620, { w: 5 }); }
   };
   P[43] = function (ctx) {
-    seed(43); ground(ctx, 560);
-    /* Rocket's wheels rolling past on the rail, and Huskisson on the ground beside it, his leg crushed */
-    Rc(ctx, -20, 846, W + 40, 44, { fill: '#b9b3a3', w: 0, j: 0 });
-    for (var x = -20; x < W; x += 110) Rc(ctx, x, 846, 70, 22, { fill: C.woodL, w: 3, j: 0.6 });
-    Ln(ctx, -20, 840, W + 20, 840, { w: 14 });
-    Rc(ctx, -20, 420, W + 40, 90, { fill: C.steel });
-    [430, 1030].forEach(function (wx) { wheel(ctx, wx, 680, 160, '#caa05a'); for (var k = 0; k < 3; k++) S(ctx, [[wx + Math.cos(-2.4 + k * 0.35) * 190, 680 + Math.sin(-2.4 + k * 0.35) * 190], [wx + Math.cos(-2.1 + k * 0.35) * 194, 680 + Math.sin(-2.1 + k * 0.35) * 194]], { w: 6 }); });
-    Ln(ctx, 430, 680, 1030, 680, { w: 18 }); Ln(ctx, 430, 680, 1030, 680, { w: 8, color: '#8a8a8a', j: 0 });
-    for (var i = 0; i < 6; i++) Ln(ctx, 1260, 470 + i * 60, 1480, 470 + i * 60, { w: 6 });
-    [[200, 830, 60], [720, 836, 70], [1240, 830, 60]].forEach(function (p) { puff(ctx, p[0], p[1], p[2], '#d8cfbf'); });
-    blood(ctx, 1080, 1004, 90, 22);
-    lying(ctx, huskisson({ x: 1300, y: 1052, s: 0.75, dir: 1, expr: 'out', pose: { l: [150, 170, 'open'], r: [30, 12, 'open'] }, legs: { l: [8, -2], r: [-10, 12] } }));
-    censor(ctx, 1080, 1000, 130, 52);
+    seed(43); ground(ctx, 560); rails(ctx, 770);
+    /* Rocket rolls on behind him, to the same scale as in the other panels */
+    loco(ctx, 700, 770, 1.5, { flip: true, smoke: true, tender: true });
+    for (var i = 0; i < 4; i++) Ln(ctx, 560 - i * 30, 540 + i * 60, 200 - i * 30, 540 + i * 60, { w: 6 });
+    [[1500, 770, 60], [1760, 780, 50]].forEach(function (p) { puff(ctx, p[0], p[1], p[2], '#d8cfbf'); });
+    /* Huskisson, conscious, on the ground in front of the track, clutching his crushed leg */
+    var sc = 0.95, u = sc * 10;
+    blood(ctx, 1260, 1010, 80, 20);
+    lying(ctx, huskisson({ x: 1010, y: 1030, s: sc, dir: -1, tilt: -0.05, expr: 'pain', look: [1, 0],
+      legs: { l: [-2, 0], r: [8, 4] }, pose: { l: [150, 170, 'open'], r: { to: [2.8 * u, -26 * u], type: 'fist', bend: 1 } } }));
+    censor(ctx, 1250, 1006, 110, 46);
   };
   P[44] = function (ctx) {
     seed(44);
-    /* the room he was carried to: the bed now empty, a candle burning beside it */
+    /* Eccles vicarage that evening: he dies with his wife Emily beside him */
     Rc(ctx, -20, -20, W + 40, 1020, { fill: '#e9dfc9', w: 0, j: 0 });
     Rc(ctx, -20, 1000, W + 40, 100, { fill: C.woodL, w: 0, j: 0 }); Ln(ctx, -10, 1000, W + 10, 1000, { w: 5 });
-    Rc(ctx, 760, 250, 300, 300, { fill: '#2c3e63', w: 7 }); Ln(ctx, 910, 255, 910, 545, { w: 6 }); Ln(ctx, 765, 400, 1055, 400, { w: 6 });
-    E(ctx, 985, 320, 34, 34, { fill: '#f4ebc2', w: 4 });
-    sickbed(ctx, { x: 860, y: 1000, len: 1100, frame: '#8a5a3a', shirt: '#eef0f3', patient: huskisson({ expr: 'dead' }) });
-    Rc(ctx, 1480, 790, 180, 210, { fill: C.woodL }); Rc(ctx, 1480, 790, 180, 26, { fill: shade(C.woodL, 0.85) });
-    Rc(ctx, 1552, 700, 36, 90, { fill: '#fbf5dc' }); Ln(ctx, 1570, 700, 1570, 686, { w: 4 }); fire(ctx, 1570, 672, 30);
-    alpha(ctx, 0.22, function () { E(ctx, 1570, 690, 130, 110, { fill: C.fireY, w: 0 }); });
+    Rc(ctx, 1080, 250, 280, 280, { fill: '#2c3e63', w: 7 }); Ln(ctx, 1220, 255, 1220, 525, { w: 6 }); Ln(ctx, 1085, 390, 1355, 390, { w: 6 });
+    E(ctx, 1300, 320, 30, 30, { fill: '#f4ebc2', w: 4 });
+    mourner(ctx, driscoll({ x: 290, y: 1000, s: 1.28, hat: '', dress: '#3b3b44', hair: C.hairD }));
+    sickbed(ctx, { x: 820, y: 1000, len: 820, frame: '#8a5a3a', shirt: '#eef0f3', patient: huskisson({ expr: 'dead' }) });
+    Rc(ctx, 1420, 800, 180, 200, { fill: C.woodL }); Rc(ctx, 1420, 800, 180, 24, { fill: shade(C.woodL, 0.85) });
+    Rc(ctx, 1494, 712, 32, 88, { fill: '#fbf5dc' }); Ln(ctx, 1510, 712, 1510, 698, { w: 4 }); fire(ctx, 1510, 684, 28);
+    alpha(ctx, 0.22, function () { E(ctx, 1510, 700, 120, 100, { fill: C.fireY, w: 0 }); });
   };
   P[45] = function (ctx) { seed(45); newspaper(ctx, 960, 610, 620, -0.04, 'RAILWAY DEATHS', 'before 1830'); };
   P[46] = function (ctx) {
@@ -1789,11 +1891,16 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     newspaper(ctx, 960, 500, 520, 0.03, 'MR. HUSKISSON');
   };
   P[48] = function (ctx) {
-    seed(48); ground(ctx, 720); rails(ctx, 880);
-    Ln(ctx, 760, 980, 1120, 900, { w: 8, color: '#6b4a2b' });
-    S(ctx, [[1120, 900], [1330, 960], [1300, 1060], [1110, 1000]], { closed: true, fill: '#fff' });
-    loco(ctx, 1150, 1000, 0.25, { col: C.locoG, chim: '#3a3a3a' });
-    T(ctx, 'OPENING DAY', 960, 480, 110);
+    seed(48); ground(ctx, 640); rails(ctx, 780);
+    for (var i = 0; i < 24; i++) { var tx = rr(40, W - 40), ty = rr(830, H - 10); Ln(ctx, tx, ty, tx + rr(-6, 6), ty - 22, { w: 3, color: '#8faa5a' }); }
+    /* the flag he was waving (panel 31), dropped in the grass beside the line */
+    E(ctx, 1000, 1000, 560, 46, { fill: '#b9cf95', w: 0 });
+    Ln(ctx, 480, 1010, 1440, 950, { w: 16, color: '#6b4a2b' }); E(ctx, 472, 1011, 14, 14, { fill: C.gold, w: 3 });
+    var fl = [[900, 984], [1440, 950], [1470, 820], [1260, 840], [1100, 800], [930, 850]];
+    S(ctx, fl, { closed: true, fill: '#fff' });
+    S(ctx, [[1100, 800], [1150, 976]], { w: 3, color: '#c9c9c0' });
+    ctx.save(); ctx.translate(1230, 910); ctx.rotate(-0.08); ctx.scale(1, 0.8); loco(ctx, -120, 20, 0.38, { col: C.locoG, chim: '#3a3a3a' }); ctx.restore();
+    T(ctx, 'OPENING DAY', 960, 420, 110);
   };
 
 
@@ -2107,17 +2214,13 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[88] = function (ctx) {
     seed(88);
-    /* close on the seats: her place empty, her cousins staring at where she went */
-    Rc(ctx, -20, -20, W + 40, H + 40, { fill: C.bg, w: 0, j: 0 });
-    ground(ctx, 700, C.grass);
-    [[520, 1040], [1180, 1700]].forEach(function (b) { Rc(ctx, b[0], 430, b[1] - b[0], 360, { fill: '#6b4a2b' }); for (var q = 1; q < 4; q++) Ln(ctx, b[0] + (b[1] - b[0]) * q / 4, 440, b[0] + (b[1] - b[0]) * q / 4, 780, { w: 3, color: '#4a2e1c' }); });
-    E(ctx, 780, 740, 230, 40, { fill: '#8a3b34', w: 5 });
-    [[1300, C.coatN, C.hairB], [1560, C.coatB, C.hairD]].forEach(function (c) { bust(ctx, { x: c[0], y: 600, s: 1.25, coat: c[1], hair: c[2], hairStyle: 'short', expr: 'shock', look: [-1, 0] }); });
-    Rc(ctx, -20, 780, W + 40, 320, { fill: '#8a5a3a' });
-    Rc(ctx, -20, 780, W + 40, 34, { fill: C.gold });
-    [240, 900, 1560].forEach(function (px) { Rc(ctx, px, 860, 360, 170, { w: 4, color: shade('#8a5a3a', 0.6) }); });
-    for (var i = 0; i < 6; i++) S(ctx, [[640 - i * 20, 520 + i * 40], [360 - i * 40, 470 + i * 44], [60 - i * 20, 430 + i * 50]], { w: 6 });
-    ctx.save(); ctx.translate(150, 330); ctx.rotate(-0.5);
+    /* the steam car on the bend, close up: her seat at the front is empty, her cousins staring back */
+    Rc(ctx, -20, 760, W + 40, 340, { fill: C.grass, w: 0, j: 0 });
+    church(ctx, 1520, 760, 0.55);
+    S(ctx, [[-20, 1100], [300, 960], [800, 880], [1200, 850], [1950, 840], [1950, 930], [1200, 940], [880, 1010], [520, 1100]], { closed: true, fill: '#c9b99a' });
+    steamCar(ctx, 420, 1120, 2.3, { smoke: false, seats: [null, { col: C.coatN, hair: C.hairB, open: true }, { col: C.coatB, hair: C.hairD, open: true }, null] });
+    for (var i = 0; i < 5; i++) S(ctx, [[720 - i * 10, 560 + i * 34], [520 - i * 30, 500 + i * 36], [300 - i * 40, 470 + i * 40]], { w: 6 });
+    ctx.save(); ctx.translate(200, 360); ctx.rotate(-0.5);
     S(ctx, [[-80, 30], [-70, -30], [-30, -64], [30, -64], [70, -30], [80, 30], [0, 16]], { closed: true, fill: '#e9d7a8', w: 5 });
     S(ctx, [[-86, 34], [0, 20], [86, 34]], { w: 6, color: '#7a5a3a' });
     S(ctx, [[-60, 34], [-80, 90], [-60, 130]], { w: 5, color: '#7a5a3a' }); S(ctx, [[60, 34], [70, 100], [96, 136]], { w: 5, color: '#7a5a3a' });
@@ -2306,14 +2409,15 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[109] = function (ctx) {
     seed(109);
-    /* that evening: Selfridge dead in the hospital bed, his officer's cap on the table beside him */
+    /* the army hospital at Fort Myer that evening; he never woke up after the operation */
     Rc(ctx, -20, -20, W + 40, 1020, { fill: '#e9eef3', w: 0, j: 0 });
     Rc(ctx, -20, 1000, W + 40, 100, { fill: '#c9d1d9', w: 0, j: 0 }); Ln(ctx, -10, 1000, W + 10, 1000, { w: 5 });
-    Rc(ctx, 700, 250, 300, 260, { fill: '#e79a5c', w: 7 }); Ln(ctx, 850, 255, 850, 505, { w: 6 }); Ln(ctx, 705, 380, 995, 380, { w: 6 });
-    sickbed(ctx, { x: 820, y: 1000, len: 1100, metal: true, frame: '#9aa4ad', shirt: '#e9eef3', patient: selfridge({ expr: 'dead' }) });
-    Rc(ctx, 1480, 790, 200, 210, { fill: C.woodL }); Rc(ctx, 1480, 790, 200, 26, { fill: shade(C.woodL, 0.85) });
-    officerCap(ctx, 1580, 760, 0.3);
-    T(ctx, 'FIRST · 1908', 1650, 560, 76);
+    Rc(ctx, 1000, 250, 280, 250, { fill: '#e79a5c', w: 7 }); Ln(ctx, 1140, 255, 1140, 495, { w: 6 }); Ln(ctx, 1005, 375, 1275, 375, { w: 6 });
+    mourner(ctx, { x: 270, y: 1000, s: 1.28, coat: '#f4f4f0', trousers: true, pants: '#5a5d62', hairStyle: 'short', hair: C.greyH, collar: true, vest: '#f3efe6', mous: true });
+    sickbed(ctx, { x: 800, y: 1000, len: 820, metal: true, frame: '#9aa4ad', shirt: '#e9eef3', patient: selfridge({ expr: 'dead' }) });
+    Rc(ctx, 1400, 800, 200, 200, { fill: C.woodL }); Rc(ctx, 1400, 800, 200, 24, { fill: shade(C.woodL, 0.85) });
+    officerCap(ctx, 1500, 770, 0.3);
+    T(ctx, 'FIRST · 1908', 1640, 560, 76);
   };
   P[110] = function (ctx) {
     seed(110);
@@ -2443,11 +2547,12 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[130] = function (ctx) {
     seed(130);
-    /* he dies twenty-five days later: in the hospital bed, the calendar on the wall */
+    /* the Los Alamos hospital, twenty-five days later; his mother by the bed */
     Rc(ctx, -20, -20, W + 40, 1020, { fill: '#e6e2d6', w: 0, j: 0 });
     Rc(ctx, -20, 1000, W + 40, 100, { fill: '#b9b3a3', w: 0, j: 0 }); Ln(ctx, -10, 1000, W + 10, 1000, { w: 5 });
     calendarWall(ctx, 1420, 330, 25, 28);
-    sickbed(ctx, { x: 720, y: 1000, len: 1100, metal: true, frame: '#9aa4ad', shirt: '#e9eef3', patient: daghlian({ expr: 'dead' }) });
+    mourner(ctx, mward({ x: 250, y: 1000, s: 1.24, dress: '#4a4a52', hair: C.greyH }));
+    sickbed(ctx, { x: 780, y: 1000, len: 820, metal: true, frame: '#9aa4ad', shirt: '#e9eef3', patient: daghlian({ expr: 'dead' }) });
   };
   P[131] = function (ctx) { P[130](ctx); seed(13101); T(ctx, 'FIRST', 1570, 470, 110, { color: C.red, rot: -0.12 }); };
   P[132] = function (ctx) { seed(132); Rc(ctx, -20, -20, W + 40, 1120, { fill: '#e6e2d6', w: 0, j: 0 }); polyR(ctx, 960, 620, 760, 660, 0.02, { fill: C.paper }); E(ctx, 960, 310, 16, 16, { fill: C.red }); T(ctx, 'NEW RULES', 960, 420, 96, { obj: true }); };
@@ -2487,11 +2592,13 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[139] = function (ctx) {
     seed(139);
-    /* nine days later: Slotin in the hospital bed, the calendar on the wall */
+    /* nine days later, in the same hospital room (and, by mistake, the same bed) as Daghlian; his parents by him */
     Rc(ctx, -20, -20, W + 40, 1020, { fill: '#e6e2d6', w: 0, j: 0 });
     Rc(ctx, -20, 1000, W + 40, 100, { fill: '#b9b3a3', w: 0, j: 0 }); Ln(ctx, -10, 1000, W + 10, 1000, { w: 5 });
     calendarWall(ctx, 1420, 330, 9, 14);
-    sickbed(ctx, { x: 720, y: 1000, len: 1100, metal: true, frame: '#9aa4ad', shirt: '#e9eef3', patient: slotin({ expr: 'dead' }) });
+    mourner(ctx, { x: 140, y: 1000, s: 1.24, coat: '#3a3a3a', trousers: true, pants: '#3a3a3a', hairStyle: 'short', hair: C.greyH, collar: true, vest: '#f3efe6' });
+    mourner(ctx, mward({ x: 280, y: 1000, s: 1.2, dress: '#4a4a52', hair: C.greyH }));
+    sickbed(ctx, { x: 780, y: 1000, len: 820, metal: true, frame: '#9aa4ad', shirt: '#e9eef3', patient: slotin({ expr: 'dead' }) });
     T(ctx, '9 DAYS', 1570, 720, 96);
   };
   P[140] = function (ctx) { seed(140); lamp(ctx, 960, 470); alpha(ctx, 0.2, function () { E(ctx, 960, 700, 380, 230, { fill: '#fff4b0', w: 0 }); }); labTable(ctx, 820); core(ctx, 960, 740, 80); };
@@ -3148,7 +3255,16 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   var ITEM_OF = {}; PANELS.forEach(function (p) { ITEM_OF[p.n] = p.item; });
 
   function render(ctx, n, boil, opts) {
-    BOIL = boil || 0; opts = opts || {};
+    opts = opts || {};
+    var t0 = TEXT_ON, j0 = J;
+    try {
+      BOIL = boil || 0; WOB_PEOPLE = !!opts.wobPeople; TEXT_LAYER = opts.textLayer || null;
+      if (opts.text !== undefined) TEXT_ON = !!opts.text;
+      J = BOIL ? 1.3 + 2.4 * (opts.wobAmp === undefined ? 1 : opts.wobAmp) : 1.3; PEOPLE = 0;
+      renderRaw(ctx, n, opts);
+    } finally { TEXT_ON = t0; J = j0; BOIL = 0; WOB_PEOPLE = false; TEXT_LAYER = null; }
+  }
+  function renderRaw(ctx, n, opts) {
     ctx.save(); ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     if (ITEM_OF[n] === 0) { BOIL = 0; drawGrid(ctx); ctx.restore(); return; }
@@ -3165,111 +3281,2216 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     if (!bars[k]) { var c = makeCanvas(W, BADGE.y + BADGE.r + 12), x = c.getContext('2d'); x.lineJoin = 'round'; x.lineCap = 'round'; chrome(x, k); bars[k] = c; }
     ctx.drawImage(bars[k], 0, 0);
   }
+  function barTitle(n) { var it = ITEM_OF[n]; if (!it || it === 10) return null; return ITEMS[barItem(n)].title; }
   function setText(on) { TEXT_ON = !!on; thumbs = {}; g2cache = {}; }
   function setBarName(on) { BAR_NAME = !!on; bars = {}; }
   function firstOfCell(i) { return GRID_FIRST[i]; }
 
-  var api = { W: W, H: H, PANELS: PANELS, render: render, bar: bar, setText: setText, setBarName: setBarName, gridCell: gridCell, firstOfCell: firstOfCell };
+  var api = { W: W, H: H, PANELS: PANELS, render: render, bar: bar, barTitle: barTitle, setText: setText, setBarName: setBarName, gridCell: gridCell, firstOfCell: firstOfCell };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else G.BalloonScenes = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>
+/* mp4-muxer 5.1.3, MIT License, Copyright (c) 2023 Vanilagy, https://github.com/Vanilagy/mp4-muxer */
+"use strict";
+var Mp4Muxer = (() => {
+  var __defProp = Object.defineProperty;
+  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __export = (target, all) => {
+    for (var name in all)
+      __defProp(target, name, { get: all[name], enumerable: true });
+  };
+  var __copyProps = (to, from, except, desc) => {
+    if (from && typeof from === "object" || typeof from === "function") {
+      for (let key of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key) && key !== except)
+          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+    }
+    return to;
+  };
+  var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+  var __accessCheck = (obj, member, msg) => {
+    if (!member.has(obj))
+      throw TypeError("Cannot " + msg);
+  };
+  var __privateGet = (obj, member, getter) => {
+    __accessCheck(obj, member, "read from private field");
+    return getter ? getter.call(obj) : member.get(obj);
+  };
+  var __privateAdd = (obj, member, value) => {
+    if (member.has(obj))
+      throw TypeError("Cannot add the same private member more than once");
+    member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
+  };
+  var __privateSet = (obj, member, value, setter) => {
+    __accessCheck(obj, member, "write to private field");
+    setter ? setter.call(obj, value) : member.set(obj, value);
+    return value;
+  };
+  var __privateWrapper = (obj, member, setter, getter) => ({
+    set _(value) {
+      __privateSet(obj, member, value, setter);
+    },
+    get _() {
+      return __privateGet(obj, member, getter);
+    }
+  });
+  var __privateMethod = (obj, member, method) => {
+    __accessCheck(obj, member, "access private method");
+    return method;
+  };
+
+  // src/index.ts
+  var src_exports = {};
+  __export(src_exports, {
+    ArrayBufferTarget: () => ArrayBufferTarget,
+    FileSystemWritableFileStreamTarget: () => FileSystemWritableFileStreamTarget,
+    Muxer: () => Muxer,
+    StreamTarget: () => StreamTarget
+  });
+
+  // src/misc.ts
+  var bytes = new Uint8Array(8);
+  var view = new DataView(bytes.buffer);
+  var u8 = (value) => {
+    return [(value % 256 + 256) % 256];
+  };
+  var u16 = (value) => {
+    view.setUint16(0, value, false);
+    return [bytes[0], bytes[1]];
+  };
+  var i16 = (value) => {
+    view.setInt16(0, value, false);
+    return [bytes[0], bytes[1]];
+  };
+  var u24 = (value) => {
+    view.setUint32(0, value, false);
+    return [bytes[1], bytes[2], bytes[3]];
+  };
+  var u32 = (value) => {
+    view.setUint32(0, value, false);
+    return [bytes[0], bytes[1], bytes[2], bytes[3]];
+  };
+  var i32 = (value) => {
+    view.setInt32(0, value, false);
+    return [bytes[0], bytes[1], bytes[2], bytes[3]];
+  };
+  var u64 = (value) => {
+    view.setUint32(0, Math.floor(value / 2 ** 32), false);
+    view.setUint32(4, value, false);
+    return [bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7]];
+  };
+  var fixed_8_8 = (value) => {
+    view.setInt16(0, 2 ** 8 * value, false);
+    return [bytes[0], bytes[1]];
+  };
+  var fixed_16_16 = (value) => {
+    view.setInt32(0, 2 ** 16 * value, false);
+    return [bytes[0], bytes[1], bytes[2], bytes[3]];
+  };
+  var fixed_2_30 = (value) => {
+    view.setInt32(0, 2 ** 30 * value, false);
+    return [bytes[0], bytes[1], bytes[2], bytes[3]];
+  };
+  var ascii = (text, nullTerminated = false) => {
+    let bytes2 = Array(text.length).fill(null).map((_, i) => text.charCodeAt(i));
+    if (nullTerminated)
+      bytes2.push(0);
+    return bytes2;
+  };
+  var last = (arr) => {
+    return arr && arr[arr.length - 1];
+  };
+  var lastPresentedSample = (samples) => {
+    let result = void 0;
+    for (let sample of samples) {
+      if (!result || sample.presentationTimestamp > result.presentationTimestamp) {
+        result = sample;
+      }
+    }
+    return result;
+  };
+  var intoTimescale = (timeInSeconds, timescale, round = true) => {
+    let value = timeInSeconds * timescale;
+    return round ? Math.round(value) : value;
+  };
+  var rotationMatrix = (rotationInDegrees) => {
+    let theta = rotationInDegrees * (Math.PI / 180);
+    let cosTheta = Math.cos(theta);
+    let sinTheta = Math.sin(theta);
+    return [
+      cosTheta,
+      sinTheta,
+      0,
+      -sinTheta,
+      cosTheta,
+      0,
+      0,
+      0,
+      1
+    ];
+  };
+  var IDENTITY_MATRIX = rotationMatrix(0);
+  var matrixToBytes = (matrix) => {
+    return [
+      fixed_16_16(matrix[0]),
+      fixed_16_16(matrix[1]),
+      fixed_2_30(matrix[2]),
+      fixed_16_16(matrix[3]),
+      fixed_16_16(matrix[4]),
+      fixed_2_30(matrix[5]),
+      fixed_16_16(matrix[6]),
+      fixed_16_16(matrix[7]),
+      fixed_2_30(matrix[8])
+    ];
+  };
+  var deepClone = (x) => {
+    if (!x)
+      return x;
+    if (typeof x !== "object")
+      return x;
+    if (Array.isArray(x))
+      return x.map(deepClone);
+    return Object.fromEntries(Object.entries(x).map(([key, value]) => [key, deepClone(value)]));
+  };
+  var isU32 = (value) => {
+    return value >= 0 && value < 2 ** 32;
+  };
+
+  // src/box.ts
+  var box = (type, contents, children) => ({
+    type,
+    contents: contents && new Uint8Array(contents.flat(10)),
+    children
+  });
+  var fullBox = (type, version, flags, contents, children) => box(
+    type,
+    [u8(version), u24(flags), contents ?? []],
+    children
+  );
+  var ftyp = (details) => {
+    let minorVersion = 512;
+    if (details.fragmented)
+      return box("ftyp", [
+        ascii("iso5"),
+        // Major brand
+        u32(minorVersion),
+        // Minor version
+        // Compatible brands
+        ascii("iso5"),
+        ascii("iso6"),
+        ascii("mp41")
+      ]);
+    return box("ftyp", [
+      ascii("isom"),
+      // Major brand
+      u32(minorVersion),
+      // Minor version
+      // Compatible brands
+      ascii("isom"),
+      details.holdsAvc ? ascii("avc1") : [],
+      ascii("mp41")
+    ]);
+  };
+  var mdat = (reserveLargeSize) => ({ type: "mdat", largeSize: reserveLargeSize });
+  var free = (size) => ({ type: "free", size });
+  var moov = (tracks, creationTime, fragmented = false) => box("moov", null, [
+    mvhd(creationTime, tracks),
+    ...tracks.map((x) => trak(x, creationTime)),
+    fragmented ? mvex(tracks) : null
+  ]);
+  var mvhd = (creationTime, tracks) => {
+    let duration = intoTimescale(Math.max(
+      0,
+      ...tracks.filter((x) => x.samples.length > 0).map((x) => {
+        const lastSample = lastPresentedSample(x.samples);
+        return lastSample.presentationTimestamp + lastSample.duration;
+      })
+    ), GLOBAL_TIMESCALE);
+    let nextTrackId = Math.max(...tracks.map((x) => x.id)) + 1;
+    let needsU64 = !isU32(creationTime) || !isU32(duration);
+    let u32OrU64 = needsU64 ? u64 : u32;
+    return fullBox("mvhd", +needsU64, 0, [
+      u32OrU64(creationTime),
+      // Creation time
+      u32OrU64(creationTime),
+      // Modification time
+      u32(GLOBAL_TIMESCALE),
+      // Timescale
+      u32OrU64(duration),
+      // Duration
+      fixed_16_16(1),
+      // Preferred rate
+      fixed_8_8(1),
+      // Preferred volume
+      Array(10).fill(0),
+      // Reserved
+      matrixToBytes(IDENTITY_MATRIX),
+      // Matrix
+      Array(24).fill(0),
+      // Pre-defined
+      u32(nextTrackId)
+      // Next track ID
+    ]);
+  };
+  var trak = (track, creationTime) => box("trak", null, [
+    tkhd(track, creationTime),
+    mdia(track, creationTime)
+  ]);
+  var tkhd = (track, creationTime) => {
+    let lastSample = lastPresentedSample(track.samples);
+    let durationInGlobalTimescale = intoTimescale(
+      lastSample ? lastSample.presentationTimestamp + lastSample.duration : 0,
+      GLOBAL_TIMESCALE
+    );
+    let needsU64 = !isU32(creationTime) || !isU32(durationInGlobalTimescale);
+    let u32OrU64 = needsU64 ? u64 : u32;
+    let matrix;
+    if (track.info.type === "video") {
+      matrix = typeof track.info.rotation === "number" ? rotationMatrix(track.info.rotation) : track.info.rotation;
+    } else {
+      matrix = IDENTITY_MATRIX;
+    }
+    return fullBox("tkhd", +needsU64, 3, [
+      u32OrU64(creationTime),
+      // Creation time
+      u32OrU64(creationTime),
+      // Modification time
+      u32(track.id),
+      // Track ID
+      u32(0),
+      // Reserved
+      u32OrU64(durationInGlobalTimescale),
+      // Duration
+      Array(8).fill(0),
+      // Reserved
+      u16(0),
+      // Layer
+      u16(0),
+      // Alternate group
+      fixed_8_8(track.info.type === "audio" ? 1 : 0),
+      // Volume
+      u16(0),
+      // Reserved
+      matrixToBytes(matrix),
+      // Matrix
+      fixed_16_16(track.info.type === "video" ? track.info.width : 0),
+      // Track width
+      fixed_16_16(track.info.type === "video" ? track.info.height : 0)
+      // Track height
+    ]);
+  };
+  var mdia = (track, creationTime) => box("mdia", null, [
+    mdhd(track, creationTime),
+    hdlr(track.info.type === "video" ? "vide" : "soun"),
+    minf(track)
+  ]);
+  var mdhd = (track, creationTime) => {
+    let lastSample = lastPresentedSample(track.samples);
+    let localDuration = intoTimescale(
+      lastSample ? lastSample.presentationTimestamp + lastSample.duration : 0,
+      track.timescale
+    );
+    let needsU64 = !isU32(creationTime) || !isU32(localDuration);
+    let u32OrU64 = needsU64 ? u64 : u32;
+    return fullBox("mdhd", +needsU64, 0, [
+      u32OrU64(creationTime),
+      // Creation time
+      u32OrU64(creationTime),
+      // Modification time
+      u32(track.timescale),
+      // Timescale
+      u32OrU64(localDuration),
+      // Duration
+      u16(21956),
+      // Language ("und", undetermined)
+      u16(0)
+      // Quality
+    ]);
+  };
+  var hdlr = (componentSubtype) => fullBox("hdlr", 0, 0, [
+    ascii("mhlr"),
+    // Component type
+    ascii(componentSubtype),
+    // Component subtype
+    u32(0),
+    // Component manufacturer
+    u32(0),
+    // Component flags
+    u32(0),
+    // Component flags mask
+    ascii("mp4-muxer-hdlr", true)
+    // Component name
+  ]);
+  var minf = (track) => box("minf", null, [
+    track.info.type === "video" ? vmhd() : smhd(),
+    dinf(),
+    stbl(track)
+  ]);
+  var vmhd = () => fullBox("vmhd", 0, 1, [
+    u16(0),
+    // Graphics mode
+    u16(0),
+    // Opcolor R
+    u16(0),
+    // Opcolor G
+    u16(0)
+    // Opcolor B
+  ]);
+  var smhd = () => fullBox("smhd", 0, 0, [
+    u16(0),
+    // Balance
+    u16(0)
+    // Reserved
+  ]);
+  var dinf = () => box("dinf", null, [
+    dref()
+  ]);
+  var dref = () => fullBox("dref", 0, 0, [
+    u32(1)
+    // Entry count
+  ], [
+    url()
+  ]);
+  var url = () => fullBox("url ", 0, 1);
+  var stbl = (track) => {
+    const needsCtts = track.compositionTimeOffsetTable.length > 1 || track.compositionTimeOffsetTable.some((x) => x.sampleCompositionTimeOffset !== 0);
+    return box("stbl", null, [
+      stsd(track),
+      stts(track),
+      stss(track),
+      stsc(track),
+      stsz(track),
+      stco(track),
+      needsCtts ? ctts(track) : null
+    ]);
+  };
+  var stsd = (track) => fullBox("stsd", 0, 0, [
+    u32(1)
+    // Entry count
+  ], [
+    track.info.type === "video" ? videoSampleDescription(
+      VIDEO_CODEC_TO_BOX_NAME[track.info.codec],
+      track
+    ) : soundSampleDescription(
+      AUDIO_CODEC_TO_BOX_NAME[track.info.codec],
+      track
+    )
+  ]);
+  var videoSampleDescription = (compressionType, track) => box(compressionType, [
+    Array(6).fill(0),
+    // Reserved
+    u16(1),
+    // Data reference index
+    u16(0),
+    // Pre-defined
+    u16(0),
+    // Reserved
+    Array(12).fill(0),
+    // Pre-defined
+    u16(track.info.width),
+    // Width
+    u16(track.info.height),
+    // Height
+    u32(4718592),
+    // Horizontal resolution
+    u32(4718592),
+    // Vertical resolution
+    u32(0),
+    // Reserved
+    u16(1),
+    // Frame count
+    Array(32).fill(0),
+    // Compressor name
+    u16(24),
+    // Depth
+    i16(65535)
+    // Pre-defined
+  ], [
+    VIDEO_CODEC_TO_CONFIGURATION_BOX[track.info.codec](track)
+  ]);
+  var avcC = (track) => track.info.decoderConfig && box("avcC", [
+    // For AVC, description is an AVCDecoderConfigurationRecord, so nothing else to do here
+    ...new Uint8Array(track.info.decoderConfig.description)
+  ]);
+  var hvcC = (track) => track.info.decoderConfig && box("hvcC", [
+    // For HEVC, description is a HEVCDecoderConfigurationRecord, so nothing else to do here
+    ...new Uint8Array(track.info.decoderConfig.description)
+  ]);
+  var vpcC = (track) => {
+    if (!track.info.decoderConfig) {
+      return null;
+    }
+    let decoderConfig = track.info.decoderConfig;
+    if (!decoderConfig.colorSpace) {
+      throw new Error(`'colorSpace' is required in the decoder config for VP9.`);
+    }
+    let parts = decoderConfig.codec.split(".");
+    let profile = Number(parts[1]);
+    let level = Number(parts[2]);
+    let bitDepth = Number(parts[3]);
+    let chromaSubsampling = 0;
+    let thirdByte = (bitDepth << 4) + (chromaSubsampling << 1) + Number(decoderConfig.colorSpace.fullRange);
+    let colourPrimaries = 2;
+    let transferCharacteristics = 2;
+    let matrixCoefficients = 2;
+    return fullBox("vpcC", 1, 0, [
+      u8(profile),
+      // Profile
+      u8(level),
+      // Level
+      u8(thirdByte),
+      // Bit depth, chroma subsampling, full range
+      u8(colourPrimaries),
+      // Colour primaries
+      u8(transferCharacteristics),
+      // Transfer characteristics
+      u8(matrixCoefficients),
+      // Matrix coefficients
+      u16(0)
+      // Codec initialization data size
+    ]);
+  };
+  var av1C = () => {
+    let marker = 1;
+    let version = 1;
+    let firstByte = (marker << 7) + version;
+    return box("av1C", [
+      firstByte,
+      0,
+      0,
+      0
+    ]);
+  };
+  var soundSampleDescription = (compressionType, track) => box(compressionType, [
+    Array(6).fill(0),
+    // Reserved
+    u16(1),
+    // Data reference index
+    u16(0),
+    // Version
+    u16(0),
+    // Revision level
+    u32(0),
+    // Vendor
+    u16(track.info.numberOfChannels),
+    // Number of channels
+    u16(16),
+    // Sample size (bits)
+    u16(0),
+    // Compression ID
+    u16(0),
+    // Packet size
+    fixed_16_16(track.info.sampleRate)
+    // Sample rate
+  ], [
+    AUDIO_CODEC_TO_CONFIGURATION_BOX[track.info.codec](track)
+  ]);
+  var esds = (track) => {
+    let description = new Uint8Array(track.info.decoderConfig.description);
+    return fullBox("esds", 0, 0, [
+      // https://stackoverflow.com/a/54803118
+      u32(58753152),
+      // TAG(3) = Object Descriptor ([2])
+      u8(32 + description.byteLength),
+      // length of this OD (which includes the next 2 tags)
+      u16(1),
+      // ES_ID = 1
+      u8(0),
+      // flags etc = 0
+      u32(75530368),
+      // TAG(4) = ES Descriptor ([2]) embedded in above OD
+      u8(18 + description.byteLength),
+      // length of this ESD
+      u8(64),
+      // MPEG-4 Audio
+      u8(21),
+      // stream type(6bits)=5 audio, flags(2bits)=1
+      u24(0),
+      // 24bit buffer size
+      u32(130071),
+      // max bitrate
+      u32(130071),
+      // avg bitrate
+      u32(92307584),
+      // TAG(5) = ASC ([2],[3]) embedded in above OD
+      u8(description.byteLength),
+      // length
+      ...description,
+      u32(109084800),
+      // TAG(6)
+      u8(1),
+      // length
+      u8(2)
+      // data
+    ]);
+  };
+  var dOps = (track) => {
+    let preskip = 3840;
+    let gain = 0;
+    const description = track.info.decoderConfig?.description;
+    if (description) {
+      if (description.byteLength < 18) {
+        throw new TypeError("Invalid decoder description provided for Opus; must be at least 18 bytes long.");
+      }
+      const view2 = ArrayBuffer.isView(description) ? new DataView(description.buffer, description.byteOffset, description.byteLength) : new DataView(description);
+      preskip = view2.getUint16(10, true);
+      gain = view2.getInt16(14, true);
+    }
+    return box("dOps", [
+      u8(0),
+      // Version
+      u8(track.info.numberOfChannels),
+      // OutputChannelCount
+      u16(preskip),
+      u32(track.info.sampleRate),
+      // InputSampleRate
+      fixed_8_8(gain),
+      // OutputGain
+      u8(0)
+      // ChannelMappingFamily
+    ]);
+  };
+  var stts = (track) => {
+    return fullBox("stts", 0, 0, [
+      u32(track.timeToSampleTable.length),
+      // Number of entries
+      track.timeToSampleTable.map((x) => [
+        // Time-to-sample table
+        u32(x.sampleCount),
+        // Sample count
+        u32(x.sampleDelta)
+        // Sample duration
+      ])
+    ]);
+  };
+  var stss = (track) => {
+    if (track.samples.every((x) => x.type === "key"))
+      return null;
+    let keySamples = [...track.samples.entries()].filter(([, sample]) => sample.type === "key");
+    return fullBox("stss", 0, 0, [
+      u32(keySamples.length),
+      // Number of entries
+      keySamples.map(([index]) => u32(index + 1))
+      // Sync sample table
+    ]);
+  };
+  var stsc = (track) => {
+    return fullBox("stsc", 0, 0, [
+      u32(track.compactlyCodedChunkTable.length),
+      // Number of entries
+      track.compactlyCodedChunkTable.map((x) => [
+        // Sample-to-chunk table
+        u32(x.firstChunk),
+        // First chunk
+        u32(x.samplesPerChunk),
+        // Samples per chunk
+        u32(1)
+        // Sample description index
+      ])
+    ]);
+  };
+  var stsz = (track) => fullBox("stsz", 0, 0, [
+    u32(0),
+    // Sample size (0 means non-constant size)
+    u32(track.samples.length),
+    // Number of entries
+    track.samples.map((x) => u32(x.size))
+    // Sample size table
+  ]);
+  var stco = (track) => {
+    if (track.finalizedChunks.length > 0 && last(track.finalizedChunks).offset >= 2 ** 32) {
+      return fullBox("co64", 0, 0, [
+        u32(track.finalizedChunks.length),
+        // Number of entries
+        track.finalizedChunks.map((x) => u64(x.offset))
+        // Chunk offset table
+      ]);
+    }
+    return fullBox("stco", 0, 0, [
+      u32(track.finalizedChunks.length),
+      // Number of entries
+      track.finalizedChunks.map((x) => u32(x.offset))
+      // Chunk offset table
+    ]);
+  };
+  var ctts = (track) => {
+    return fullBox("ctts", 0, 0, [
+      u32(track.compositionTimeOffsetTable.length),
+      // Number of entries
+      track.compositionTimeOffsetTable.map((x) => [
+        // Time-to-sample table
+        u32(x.sampleCount),
+        // Sample count
+        u32(x.sampleCompositionTimeOffset)
+        // Sample offset
+      ])
+    ]);
+  };
+  var mvex = (tracks) => {
+    return box("mvex", null, tracks.map(trex));
+  };
+  var trex = (track) => {
+    return fullBox("trex", 0, 0, [
+      u32(track.id),
+      // Track ID
+      u32(1),
+      // Default sample description index
+      u32(0),
+      // Default sample duration
+      u32(0),
+      // Default sample size
+      u32(0)
+      // Default sample flags
+    ]);
+  };
+  var moof = (sequenceNumber, tracks) => {
+    return box("moof", null, [
+      mfhd(sequenceNumber),
+      ...tracks.map(traf)
+    ]);
+  };
+  var mfhd = (sequenceNumber) => {
+    return fullBox("mfhd", 0, 0, [
+      u32(sequenceNumber)
+      // Sequence number
+    ]);
+  };
+  var fragmentSampleFlags = (sample) => {
+    let byte1 = 0;
+    let byte2 = 0;
+    let byte3 = 0;
+    let byte4 = 0;
+    let sampleIsDifferenceSample = sample.type === "delta";
+    byte2 |= +sampleIsDifferenceSample;
+    if (sampleIsDifferenceSample) {
+      byte1 |= 1;
+    } else {
+      byte1 |= 2;
+    }
+    return byte1 << 24 | byte2 << 16 | byte3 << 8 | byte4;
+  };
+  var traf = (track) => {
+    return box("traf", null, [
+      tfhd(track),
+      tfdt(track),
+      trun(track)
+    ]);
+  };
+  var tfhd = (track) => {
+    let tfFlags = 0;
+    tfFlags |= 8;
+    tfFlags |= 16;
+    tfFlags |= 32;
+    tfFlags |= 131072;
+    let referenceSample = track.currentChunk.samples[1] ?? track.currentChunk.samples[0];
+    let referenceSampleInfo = {
+      duration: referenceSample.timescaleUnitsToNextSample,
+      size: referenceSample.size,
+      flags: fragmentSampleFlags(referenceSample)
+    };
+    return fullBox("tfhd", 0, tfFlags, [
+      u32(track.id),
+      // Track ID
+      u32(referenceSampleInfo.duration),
+      // Default sample duration
+      u32(referenceSampleInfo.size),
+      // Default sample size
+      u32(referenceSampleInfo.flags)
+      // Default sample flags
+    ]);
+  };
+  var tfdt = (track) => {
+    return fullBox("tfdt", 1, 0, [
+      u64(intoTimescale(track.currentChunk.startTimestamp, track.timescale))
+      // Base Media Decode Time
+    ]);
+  };
+  var trun = (track) => {
+    let allSampleDurations = track.currentChunk.samples.map((x) => x.timescaleUnitsToNextSample);
+    let allSampleSizes = track.currentChunk.samples.map((x) => x.size);
+    let allSampleFlags = track.currentChunk.samples.map(fragmentSampleFlags);
+    let allSampleCompositionTimeOffsets = track.currentChunk.samples.map((x) => intoTimescale(x.presentationTimestamp - x.decodeTimestamp, track.timescale));
+    let uniqueSampleDurations = new Set(allSampleDurations);
+    let uniqueSampleSizes = new Set(allSampleSizes);
+    let uniqueSampleFlags = new Set(allSampleFlags);
+    let uniqueSampleCompositionTimeOffsets = new Set(allSampleCompositionTimeOffsets);
+    let firstSampleFlagsPresent = uniqueSampleFlags.size === 2 && allSampleFlags[0] !== allSampleFlags[1];
+    let sampleDurationPresent = uniqueSampleDurations.size > 1;
+    let sampleSizePresent = uniqueSampleSizes.size > 1;
+    let sampleFlagsPresent = !firstSampleFlagsPresent && uniqueSampleFlags.size > 1;
+    let sampleCompositionTimeOffsetsPresent = uniqueSampleCompositionTimeOffsets.size > 1 || [...uniqueSampleCompositionTimeOffsets].some((x) => x !== 0);
+    let flags = 0;
+    flags |= 1;
+    flags |= 4 * +firstSampleFlagsPresent;
+    flags |= 256 * +sampleDurationPresent;
+    flags |= 512 * +sampleSizePresent;
+    flags |= 1024 * +sampleFlagsPresent;
+    flags |= 2048 * +sampleCompositionTimeOffsetsPresent;
+    return fullBox("trun", 1, flags, [
+      u32(track.currentChunk.samples.length),
+      // Sample count
+      u32(track.currentChunk.offset - track.currentChunk.moofOffset || 0),
+      // Data offset
+      firstSampleFlagsPresent ? u32(allSampleFlags[0]) : [],
+      track.currentChunk.samples.map((_, i) => [
+        sampleDurationPresent ? u32(allSampleDurations[i]) : [],
+        // Sample duration
+        sampleSizePresent ? u32(allSampleSizes[i]) : [],
+        // Sample size
+        sampleFlagsPresent ? u32(allSampleFlags[i]) : [],
+        // Sample flags
+        // Sample composition time offsets
+        sampleCompositionTimeOffsetsPresent ? i32(allSampleCompositionTimeOffsets[i]) : []
+      ])
+    ]);
+  };
+  var mfra = (tracks) => {
+    return box("mfra", null, [
+      ...tracks.map(tfra),
+      mfro()
+    ]);
+  };
+  var tfra = (track, trackIndex) => {
+    let version = 1;
+    return fullBox("tfra", version, 0, [
+      u32(track.id),
+      // Track ID
+      u32(63),
+      // This specifies that traf number, trun number and sample number are 32-bit ints
+      u32(track.finalizedChunks.length),
+      // Number of entries
+      track.finalizedChunks.map((chunk) => [
+        u64(intoTimescale(chunk.startTimestamp, track.timescale)),
+        // Time
+        u64(chunk.moofOffset),
+        // moof offset
+        u32(trackIndex + 1),
+        // traf number
+        u32(1),
+        // trun number
+        u32(1)
+        // Sample number
+      ])
+    ]);
+  };
+  var mfro = () => {
+    return fullBox("mfro", 0, 0, [
+      // This value needs to be overwritten manually from the outside, where the actual size of the enclosing mfra box
+      // is known
+      u32(0)
+      // Size
+    ]);
+  };
+  var VIDEO_CODEC_TO_BOX_NAME = {
+    "avc": "avc1",
+    "hevc": "hvc1",
+    "vp9": "vp09",
+    "av1": "av01"
+  };
+  var VIDEO_CODEC_TO_CONFIGURATION_BOX = {
+    "avc": avcC,
+    "hevc": hvcC,
+    "vp9": vpcC,
+    "av1": av1C
+  };
+  var AUDIO_CODEC_TO_BOX_NAME = {
+    "aac": "mp4a",
+    "opus": "Opus"
+  };
+  var AUDIO_CODEC_TO_CONFIGURATION_BOX = {
+    "aac": esds,
+    "opus": dOps
+  };
+
+  // src/target.ts
+  var isTarget = Symbol("isTarget");
+  var Target = class {
+  };
+  isTarget;
+  var ArrayBufferTarget = class extends Target {
+    constructor() {
+      super(...arguments);
+      this.buffer = null;
+    }
+  };
+  var StreamTarget = class extends Target {
+    constructor(options) {
+      super();
+      this.options = options;
+      if (typeof options !== "object") {
+        throw new TypeError("StreamTarget requires an options object to be passed to its constructor.");
+      }
+      if (options.onData) {
+        if (typeof options.onData !== "function") {
+          throw new TypeError("options.onData, when provided, must be a function.");
+        }
+        if (options.onData.length < 2) {
+          throw new TypeError(
+            "options.onData, when provided, must be a function that takes in at least two arguments (data and position). Ignoring the position argument, which specifies the byte offset at which the data is to be written, can lead to broken outputs."
+          );
+        }
+      }
+      if (options.chunked !== void 0 && typeof options.chunked !== "boolean") {
+        throw new TypeError("options.chunked, when provided, must be a boolean.");
+      }
+      if (options.chunkSize !== void 0 && (!Number.isInteger(options.chunkSize) || options.chunkSize <= 0)) {
+        throw new TypeError("options.chunkSize, when provided, must be a positive integer.");
+      }
+    }
+  };
+  var FileSystemWritableFileStreamTarget = class extends Target {
+    constructor(stream, options) {
+      super();
+      this.stream = stream;
+      this.options = options;
+      if (!(stream instanceof FileSystemWritableFileStream)) {
+        throw new TypeError("FileSystemWritableFileStreamTarget requires a FileSystemWritableFileStream instance.");
+      }
+      if (options !== void 0 && typeof options !== "object") {
+        throw new TypeError("FileSystemWritableFileStreamTarget's options, when provided, must be an object.");
+      }
+      if (options) {
+        if (options.chunkSize !== void 0 && (!Number.isInteger(options.chunkSize) || options.chunkSize <= 0)) {
+          throw new TypeError("options.chunkSize, when provided, must be a positive integer");
+        }
+      }
+    }
+  };
+
+  // src/writer.ts
+  var _helper, _helperView;
+  var Writer = class {
+    constructor() {
+      this.pos = 0;
+      __privateAdd(this, _helper, new Uint8Array(8));
+      __privateAdd(this, _helperView, new DataView(__privateGet(this, _helper).buffer));
+      /**
+       * Stores the position from the start of the file to where boxes elements have been written. This is used to
+       * rewrite/edit elements that were already added before, and to measure sizes of things.
+       */
+      this.offsets = /* @__PURE__ */ new WeakMap();
+    }
+    /** Sets the current position for future writes to a new one. */
+    seek(newPos) {
+      this.pos = newPos;
+    }
+    writeU32(value) {
+      __privateGet(this, _helperView).setUint32(0, value, false);
+      this.write(__privateGet(this, _helper).subarray(0, 4));
+    }
+    writeU64(value) {
+      __privateGet(this, _helperView).setUint32(0, Math.floor(value / 2 ** 32), false);
+      __privateGet(this, _helperView).setUint32(4, value, false);
+      this.write(__privateGet(this, _helper).subarray(0, 8));
+    }
+    writeAscii(text) {
+      for (let i = 0; i < text.length; i++) {
+        __privateGet(this, _helperView).setUint8(i % 8, text.charCodeAt(i));
+        if (i % 8 === 7)
+          this.write(__privateGet(this, _helper));
+      }
+      if (text.length % 8 !== 0) {
+        this.write(__privateGet(this, _helper).subarray(0, text.length % 8));
+      }
+    }
+    writeBox(box2) {
+      this.offsets.set(box2, this.pos);
+      if (box2.contents && !box2.children) {
+        this.writeBoxHeader(box2, box2.size ?? box2.contents.byteLength + 8);
+        this.write(box2.contents);
+      } else {
+        let startPos = this.pos;
+        this.writeBoxHeader(box2, 0);
+        if (box2.contents)
+          this.write(box2.contents);
+        if (box2.children) {
+          for (let child of box2.children)
+            if (child)
+              this.writeBox(child);
+        }
+        let endPos = this.pos;
+        let size = box2.size ?? endPos - startPos;
+        this.seek(startPos);
+        this.writeBoxHeader(box2, size);
+        this.seek(endPos);
+      }
+    }
+    writeBoxHeader(box2, size) {
+      this.writeU32(box2.largeSize ? 1 : size);
+      this.writeAscii(box2.type);
+      if (box2.largeSize)
+        this.writeU64(size);
+    }
+    measureBoxHeader(box2) {
+      return 8 + (box2.largeSize ? 8 : 0);
+    }
+    patchBox(box2) {
+      let endPos = this.pos;
+      this.seek(this.offsets.get(box2));
+      this.writeBox(box2);
+      this.seek(endPos);
+    }
+    measureBox(box2) {
+      if (box2.contents && !box2.children) {
+        let headerSize = this.measureBoxHeader(box2);
+        return headerSize + box2.contents.byteLength;
+      } else {
+        let result = this.measureBoxHeader(box2);
+        if (box2.contents)
+          result += box2.contents.byteLength;
+        if (box2.children) {
+          for (let child of box2.children)
+            if (child)
+              result += this.measureBox(child);
+        }
+        return result;
+      }
+    }
+  };
+  _helper = new WeakMap();
+  _helperView = new WeakMap();
+  var _target, _buffer, _bytes, _maxPos, _ensureSize, ensureSize_fn;
+  var ArrayBufferTargetWriter = class extends Writer {
+    constructor(target) {
+      super();
+      __privateAdd(this, _ensureSize);
+      __privateAdd(this, _target, void 0);
+      __privateAdd(this, _buffer, new ArrayBuffer(2 ** 16));
+      __privateAdd(this, _bytes, new Uint8Array(__privateGet(this, _buffer)));
+      __privateAdd(this, _maxPos, 0);
+      __privateSet(this, _target, target);
+    }
+    write(data) {
+      __privateMethod(this, _ensureSize, ensureSize_fn).call(this, this.pos + data.byteLength);
+      __privateGet(this, _bytes).set(data, this.pos);
+      this.pos += data.byteLength;
+      __privateSet(this, _maxPos, Math.max(__privateGet(this, _maxPos), this.pos));
+    }
+    finalize() {
+      __privateMethod(this, _ensureSize, ensureSize_fn).call(this, this.pos);
+      __privateGet(this, _target).buffer = __privateGet(this, _buffer).slice(0, Math.max(__privateGet(this, _maxPos), this.pos));
+    }
+  };
+  _target = new WeakMap();
+  _buffer = new WeakMap();
+  _bytes = new WeakMap();
+  _maxPos = new WeakMap();
+  _ensureSize = new WeakSet();
+  ensureSize_fn = function(size) {
+    let newLength = __privateGet(this, _buffer).byteLength;
+    while (newLength < size)
+      newLength *= 2;
+    if (newLength === __privateGet(this, _buffer).byteLength)
+      return;
+    let newBuffer = new ArrayBuffer(newLength);
+    let newBytes = new Uint8Array(newBuffer);
+    newBytes.set(__privateGet(this, _bytes), 0);
+    __privateSet(this, _buffer, newBuffer);
+    __privateSet(this, _bytes, newBytes);
+  };
+  var _target2, _sections;
+  var StreamTargetWriter = class extends Writer {
+    constructor(target) {
+      super();
+      __privateAdd(this, _target2, void 0);
+      __privateAdd(this, _sections, []);
+      __privateSet(this, _target2, target);
+    }
+    write(data) {
+      __privateGet(this, _sections).push({
+        data: data.slice(),
+        start: this.pos
+      });
+      this.pos += data.byteLength;
+    }
+    flush() {
+      if (__privateGet(this, _sections).length === 0)
+        return;
+      let chunks = [];
+      let sorted = [...__privateGet(this, _sections)].sort((a, b) => a.start - b.start);
+      chunks.push({
+        start: sorted[0].start,
+        size: sorted[0].data.byteLength
+      });
+      for (let i = 1; i < sorted.length; i++) {
+        let lastChunk = chunks[chunks.length - 1];
+        let section = sorted[i];
+        if (section.start <= lastChunk.start + lastChunk.size) {
+          lastChunk.size = Math.max(lastChunk.size, section.start + section.data.byteLength - lastChunk.start);
+        } else {
+          chunks.push({
+            start: section.start,
+            size: section.data.byteLength
+          });
+        }
+      }
+      for (let chunk of chunks) {
+        chunk.data = new Uint8Array(chunk.size);
+        for (let section of __privateGet(this, _sections)) {
+          if (chunk.start <= section.start && section.start < chunk.start + chunk.size) {
+            chunk.data.set(section.data, section.start - chunk.start);
+          }
+        }
+        __privateGet(this, _target2).options.onData?.(chunk.data, chunk.start);
+      }
+      __privateGet(this, _sections).length = 0;
+    }
+    finalize() {
+    }
+  };
+  _target2 = new WeakMap();
+  _sections = new WeakMap();
+  var DEFAULT_CHUNK_SIZE = 2 ** 24;
+  var MAX_CHUNKS_AT_ONCE = 2;
+  var _target3, _chunkSize, _chunks, _writeDataIntoChunks, writeDataIntoChunks_fn, _insertSectionIntoChunk, insertSectionIntoChunk_fn, _createChunk, createChunk_fn, _flushChunks, flushChunks_fn;
+  var ChunkedStreamTargetWriter = class extends Writer {
+    constructor(target) {
+      super();
+      __privateAdd(this, _writeDataIntoChunks);
+      __privateAdd(this, _insertSectionIntoChunk);
+      __privateAdd(this, _createChunk);
+      __privateAdd(this, _flushChunks);
+      __privateAdd(this, _target3, void 0);
+      __privateAdd(this, _chunkSize, void 0);
+      /**
+       * The data is divided up into fixed-size chunks, whose contents are first filled in RAM and then flushed out.
+       * A chunk is flushed if all of its contents have been written.
+       */
+      __privateAdd(this, _chunks, []);
+      __privateSet(this, _target3, target);
+      __privateSet(this, _chunkSize, target.options?.chunkSize ?? DEFAULT_CHUNK_SIZE);
+      if (!Number.isInteger(__privateGet(this, _chunkSize)) || __privateGet(this, _chunkSize) < 2 ** 10) {
+        throw new Error("Invalid StreamTarget options: chunkSize must be an integer not smaller than 1024.");
+      }
+    }
+    write(data) {
+      __privateMethod(this, _writeDataIntoChunks, writeDataIntoChunks_fn).call(this, data, this.pos);
+      __privateMethod(this, _flushChunks, flushChunks_fn).call(this);
+      this.pos += data.byteLength;
+    }
+    finalize() {
+      __privateMethod(this, _flushChunks, flushChunks_fn).call(this, true);
+    }
+  };
+  _target3 = new WeakMap();
+  _chunkSize = new WeakMap();
+  _chunks = new WeakMap();
+  _writeDataIntoChunks = new WeakSet();
+  writeDataIntoChunks_fn = function(data, position) {
+    let chunkIndex = __privateGet(this, _chunks).findIndex((x) => x.start <= position && position < x.start + __privateGet(this, _chunkSize));
+    if (chunkIndex === -1)
+      chunkIndex = __privateMethod(this, _createChunk, createChunk_fn).call(this, position);
+    let chunk = __privateGet(this, _chunks)[chunkIndex];
+    let relativePosition = position - chunk.start;
+    let toWrite = data.subarray(0, Math.min(__privateGet(this, _chunkSize) - relativePosition, data.byteLength));
+    chunk.data.set(toWrite, relativePosition);
+    let section = {
+      start: relativePosition,
+      end: relativePosition + toWrite.byteLength
+    };
+    __privateMethod(this, _insertSectionIntoChunk, insertSectionIntoChunk_fn).call(this, chunk, section);
+    if (chunk.written[0].start === 0 && chunk.written[0].end === __privateGet(this, _chunkSize)) {
+      chunk.shouldFlush = true;
+    }
+    if (__privateGet(this, _chunks).length > MAX_CHUNKS_AT_ONCE) {
+      for (let i = 0; i < __privateGet(this, _chunks).length - 1; i++) {
+        __privateGet(this, _chunks)[i].shouldFlush = true;
+      }
+      __privateMethod(this, _flushChunks, flushChunks_fn).call(this);
+    }
+    if (toWrite.byteLength < data.byteLength) {
+      __privateMethod(this, _writeDataIntoChunks, writeDataIntoChunks_fn).call(this, data.subarray(toWrite.byteLength), position + toWrite.byteLength);
+    }
+  };
+  _insertSectionIntoChunk = new WeakSet();
+  insertSectionIntoChunk_fn = function(chunk, section) {
+    let low = 0;
+    let high = chunk.written.length - 1;
+    let index = -1;
+    while (low <= high) {
+      let mid = Math.floor(low + (high - low + 1) / 2);
+      if (chunk.written[mid].start <= section.start) {
+        low = mid + 1;
+        index = mid;
+      } else {
+        high = mid - 1;
+      }
+    }
+    chunk.written.splice(index + 1, 0, section);
+    if (index === -1 || chunk.written[index].end < section.start)
+      index++;
+    while (index < chunk.written.length - 1 && chunk.written[index].end >= chunk.written[index + 1].start) {
+      chunk.written[index].end = Math.max(chunk.written[index].end, chunk.written[index + 1].end);
+      chunk.written.splice(index + 1, 1);
+    }
+  };
+  _createChunk = new WeakSet();
+  createChunk_fn = function(includesPosition) {
+    let start = Math.floor(includesPosition / __privateGet(this, _chunkSize)) * __privateGet(this, _chunkSize);
+    let chunk = {
+      start,
+      data: new Uint8Array(__privateGet(this, _chunkSize)),
+      written: [],
+      shouldFlush: false
+    };
+    __privateGet(this, _chunks).push(chunk);
+    __privateGet(this, _chunks).sort((a, b) => a.start - b.start);
+    return __privateGet(this, _chunks).indexOf(chunk);
+  };
+  _flushChunks = new WeakSet();
+  flushChunks_fn = function(force = false) {
+    for (let i = 0; i < __privateGet(this, _chunks).length; i++) {
+      let chunk = __privateGet(this, _chunks)[i];
+      if (!chunk.shouldFlush && !force)
+        continue;
+      for (let section of chunk.written) {
+        __privateGet(this, _target3).options.onData?.(
+          chunk.data.subarray(section.start, section.end),
+          chunk.start + section.start
+        );
+      }
+      __privateGet(this, _chunks).splice(i--, 1);
+    }
+  };
+  var FileSystemWritableFileStreamTargetWriter = class extends ChunkedStreamTargetWriter {
+    constructor(target) {
+      super(new StreamTarget({
+        onData: (data, position) => target.stream.write({
+          type: "write",
+          data,
+          position
+        }),
+        chunkSize: target.options?.chunkSize
+      }));
+    }
+  };
+
+  // src/muxer.ts
+  var GLOBAL_TIMESCALE = 1e3;
+  var SUPPORTED_VIDEO_CODECS = ["avc", "hevc", "vp9", "av1"];
+  var SUPPORTED_AUDIO_CODECS = ["aac", "opus"];
+  var TIMESTAMP_OFFSET = 2082844800;
+  var FIRST_TIMESTAMP_BEHAVIORS = ["strict", "offset", "cross-track-offset"];
+  var _options, _writer, _ftypSize, _mdat, _videoTrack, _audioTrack, _creationTime, _finalizedChunks, _nextFragmentNumber, _videoSampleQueue, _audioSampleQueue, _finalized, _validateOptions, validateOptions_fn, _writeHeader, writeHeader_fn, _computeMoovSizeUpperBound, computeMoovSizeUpperBound_fn, _prepareTracks, prepareTracks_fn, _generateMpeg4AudioSpecificConfig, generateMpeg4AudioSpecificConfig_fn, _createSampleForTrack, createSampleForTrack_fn, _addSampleToTrack, addSampleToTrack_fn, _validateTimestamp, validateTimestamp_fn, _finalizeCurrentChunk, finalizeCurrentChunk_fn, _finalizeFragment, finalizeFragment_fn, _maybeFlushStreamingTargetWriter, maybeFlushStreamingTargetWriter_fn, _ensureNotFinalized, ensureNotFinalized_fn;
+  var Muxer = class {
+    constructor(options) {
+      __privateAdd(this, _validateOptions);
+      __privateAdd(this, _writeHeader);
+      __privateAdd(this, _computeMoovSizeUpperBound);
+      __privateAdd(this, _prepareTracks);
+      // https://wiki.multimedia.cx/index.php/MPEG-4_Audio
+      __privateAdd(this, _generateMpeg4AudioSpecificConfig);
+      __privateAdd(this, _createSampleForTrack);
+      __privateAdd(this, _addSampleToTrack);
+      __privateAdd(this, _validateTimestamp);
+      __privateAdd(this, _finalizeCurrentChunk);
+      __privateAdd(this, _finalizeFragment);
+      __privateAdd(this, _maybeFlushStreamingTargetWriter);
+      __privateAdd(this, _ensureNotFinalized);
+      __privateAdd(this, _options, void 0);
+      __privateAdd(this, _writer, void 0);
+      __privateAdd(this, _ftypSize, void 0);
+      __privateAdd(this, _mdat, void 0);
+      __privateAdd(this, _videoTrack, null);
+      __privateAdd(this, _audioTrack, null);
+      __privateAdd(this, _creationTime, Math.floor(Date.now() / 1e3) + TIMESTAMP_OFFSET);
+      __privateAdd(this, _finalizedChunks, []);
+      // Fields for fragmented MP4:
+      __privateAdd(this, _nextFragmentNumber, 1);
+      __privateAdd(this, _videoSampleQueue, []);
+      __privateAdd(this, _audioSampleQueue, []);
+      __privateAdd(this, _finalized, false);
+      __privateMethod(this, _validateOptions, validateOptions_fn).call(this, options);
+      options.video = deepClone(options.video);
+      options.audio = deepClone(options.audio);
+      options.fastStart = deepClone(options.fastStart);
+      this.target = options.target;
+      __privateSet(this, _options, {
+        firstTimestampBehavior: "strict",
+        ...options
+      });
+      if (options.target instanceof ArrayBufferTarget) {
+        __privateSet(this, _writer, new ArrayBufferTargetWriter(options.target));
+      } else if (options.target instanceof StreamTarget) {
+        __privateSet(this, _writer, options.target.options?.chunked ? new ChunkedStreamTargetWriter(options.target) : new StreamTargetWriter(options.target));
+      } else if (options.target instanceof FileSystemWritableFileStreamTarget) {
+        __privateSet(this, _writer, new FileSystemWritableFileStreamTargetWriter(options.target));
+      } else {
+        throw new Error(`Invalid target: ${options.target}`);
+      }
+      __privateMethod(this, _prepareTracks, prepareTracks_fn).call(this);
+      __privateMethod(this, _writeHeader, writeHeader_fn).call(this);
+    }
+    addVideoChunk(sample, meta, timestamp, compositionTimeOffset) {
+      if (!(sample instanceof EncodedVideoChunk)) {
+        throw new TypeError("addVideoChunk's first argument (sample) must be of type EncodedVideoChunk.");
+      }
+      if (meta && typeof meta !== "object") {
+        throw new TypeError("addVideoChunk's second argument (meta), when provided, must be an object.");
+      }
+      if (timestamp !== void 0 && (!Number.isFinite(timestamp) || timestamp < 0)) {
+        throw new TypeError(
+          "addVideoChunk's third argument (timestamp), when provided, must be a non-negative real number."
+        );
+      }
+      if (compositionTimeOffset !== void 0 && !Number.isFinite(compositionTimeOffset)) {
+        throw new TypeError(
+          "addVideoChunk's fourth argument (compositionTimeOffset), when provided, must be a real number."
+        );
+      }
+      let data = new Uint8Array(sample.byteLength);
+      sample.copyTo(data);
+      this.addVideoChunkRaw(
+        data,
+        sample.type,
+        timestamp ?? sample.timestamp,
+        sample.duration,
+        meta,
+        compositionTimeOffset
+      );
+    }
+    addVideoChunkRaw(data, type, timestamp, duration, meta, compositionTimeOffset) {
+      if (!(data instanceof Uint8Array)) {
+        throw new TypeError("addVideoChunkRaw's first argument (data) must be an instance of Uint8Array.");
+      }
+      if (type !== "key" && type !== "delta") {
+        throw new TypeError("addVideoChunkRaw's second argument (type) must be either 'key' or 'delta'.");
+      }
+      if (!Number.isFinite(timestamp) || timestamp < 0) {
+        throw new TypeError("addVideoChunkRaw's third argument (timestamp) must be a non-negative real number.");
+      }
+      if (!Number.isFinite(duration) || duration < 0) {
+        throw new TypeError("addVideoChunkRaw's fourth argument (duration) must be a non-negative real number.");
+      }
+      if (meta && typeof meta !== "object") {
+        throw new TypeError("addVideoChunkRaw's fifth argument (meta), when provided, must be an object.");
+      }
+      if (compositionTimeOffset !== void 0 && !Number.isFinite(compositionTimeOffset)) {
+        throw new TypeError(
+          "addVideoChunkRaw's sixth argument (compositionTimeOffset), when provided, must be a real number."
+        );
+      }
+      __privateMethod(this, _ensureNotFinalized, ensureNotFinalized_fn).call(this);
+      if (!__privateGet(this, _options).video)
+        throw new Error("No video track declared.");
+      if (typeof __privateGet(this, _options).fastStart === "object" && __privateGet(this, _videoTrack).samples.length === __privateGet(this, _options).fastStart.expectedVideoChunks) {
+        throw new Error(`Cannot add more video chunks than specified in 'fastStart' (${__privateGet(this, _options).fastStart.expectedVideoChunks}).`);
+      }
+      let videoSample = __privateMethod(this, _createSampleForTrack, createSampleForTrack_fn).call(this, __privateGet(this, _videoTrack), data, type, timestamp, duration, meta, compositionTimeOffset);
+      if (__privateGet(this, _options).fastStart === "fragmented" && __privateGet(this, _audioTrack)) {
+        while (__privateGet(this, _audioSampleQueue).length > 0 && __privateGet(this, _audioSampleQueue)[0].decodeTimestamp <= videoSample.decodeTimestamp) {
+          let audioSample = __privateGet(this, _audioSampleQueue).shift();
+          __privateMethod(this, _addSampleToTrack, addSampleToTrack_fn).call(this, __privateGet(this, _audioTrack), audioSample);
+        }
+        if (videoSample.decodeTimestamp <= __privateGet(this, _audioTrack).lastDecodeTimestamp) {
+          __privateMethod(this, _addSampleToTrack, addSampleToTrack_fn).call(this, __privateGet(this, _videoTrack), videoSample);
+        } else {
+          __privateGet(this, _videoSampleQueue).push(videoSample);
+        }
+      } else {
+        __privateMethod(this, _addSampleToTrack, addSampleToTrack_fn).call(this, __privateGet(this, _videoTrack), videoSample);
+      }
+    }
+    addAudioChunk(sample, meta, timestamp) {
+      if (!(sample instanceof EncodedAudioChunk)) {
+        throw new TypeError("addAudioChunk's first argument (sample) must be of type EncodedAudioChunk.");
+      }
+      if (meta && typeof meta !== "object") {
+        throw new TypeError("addAudioChunk's second argument (meta), when provided, must be an object.");
+      }
+      if (timestamp !== void 0 && (!Number.isFinite(timestamp) || timestamp < 0)) {
+        throw new TypeError(
+          "addAudioChunk's third argument (timestamp), when provided, must be a non-negative real number."
+        );
+      }
+      let data = new Uint8Array(sample.byteLength);
+      sample.copyTo(data);
+      this.addAudioChunkRaw(data, sample.type, timestamp ?? sample.timestamp, sample.duration, meta);
+    }
+    addAudioChunkRaw(data, type, timestamp, duration, meta) {
+      if (!(data instanceof Uint8Array)) {
+        throw new TypeError("addAudioChunkRaw's first argument (data) must be an instance of Uint8Array.");
+      }
+      if (type !== "key" && type !== "delta") {
+        throw new TypeError("addAudioChunkRaw's second argument (type) must be either 'key' or 'delta'.");
+      }
+      if (!Number.isFinite(timestamp) || timestamp < 0) {
+        throw new TypeError("addAudioChunkRaw's third argument (timestamp) must be a non-negative real number.");
+      }
+      if (!Number.isFinite(duration) || duration < 0) {
+        throw new TypeError("addAudioChunkRaw's fourth argument (duration) must be a non-negative real number.");
+      }
+      if (meta && typeof meta !== "object") {
+        throw new TypeError("addAudioChunkRaw's fifth argument (meta), when provided, must be an object.");
+      }
+      __privateMethod(this, _ensureNotFinalized, ensureNotFinalized_fn).call(this);
+      if (!__privateGet(this, _options).audio)
+        throw new Error("No audio track declared.");
+      if (typeof __privateGet(this, _options).fastStart === "object" && __privateGet(this, _audioTrack).samples.length === __privateGet(this, _options).fastStart.expectedAudioChunks) {
+        throw new Error(`Cannot add more audio chunks than specified in 'fastStart' (${__privateGet(this, _options).fastStart.expectedAudioChunks}).`);
+      }
+      let audioSample = __privateMethod(this, _createSampleForTrack, createSampleForTrack_fn).call(this, __privateGet(this, _audioTrack), data, type, timestamp, duration, meta);
+      if (__privateGet(this, _options).fastStart === "fragmented" && __privateGet(this, _videoTrack)) {
+        while (__privateGet(this, _videoSampleQueue).length > 0 && __privateGet(this, _videoSampleQueue)[0].decodeTimestamp <= audioSample.decodeTimestamp) {
+          let videoSample = __privateGet(this, _videoSampleQueue).shift();
+          __privateMethod(this, _addSampleToTrack, addSampleToTrack_fn).call(this, __privateGet(this, _videoTrack), videoSample);
+        }
+        if (audioSample.decodeTimestamp <= __privateGet(this, _videoTrack).lastDecodeTimestamp) {
+          __privateMethod(this, _addSampleToTrack, addSampleToTrack_fn).call(this, __privateGet(this, _audioTrack), audioSample);
+        } else {
+          __privateGet(this, _audioSampleQueue).push(audioSample);
+        }
+      } else {
+        __privateMethod(this, _addSampleToTrack, addSampleToTrack_fn).call(this, __privateGet(this, _audioTrack), audioSample);
+      }
+    }
+    /** Finalizes the file, making it ready for use. Must be called after all video and audio chunks have been added. */
+    finalize() {
+      if (__privateGet(this, _finalized)) {
+        throw new Error("Cannot finalize a muxer more than once.");
+      }
+      if (__privateGet(this, _options).fastStart === "fragmented") {
+        for (let videoSample of __privateGet(this, _videoSampleQueue))
+          __privateMethod(this, _addSampleToTrack, addSampleToTrack_fn).call(this, __privateGet(this, _videoTrack), videoSample);
+        for (let audioSample of __privateGet(this, _audioSampleQueue))
+          __privateMethod(this, _addSampleToTrack, addSampleToTrack_fn).call(this, __privateGet(this, _audioTrack), audioSample);
+        __privateMethod(this, _finalizeFragment, finalizeFragment_fn).call(this, false);
+      } else {
+        if (__privateGet(this, _videoTrack))
+          __privateMethod(this, _finalizeCurrentChunk, finalizeCurrentChunk_fn).call(this, __privateGet(this, _videoTrack));
+        if (__privateGet(this, _audioTrack))
+          __privateMethod(this, _finalizeCurrentChunk, finalizeCurrentChunk_fn).call(this, __privateGet(this, _audioTrack));
+      }
+      let tracks = [__privateGet(this, _videoTrack), __privateGet(this, _audioTrack)].filter(Boolean);
+      if (__privateGet(this, _options).fastStart === "in-memory") {
+        let mdatSize;
+        for (let i = 0; i < 2; i++) {
+          let movieBox2 = moov(tracks, __privateGet(this, _creationTime));
+          let movieBoxSize = __privateGet(this, _writer).measureBox(movieBox2);
+          mdatSize = __privateGet(this, _writer).measureBox(__privateGet(this, _mdat));
+          let currentChunkPos = __privateGet(this, _writer).pos + movieBoxSize + mdatSize;
+          for (let chunk of __privateGet(this, _finalizedChunks)) {
+            chunk.offset = currentChunkPos;
+            for (let { data } of chunk.samples) {
+              currentChunkPos += data.byteLength;
+              mdatSize += data.byteLength;
+            }
+          }
+          if (currentChunkPos < 2 ** 32)
+            break;
+          if (mdatSize >= 2 ** 32)
+            __privateGet(this, _mdat).largeSize = true;
+        }
+        let movieBox = moov(tracks, __privateGet(this, _creationTime));
+        __privateGet(this, _writer).writeBox(movieBox);
+        __privateGet(this, _mdat).size = mdatSize;
+        __privateGet(this, _writer).writeBox(__privateGet(this, _mdat));
+        for (let chunk of __privateGet(this, _finalizedChunks)) {
+          for (let sample of chunk.samples) {
+            __privateGet(this, _writer).write(sample.data);
+            sample.data = null;
+          }
+        }
+      } else if (__privateGet(this, _options).fastStart === "fragmented") {
+        let startPos = __privateGet(this, _writer).pos;
+        let mfraBox = mfra(tracks);
+        __privateGet(this, _writer).writeBox(mfraBox);
+        let mfraBoxSize = __privateGet(this, _writer).pos - startPos;
+        __privateGet(this, _writer).seek(__privateGet(this, _writer).pos - 4);
+        __privateGet(this, _writer).writeU32(mfraBoxSize);
+      } else {
+        let mdatPos = __privateGet(this, _writer).offsets.get(__privateGet(this, _mdat));
+        let mdatSize = __privateGet(this, _writer).pos - mdatPos;
+        __privateGet(this, _mdat).size = mdatSize;
+        __privateGet(this, _mdat).largeSize = mdatSize >= 2 ** 32;
+        __privateGet(this, _writer).patchBox(__privateGet(this, _mdat));
+        let movieBox = moov(tracks, __privateGet(this, _creationTime));
+        if (typeof __privateGet(this, _options).fastStart === "object") {
+          __privateGet(this, _writer).seek(__privateGet(this, _ftypSize));
+          __privateGet(this, _writer).writeBox(movieBox);
+          let remainingBytes = mdatPos - __privateGet(this, _writer).pos;
+          __privateGet(this, _writer).writeBox(free(remainingBytes));
+        } else {
+          __privateGet(this, _writer).writeBox(movieBox);
+        }
+      }
+      __privateMethod(this, _maybeFlushStreamingTargetWriter, maybeFlushStreamingTargetWriter_fn).call(this);
+      __privateGet(this, _writer).finalize();
+      __privateSet(this, _finalized, true);
+    }
+  };
+  _options = new WeakMap();
+  _writer = new WeakMap();
+  _ftypSize = new WeakMap();
+  _mdat = new WeakMap();
+  _videoTrack = new WeakMap();
+  _audioTrack = new WeakMap();
+  _creationTime = new WeakMap();
+  _finalizedChunks = new WeakMap();
+  _nextFragmentNumber = new WeakMap();
+  _videoSampleQueue = new WeakMap();
+  _audioSampleQueue = new WeakMap();
+  _finalized = new WeakMap();
+  _validateOptions = new WeakSet();
+  validateOptions_fn = function(options) {
+    if (typeof options !== "object") {
+      throw new TypeError("The muxer requires an options object to be passed to its constructor.");
+    }
+    if (!(options.target instanceof Target)) {
+      throw new TypeError("The target must be provided and an instance of Target.");
+    }
+    if (options.video) {
+      if (!SUPPORTED_VIDEO_CODECS.includes(options.video.codec)) {
+        throw new TypeError(`Unsupported video codec: ${options.video.codec}`);
+      }
+      if (!Number.isInteger(options.video.width) || options.video.width <= 0) {
+        throw new TypeError(`Invalid video width: ${options.video.width}. Must be a positive integer.`);
+      }
+      if (!Number.isInteger(options.video.height) || options.video.height <= 0) {
+        throw new TypeError(`Invalid video height: ${options.video.height}. Must be a positive integer.`);
+      }
+      const videoRotation = options.video.rotation;
+      if (typeof videoRotation === "number" && ![0, 90, 180, 270].includes(videoRotation)) {
+        throw new TypeError(`Invalid video rotation: ${videoRotation}. Has to be 0, 90, 180 or 270.`);
+      } else if (Array.isArray(videoRotation) && (videoRotation.length !== 9 || videoRotation.some((value) => typeof value !== "number"))) {
+        throw new TypeError(`Invalid video transformation matrix: ${videoRotation.join()}`);
+      }
+      if (options.video.frameRate !== void 0 && (!Number.isInteger(options.video.frameRate) || options.video.frameRate <= 0)) {
+        throw new TypeError(
+          `Invalid video frame rate: ${options.video.frameRate}. Must be a positive integer.`
+        );
+      }
+    }
+    if (options.audio) {
+      if (!SUPPORTED_AUDIO_CODECS.includes(options.audio.codec)) {
+        throw new TypeError(`Unsupported audio codec: ${options.audio.codec}`);
+      }
+      if (!Number.isInteger(options.audio.numberOfChannels) || options.audio.numberOfChannels <= 0) {
+        throw new TypeError(
+          `Invalid number of audio channels: ${options.audio.numberOfChannels}. Must be a positive integer.`
+        );
+      }
+      if (!Number.isInteger(options.audio.sampleRate) || options.audio.sampleRate <= 0) {
+        throw new TypeError(
+          `Invalid audio sample rate: ${options.audio.sampleRate}. Must be a positive integer.`
+        );
+      }
+    }
+    if (options.firstTimestampBehavior && !FIRST_TIMESTAMP_BEHAVIORS.includes(options.firstTimestampBehavior)) {
+      throw new TypeError(`Invalid first timestamp behavior: ${options.firstTimestampBehavior}`);
+    }
+    if (typeof options.fastStart === "object") {
+      if (options.video) {
+        if (options.fastStart.expectedVideoChunks === void 0) {
+          throw new TypeError(`'fastStart' is an object but is missing property 'expectedVideoChunks'.`);
+        } else if (!Number.isInteger(options.fastStart.expectedVideoChunks) || options.fastStart.expectedVideoChunks < 0) {
+          throw new TypeError(`'expectedVideoChunks' must be a non-negative integer.`);
+        }
+      }
+      if (options.audio) {
+        if (options.fastStart.expectedAudioChunks === void 0) {
+          throw new TypeError(`'fastStart' is an object but is missing property 'expectedAudioChunks'.`);
+        } else if (!Number.isInteger(options.fastStart.expectedAudioChunks) || options.fastStart.expectedAudioChunks < 0) {
+          throw new TypeError(`'expectedAudioChunks' must be a non-negative integer.`);
+        }
+      }
+    } else if (![false, "in-memory", "fragmented"].includes(options.fastStart)) {
+      throw new TypeError(`'fastStart' option must be false, 'in-memory', 'fragmented' or an object.`);
+    }
+  };
+  _writeHeader = new WeakSet();
+  writeHeader_fn = function() {
+    __privateGet(this, _writer).writeBox(ftyp({
+      holdsAvc: __privateGet(this, _options).video?.codec === "avc",
+      fragmented: __privateGet(this, _options).fastStart === "fragmented"
+    }));
+    __privateSet(this, _ftypSize, __privateGet(this, _writer).pos);
+    if (__privateGet(this, _options).fastStart === "in-memory") {
+      __privateSet(this, _mdat, mdat(false));
+    } else if (__privateGet(this, _options).fastStart === "fragmented") {
+    } else {
+      if (typeof __privateGet(this, _options).fastStart === "object") {
+        let moovSizeUpperBound = __privateMethod(this, _computeMoovSizeUpperBound, computeMoovSizeUpperBound_fn).call(this);
+        __privateGet(this, _writer).seek(__privateGet(this, _writer).pos + moovSizeUpperBound);
+      }
+      __privateSet(this, _mdat, mdat(true));
+      __privateGet(this, _writer).writeBox(__privateGet(this, _mdat));
+    }
+    __privateMethod(this, _maybeFlushStreamingTargetWriter, maybeFlushStreamingTargetWriter_fn).call(this);
+  };
+  _computeMoovSizeUpperBound = new WeakSet();
+  computeMoovSizeUpperBound_fn = function() {
+    if (typeof __privateGet(this, _options).fastStart !== "object")
+      return;
+    let upperBound = 0;
+    let sampleCounts = [
+      __privateGet(this, _options).fastStart.expectedVideoChunks,
+      __privateGet(this, _options).fastStart.expectedAudioChunks
+    ];
+    for (let n of sampleCounts) {
+      if (!n)
+        continue;
+      upperBound += (4 + 4) * Math.ceil(2 / 3 * n);
+      upperBound += 4 * n;
+      upperBound += (4 + 4 + 4) * Math.ceil(2 / 3 * n);
+      upperBound += 4 * n;
+      upperBound += 8 * n;
+    }
+    upperBound += 4096;
+    return upperBound;
+  };
+  _prepareTracks = new WeakSet();
+  prepareTracks_fn = function() {
+    if (__privateGet(this, _options).video) {
+      __privateSet(this, _videoTrack, {
+        id: 1,
+        info: {
+          type: "video",
+          codec: __privateGet(this, _options).video.codec,
+          width: __privateGet(this, _options).video.width,
+          height: __privateGet(this, _options).video.height,
+          rotation: __privateGet(this, _options).video.rotation ?? 0,
+          decoderConfig: null
+        },
+        // The fallback contains many common frame rates as factors
+        timescale: __privateGet(this, _options).video.frameRate ?? 57600,
+        samples: [],
+        finalizedChunks: [],
+        currentChunk: null,
+        firstDecodeTimestamp: void 0,
+        lastDecodeTimestamp: -1,
+        timeToSampleTable: [],
+        compositionTimeOffsetTable: [],
+        lastTimescaleUnits: null,
+        lastSample: null,
+        compactlyCodedChunkTable: []
+      });
+    }
+    if (__privateGet(this, _options).audio) {
+      __privateSet(this, _audioTrack, {
+        id: __privateGet(this, _options).video ? 2 : 1,
+        info: {
+          type: "audio",
+          codec: __privateGet(this, _options).audio.codec,
+          numberOfChannels: __privateGet(this, _options).audio.numberOfChannels,
+          sampleRate: __privateGet(this, _options).audio.sampleRate,
+          decoderConfig: null
+        },
+        timescale: __privateGet(this, _options).audio.sampleRate,
+        samples: [],
+        finalizedChunks: [],
+        currentChunk: null,
+        firstDecodeTimestamp: void 0,
+        lastDecodeTimestamp: -1,
+        timeToSampleTable: [],
+        compositionTimeOffsetTable: [],
+        lastTimescaleUnits: null,
+        lastSample: null,
+        compactlyCodedChunkTable: []
+      });
+      if (__privateGet(this, _options).audio.codec === "aac") {
+        let guessedCodecPrivate = __privateMethod(this, _generateMpeg4AudioSpecificConfig, generateMpeg4AudioSpecificConfig_fn).call(
+          this,
+          2,
+          // Object type for AAC-LC, since it's the most common
+          __privateGet(this, _options).audio.sampleRate,
+          __privateGet(this, _options).audio.numberOfChannels
+        );
+        __privateGet(this, _audioTrack).info.decoderConfig = {
+          codec: __privateGet(this, _options).audio.codec,
+          description: guessedCodecPrivate,
+          numberOfChannels: __privateGet(this, _options).audio.numberOfChannels,
+          sampleRate: __privateGet(this, _options).audio.sampleRate
+        };
+      }
+    }
+  };
+  _generateMpeg4AudioSpecificConfig = new WeakSet();
+  generateMpeg4AudioSpecificConfig_fn = function(objectType, sampleRate, numberOfChannels) {
+    let frequencyIndices = [96e3, 88200, 64e3, 48e3, 44100, 32e3, 24e3, 22050, 16e3, 12e3, 11025, 8e3, 7350];
+    let frequencyIndex = frequencyIndices.indexOf(sampleRate);
+    let channelConfig = numberOfChannels;
+    let configBits = "";
+    configBits += objectType.toString(2).padStart(5, "0");
+    configBits += frequencyIndex.toString(2).padStart(4, "0");
+    if (frequencyIndex === 15)
+      configBits += sampleRate.toString(2).padStart(24, "0");
+    configBits += channelConfig.toString(2).padStart(4, "0");
+    let paddingLength = Math.ceil(configBits.length / 8) * 8;
+    configBits = configBits.padEnd(paddingLength, "0");
+    let configBytes = new Uint8Array(configBits.length / 8);
+    for (let i = 0; i < configBits.length; i += 8) {
+      configBytes[i / 8] = parseInt(configBits.slice(i, i + 8), 2);
+    }
+    return configBytes;
+  };
+  _createSampleForTrack = new WeakSet();
+  createSampleForTrack_fn = function(track, data, type, timestamp, duration, meta, compositionTimeOffset) {
+    let presentationTimestampInSeconds = timestamp / 1e6;
+    let decodeTimestampInSeconds = (timestamp - (compositionTimeOffset ?? 0)) / 1e6;
+    let durationInSeconds = duration / 1e6;
+    let adjusted = __privateMethod(this, _validateTimestamp, validateTimestamp_fn).call(this, presentationTimestampInSeconds, decodeTimestampInSeconds, track);
+    presentationTimestampInSeconds = adjusted.presentationTimestamp;
+    decodeTimestampInSeconds = adjusted.decodeTimestamp;
+    if (meta?.decoderConfig) {
+      if (track.info.decoderConfig === null) {
+        track.info.decoderConfig = meta.decoderConfig;
+      } else {
+        Object.assign(track.info.decoderConfig, meta.decoderConfig);
+      }
+    }
+    let sample = {
+      presentationTimestamp: presentationTimestampInSeconds,
+      decodeTimestamp: decodeTimestampInSeconds,
+      duration: durationInSeconds,
+      data,
+      size: data.byteLength,
+      type,
+      // Will be refined once the next sample comes in
+      timescaleUnitsToNextSample: intoTimescale(durationInSeconds, track.timescale)
+    };
+    return sample;
+  };
+  _addSampleToTrack = new WeakSet();
+  addSampleToTrack_fn = function(track, sample) {
+    if (__privateGet(this, _options).fastStart !== "fragmented") {
+      track.samples.push(sample);
+    }
+    const sampleCompositionTimeOffset = intoTimescale(sample.presentationTimestamp - sample.decodeTimestamp, track.timescale);
+    if (track.lastTimescaleUnits !== null) {
+      let timescaleUnits = intoTimescale(sample.decodeTimestamp, track.timescale, false);
+      let delta = Math.round(timescaleUnits - track.lastTimescaleUnits);
+      track.lastTimescaleUnits += delta;
+      track.lastSample.timescaleUnitsToNextSample = delta;
+      if (__privateGet(this, _options).fastStart !== "fragmented") {
+        let lastTableEntry = last(track.timeToSampleTable);
+        if (lastTableEntry.sampleCount === 1) {
+          lastTableEntry.sampleDelta = delta;
+          lastTableEntry.sampleCount++;
+        } else if (lastTableEntry.sampleDelta === delta) {
+          lastTableEntry.sampleCount++;
+        } else {
+          lastTableEntry.sampleCount--;
+          track.timeToSampleTable.push({
+            sampleCount: 2,
+            sampleDelta: delta
+          });
+        }
+        const lastCompositionTimeOffsetTableEntry = last(track.compositionTimeOffsetTable);
+        if (lastCompositionTimeOffsetTableEntry.sampleCompositionTimeOffset === sampleCompositionTimeOffset) {
+          lastCompositionTimeOffsetTableEntry.sampleCount++;
+        } else {
+          track.compositionTimeOffsetTable.push({
+            sampleCount: 1,
+            sampleCompositionTimeOffset
+          });
+        }
+      }
+    } else {
+      track.lastTimescaleUnits = 0;
+      if (__privateGet(this, _options).fastStart !== "fragmented") {
+        track.timeToSampleTable.push({
+          sampleCount: 1,
+          sampleDelta: intoTimescale(sample.duration, track.timescale)
+        });
+        track.compositionTimeOffsetTable.push({
+          sampleCount: 1,
+          sampleCompositionTimeOffset
+        });
+      }
+    }
+    track.lastSample = sample;
+    let beginNewChunk = false;
+    if (!track.currentChunk) {
+      beginNewChunk = true;
+    } else {
+      let currentChunkDuration = sample.presentationTimestamp - track.currentChunk.startTimestamp;
+      if (__privateGet(this, _options).fastStart === "fragmented") {
+        let mostImportantTrack = __privateGet(this, _videoTrack) ?? __privateGet(this, _audioTrack);
+        if (track === mostImportantTrack && sample.type === "key" && currentChunkDuration >= 1) {
+          beginNewChunk = true;
+          __privateMethod(this, _finalizeFragment, finalizeFragment_fn).call(this);
+        }
+      } else {
+        beginNewChunk = currentChunkDuration >= 0.5;
+      }
+    }
+    if (beginNewChunk) {
+      if (track.currentChunk) {
+        __privateMethod(this, _finalizeCurrentChunk, finalizeCurrentChunk_fn).call(this, track);
+      }
+      track.currentChunk = {
+        startTimestamp: sample.presentationTimestamp,
+        samples: []
+      };
+    }
+    track.currentChunk.samples.push(sample);
+  };
+  _validateTimestamp = new WeakSet();
+  validateTimestamp_fn = function(presentationTimestamp, decodeTimestamp, track) {
+    const strictTimestampBehavior = __privateGet(this, _options).firstTimestampBehavior === "strict";
+    const noLastDecodeTimestamp = track.lastDecodeTimestamp === -1;
+    const timestampNonZero = decodeTimestamp !== 0;
+    if (strictTimestampBehavior && noLastDecodeTimestamp && timestampNonZero) {
+      throw new Error(
+        `The first chunk for your media track must have a timestamp of 0 (received DTS=${decodeTimestamp}).Non-zero first timestamps are often caused by directly piping frames or audio data from a MediaStreamTrack into the encoder. Their timestamps are typically relative to the age of thedocument, which is probably what you want.
+
+If you want to offset all timestamps of a track such that the first one is zero, set firstTimestampBehavior: 'offset' in the options.
+`
+      );
+    } else if (__privateGet(this, _options).firstTimestampBehavior === "offset" || __privateGet(this, _options).firstTimestampBehavior === "cross-track-offset") {
+      if (track.firstDecodeTimestamp === void 0) {
+        track.firstDecodeTimestamp = decodeTimestamp;
+      }
+      let baseDecodeTimestamp;
+      if (__privateGet(this, _options).firstTimestampBehavior === "offset") {
+        baseDecodeTimestamp = track.firstDecodeTimestamp;
+      } else {
+        baseDecodeTimestamp = Math.min(
+          __privateGet(this, _videoTrack)?.firstDecodeTimestamp ?? Infinity,
+          __privateGet(this, _audioTrack)?.firstDecodeTimestamp ?? Infinity
+        );
+      }
+      decodeTimestamp -= baseDecodeTimestamp;
+      presentationTimestamp -= baseDecodeTimestamp;
+    }
+    if (decodeTimestamp < track.lastDecodeTimestamp) {
+      throw new Error(
+        `Timestamps must be monotonically increasing (DTS went from ${track.lastDecodeTimestamp * 1e6} to ${decodeTimestamp * 1e6}).`
+      );
+    }
+    track.lastDecodeTimestamp = decodeTimestamp;
+    return { presentationTimestamp, decodeTimestamp };
+  };
+  _finalizeCurrentChunk = new WeakSet();
+  finalizeCurrentChunk_fn = function(track) {
+    if (__privateGet(this, _options).fastStart === "fragmented") {
+      throw new Error("Can't finalize individual chunks if 'fastStart' is set to 'fragmented'.");
+    }
+    if (!track.currentChunk)
+      return;
+    track.finalizedChunks.push(track.currentChunk);
+    __privateGet(this, _finalizedChunks).push(track.currentChunk);
+    if (track.compactlyCodedChunkTable.length === 0 || last(track.compactlyCodedChunkTable).samplesPerChunk !== track.currentChunk.samples.length) {
+      track.compactlyCodedChunkTable.push({
+        firstChunk: track.finalizedChunks.length,
+        // 1-indexed
+        samplesPerChunk: track.currentChunk.samples.length
+      });
+    }
+    if (__privateGet(this, _options).fastStart === "in-memory") {
+      track.currentChunk.offset = 0;
+      return;
+    }
+    track.currentChunk.offset = __privateGet(this, _writer).pos;
+    for (let sample of track.currentChunk.samples) {
+      __privateGet(this, _writer).write(sample.data);
+      sample.data = null;
+    }
+    __privateMethod(this, _maybeFlushStreamingTargetWriter, maybeFlushStreamingTargetWriter_fn).call(this);
+  };
+  _finalizeFragment = new WeakSet();
+  finalizeFragment_fn = function(flushStreamingWriter = true) {
+    if (__privateGet(this, _options).fastStart !== "fragmented") {
+      throw new Error("Can't finalize a fragment unless 'fastStart' is set to 'fragmented'.");
+    }
+    let tracks = [__privateGet(this, _videoTrack), __privateGet(this, _audioTrack)].filter((track) => track && track.currentChunk);
+    if (tracks.length === 0)
+      return;
+    let fragmentNumber = __privateWrapper(this, _nextFragmentNumber)._++;
+    if (fragmentNumber === 1) {
+      let movieBox = moov(tracks, __privateGet(this, _creationTime), true);
+      __privateGet(this, _writer).writeBox(movieBox);
+    }
+    let moofOffset = __privateGet(this, _writer).pos;
+    let moofBox = moof(fragmentNumber, tracks);
+    __privateGet(this, _writer).writeBox(moofBox);
+    {
+      let mdatBox = mdat(false);
+      let totalTrackSampleSize = 0;
+      for (let track of tracks) {
+        for (let sample of track.currentChunk.samples) {
+          totalTrackSampleSize += sample.size;
+        }
+      }
+      let mdatSize = __privateGet(this, _writer).measureBox(mdatBox) + totalTrackSampleSize;
+      if (mdatSize >= 2 ** 32) {
+        mdatBox.largeSize = true;
+        mdatSize = __privateGet(this, _writer).measureBox(mdatBox) + totalTrackSampleSize;
+      }
+      mdatBox.size = mdatSize;
+      __privateGet(this, _writer).writeBox(mdatBox);
+    }
+    for (let track of tracks) {
+      track.currentChunk.offset = __privateGet(this, _writer).pos;
+      track.currentChunk.moofOffset = moofOffset;
+      for (let sample of track.currentChunk.samples) {
+        __privateGet(this, _writer).write(sample.data);
+        sample.data = null;
+      }
+    }
+    let endPos = __privateGet(this, _writer).pos;
+    __privateGet(this, _writer).seek(__privateGet(this, _writer).offsets.get(moofBox));
+    let newMoofBox = moof(fragmentNumber, tracks);
+    __privateGet(this, _writer).writeBox(newMoofBox);
+    __privateGet(this, _writer).seek(endPos);
+    for (let track of tracks) {
+      track.finalizedChunks.push(track.currentChunk);
+      __privateGet(this, _finalizedChunks).push(track.currentChunk);
+      track.currentChunk = null;
+    }
+    if (flushStreamingWriter) {
+      __privateMethod(this, _maybeFlushStreamingTargetWriter, maybeFlushStreamingTargetWriter_fn).call(this);
+    }
+  };
+  _maybeFlushStreamingTargetWriter = new WeakSet();
+  maybeFlushStreamingTargetWriter_fn = function() {
+    if (__privateGet(this, _writer) instanceof StreamTargetWriter) {
+      __privateGet(this, _writer).flush();
+    }
+  };
+  _ensureNotFinalized = new WeakSet();
+  ensureNotFinalized_fn = function() {
+    if (__privateGet(this, _finalized)) {
+      throw new Error("Cannot add new video or audio chunks after the file has been finalized.");
+    }
+  };
+  return __toCommonJS(src_exports);
+})();
+if (typeof module === "object" && typeof module.exports === "object") Object.assign(module.exports, Mp4Muxer)
+
+</script>
+<script>
+/* fflate 0.8.2, MIT License, Copyright (c) 2023 Arjun Barrett, https://github.com/101arrowz/fflate */
+!function(f){typeof module!='undefined'&&typeof exports=='object'?module.exports=f():typeof define!='undefined'&&define.amd?define(f):(typeof self!='undefined'?self:this).fflate=f()}(function(){var _e={};"use strict";var t=(typeof module!='undefined'&&typeof exports=='object'?function(_f){"use strict";var e,t=";var __w=require('worker_threads');__w.parentPort.on('message',function(m){onmessage({data:m})}),postMessage=function(m,t){__w.parentPort.postMessage(m,t)},close=process.exit;self=global";try{e=require("worker_threads").Worker}catch(e){}exports.default=e?function(r,n,o,a,s){var u=!1,i=new e(r+t,{eval:!0}).on("error",(function(e){return s(e,null)})).on("message",(function(e){return s(null,e)})).on("exit",(function(e){e&&!u&&s(Error("exited with code "+e),null)}));return i.postMessage(o,a),i.terminate=function(){return u=!0,e.prototype.terminate.call(i)},i}:function(e,t,r,n,o){setImmediate((function(){return o(Error("async operations unsupported - update to Node 12+ (or Node 10-11 with the --experimental-worker CLI flag)"),null)}));var a=function(){};return{terminate:a,postMessage:a}};return _f}:function(_f){"use strict";var e={};_f.default=function(r,t,s,a,n){var o=new Worker(e[t]||(e[t]=URL.createObjectURL(new Blob([r+';addEventListener("error",function(e){e=e.error;postMessage({$e$:[e.message,e.code,e.stack]})})'],{type:"text/javascript"}))));return o.onmessage=function(e){var r=e.data,t=r.$e$;if(t){var s=Error(t[0]);s.code=t[1],s.stack=t[2],n(s,null)}else n(null,r)},o.postMessage(s,a),o};return _f})({}),n=Uint8Array,r=Uint16Array,e=Int32Array,i=new n([0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0,0,0,0]),o=new n([0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,0,0]),s=new n([16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15]),a=function(t,n){for(var i=new r(31),o=0;o<31;++o)i[o]=n+=1<<t[o-1];var s=new e(i[30]);for(o=1;o<30;++o)for(var a=i[o];a<i[o+1];++a)s[a]=a-i[o]<<5|o;return{b:i,r:s}},u=a(i,2),h=u.b,f=u.r;h[28]=258,f[258]=28;for(var l=a(o,0),c=l.b,p=l.r,v=new r(32768),d=0;d<32768;++d){var g=(43690&d)>>1|(21845&d)<<1;v[d]=((65280&(g=(61680&(g=(52428&g)>>2|(13107&g)<<2))>>4|(3855&g)<<4))>>8|(255&g)<<8)>>1}var y=function(t,n,e){for(var i=t.length,o=0,s=new r(n);o<i;++o)t[o]&&++s[t[o]-1];var a,u=new r(n);for(o=1;o<n;++o)u[o]=u[o-1]+s[o-1]<<1;if(e){a=new r(1<<n);var h=15-n;for(o=0;o<i;++o)if(t[o])for(var f=o<<4|t[o],l=n-t[o],c=u[t[o]-1]++<<l,p=c|(1<<l)-1;c<=p;++c)a[v[c]>>h]=f}else for(a=new r(i),o=0;o<i;++o)t[o]&&(a[o]=v[u[t[o]-1]++]>>15-t[o]);return a},m=new n(288);for(d=0;d<144;++d)m[d]=8;for(d=144;d<256;++d)m[d]=9;for(d=256;d<280;++d)m[d]=7;for(d=280;d<288;++d)m[d]=8;var b=new n(32);for(d=0;d<32;++d)b[d]=5;var w=y(m,9,0),x=y(m,9,1),z=y(b,5,0),k=y(b,5,1),M=function(t){for(var n=t[0],r=1;r<t.length;++r)t[r]>n&&(n=t[r]);return n},S=function(t,n,r){var e=n/8|0;return(t[e]|t[e+1]<<8)>>(7&n)&r},A=function(t,n){var r=n/8|0;return(t[r]|t[r+1]<<8|t[r+2]<<16)>>(7&n)},T=function(t){return(t+7)/8|0},D=function(t,r,e){return(null==r||r<0)&&(r=0),(null==e||e>t.length)&&(e=t.length),new n(t.subarray(r,e))};_e.FlateErrorCode={UnexpectedEOF:0,InvalidBlockType:1,InvalidLengthLiteral:2,InvalidDistance:3,StreamFinished:4,NoStreamHandler:5,InvalidHeader:6,NoCallback:7,InvalidUTF8:8,ExtraFieldTooLong:9,InvalidDate:10,FilenameTooLong:11,StreamFinishing:12,InvalidZipData:13,UnknownCompressionMethod:14};var C=["unexpected EOF","invalid block type","invalid length/literal","invalid distance","stream finished","no stream handler",,"no callback","invalid UTF-8 data","extra field too long","date not in range 1980-2099","filename too long","stream finishing","invalid zip data"],I=function(t,n,r){var e=Error(n||C[t]);if(e.code=t,Error.captureStackTrace&&Error.captureStackTrace(e,I),!r)throw e;return e},U=function(t,r,e,a){var u=t.length,f=a?a.length:0;if(!u||r.f&&!r.l)return e||new n(0);var l=!e,p=l||2!=r.i,v=r.i;l&&(e=new n(3*u));var d=function(t){var r=e.length;if(t>r){var i=new n(Math.max(2*r,t));i.set(e),e=i}},g=r.f||0,m=r.p||0,b=r.b||0,w=r.l,z=r.d,C=r.m,U=r.n,F=8*u;do{if(!w){g=S(t,m,1);var E=S(t,m+1,3);if(m+=3,!E){var Z=t[(J=T(m)+4)-4]|t[J-3]<<8,q=J+Z;if(q>u){v&&I(0);break}p&&d(b+Z),e.set(t.subarray(J,q),b),r.b=b+=Z,r.p=m=8*q,r.f=g;continue}if(1==E)w=x,z=k,C=9,U=5;else if(2==E){var O=S(t,m,31)+257,G=S(t,m+10,15)+4,L=O+S(t,m+5,31)+1;m+=14;for(var H=new n(L),j=new n(19),N=0;N<G;++N)j[s[N]]=S(t,m+3*N,7);m+=3*G;var P=M(j),B=(1<<P)-1,Y=y(j,P,1);for(N=0;N<L;){var J,K=Y[S(t,m,B)];if(m+=15&K,(J=K>>4)<16)H[N++]=J;else{var Q=0,R=0;for(16==J?(R=3+S(t,m,3),m+=2,Q=H[N-1]):17==J?(R=3+S(t,m,7),m+=3):18==J&&(R=11+S(t,m,127),m+=7);R--;)H[N++]=Q}}var V=H.subarray(0,O),W=H.subarray(O);C=M(V),U=M(W),w=y(V,C,1),z=y(W,U,1)}else I(1);if(m>F){v&&I(0);break}}p&&d(b+131072);for(var X=(1<<C)-1,$=(1<<U)-1,_=m;;_=m){var tt=(Q=w[A(t,m)&X])>>4;if((m+=15&Q)>F){v&&I(0);break}if(Q||I(2),tt<256)e[b++]=tt;else{if(256==tt){_=m,w=null;break}var nt=tt-254;tt>264&&(nt=S(t,m,(1<<(it=i[N=tt-257]))-1)+h[N],m+=it);var rt=z[A(t,m)&$],et=rt>>4;if(rt||I(3),m+=15&rt,W=c[et],et>3){var it=o[et];W+=A(t,m)&(1<<it)-1,m+=it}if(m>F){v&&I(0);break}p&&d(b+131072);var ot=b+nt;if(b<W){var st=f-W,at=Math.min(W,ot);for(st+b<0&&I(3);b<at;++b)e[b]=a[st+b]}for(;b<ot;++b)e[b]=e[b-W]}}r.l=w,r.p=_,r.b=b,r.f=g,w&&(g=1,r.m=C,r.d=z,r.n=U)}while(!g);return b!=e.length&&l?D(e,0,b):e.subarray(0,b)},F=function(t,n,r){var e=n/8|0;t[e]|=r<<=7&n,t[e+1]|=r>>8},E=function(t,n,r){var e=n/8|0;t[e]|=r<<=7&n,t[e+1]|=r>>8,t[e+2]|=r>>16},Z=function(t,e){for(var i=[],o=0;o<t.length;++o)t[o]&&i.push({s:o,f:t[o]});var s=i.length,a=i.slice();if(!s)return{t:N,l:0};if(1==s){var u=new n(i[0].s+1);return u[i[0].s]=1,{t:u,l:1}}i.sort((function(t,n){return t.f-n.f})),i.push({s:-1,f:25001});var h=i[0],f=i[1],l=0,c=1,p=2;for(i[0]={s:-1,f:h.f+f.f,l:h,r:f};c!=s-1;)h=i[i[l].f<i[p].f?l++:p++],f=i[l!=c&&i[l].f<i[p].f?l++:p++],i[c++]={s:-1,f:h.f+f.f,l:h,r:f};var v=a[0].s;for(o=1;o<s;++o)a[o].s>v&&(v=a[o].s);var d=new r(v+1),g=q(i[c-1],d,0);if(g>e){o=0;var y=0,m=g-e,b=1<<m;for(a.sort((function(t,n){return d[n.s]-d[t.s]||t.f-n.f}));o<s;++o){var w=a[o].s;if(!(d[w]>e))break;y+=b-(1<<g-d[w]),d[w]=e}for(y>>=m;y>0;){var x=a[o].s;d[x]<e?y-=1<<e-d[x]++-1:++o}for(;o>=0&&y;--o){var z=a[o].s;d[z]==e&&(--d[z],++y)}g=e}return{t:new n(d),l:g}},q=function(t,n,r){return-1==t.s?Math.max(q(t.l,n,r+1),q(t.r,n,r+1)):n[t.s]=r},O=function(t){for(var n=t.length;n&&!t[--n];);for(var e=new r(++n),i=0,o=t[0],s=1,a=function(t){e[i++]=t},u=1;u<=n;++u)if(t[u]==o&&u!=n)++s;else{if(!o&&s>2){for(;s>138;s-=138)a(32754);s>2&&(a(s>10?s-11<<5|28690:s-3<<5|12305),s=0)}else if(s>3){for(a(o),--s;s>6;s-=6)a(8304);s>2&&(a(s-3<<5|8208),s=0)}for(;s--;)a(o);s=1,o=t[u]}return{c:e.subarray(0,i),n:n}},G=function(t,n){for(var r=0,e=0;e<n.length;++e)r+=t[e]*n[e];return r},L=function(t,n,r){var e=r.length,i=T(n+2);t[i]=255&e,t[i+1]=e>>8,t[i+2]=255^t[i],t[i+3]=255^t[i+1];for(var o=0;o<e;++o)t[i+o+4]=r[o];return 8*(i+4+e)},H=function(t,n,e,a,u,h,f,l,c,p,v){F(n,v++,e),++u[256];for(var d=Z(u,15),g=d.t,x=d.l,k=Z(h,15),M=k.t,S=k.l,A=O(g),T=A.c,D=A.n,C=O(M),I=C.c,U=C.n,q=new r(19),H=0;H<T.length;++H)++q[31&T[H]];for(H=0;H<I.length;++H)++q[31&I[H]];for(var j=Z(q,7),N=j.t,P=j.l,B=19;B>4&&!N[s[B-1]];--B);var Y,J,K,Q,R=p+5<<3,V=G(u,m)+G(h,b)+f,W=G(u,g)+G(h,M)+f+14+3*B+G(q,N)+2*q[16]+3*q[17]+7*q[18];if(c>=0&&R<=V&&R<=W)return L(n,v,t.subarray(c,c+p));if(F(n,v,1+(W<V)),v+=2,W<V){Y=y(g,x,0),J=g,K=y(M,S,0),Q=M;var X=y(N,P,0);for(F(n,v,D-257),F(n,v+5,U-1),F(n,v+10,B-4),v+=14,H=0;H<B;++H)F(n,v+3*H,N[s[H]]);v+=3*B;for(var $=[T,I],_=0;_<2;++_){var tt=$[_];for(H=0;H<tt.length;++H)F(n,v,X[rt=31&tt[H]]),v+=N[rt],rt>15&&(F(n,v,tt[H]>>5&127),v+=tt[H]>>12)}}else Y=w,J=m,K=z,Q=b;for(H=0;H<l;++H){var nt=a[H];if(nt>255){var rt;E(n,v,Y[257+(rt=nt>>18&31)]),v+=J[rt+257],rt>7&&(F(n,v,nt>>23&31),v+=i[rt]);var et=31&nt;E(n,v,K[et]),v+=Q[et],et>3&&(E(n,v,nt>>5&8191),v+=o[et])}else E(n,v,Y[nt]),v+=J[nt]}return E(n,v,Y[256]),v+J[256]},j=new e([65540,131080,131088,131104,262176,1048704,1048832,2114560,2117632]),N=new n(0),P=function(t,s,a,u,h,l){var c=l.z||t.length,v=new n(u+c+5*(1+Math.ceil(c/7e3))+h),d=v.subarray(u,v.length-h),g=l.l,y=7&(l.r||0);if(s){y&&(d[0]=l.r>>3);for(var m=j[s-1],b=m>>13,w=8191&m,x=(1<<a)-1,z=l.p||new r(32768),k=l.h||new r(x+1),M=Math.ceil(a/3),S=2*M,A=function(n){return(t[n]^t[n+1]<<M^t[n+2]<<S)&x},C=new e(25e3),I=new r(288),U=new r(32),F=0,E=0,Z=l.i||0,q=0,O=l.w||0,G=0;Z+2<c;++Z){var N=A(Z),P=32767&Z,B=k[N];if(z[P]=B,k[N]=P,O<=Z){var Y=c-Z;if((F>7e3||q>24576)&&(Y>423||!g)){y=H(t,d,0,C,I,U,E,q,G,Z-G,y),q=F=E=0,G=Z;for(var J=0;J<286;++J)I[J]=0;for(J=0;J<30;++J)U[J]=0}var K=2,Q=0,R=w,V=P-B&32767;if(Y>2&&N==A(Z-V))for(var W=Math.min(b,Y)-1,X=Math.min(32767,Z),$=Math.min(258,Y);V<=X&&--R&&P!=B;){if(t[Z+K]==t[Z+K-V]){for(var _=0;_<$&&t[Z+_]==t[Z+_-V];++_);if(_>K){if(K=_,Q=V,_>W)break;var tt=Math.min(V,_-2),nt=0;for(J=0;J<tt;++J){var rt=Z-V+J&32767,et=rt-z[rt]&32767;et>nt&&(nt=et,B=rt)}}}V+=(P=B)-(B=z[P])&32767}if(Q){C[q++]=268435456|f[K]<<18|p[Q];var it=31&f[K],ot=31&p[Q];E+=i[it]+o[ot],++I[257+it],++U[ot],O=Z+K,++F}else C[q++]=t[Z],++I[t[Z]]}}for(Z=Math.max(Z,O);Z<c;++Z)C[q++]=t[Z],++I[t[Z]];y=H(t,d,g,C,I,U,E,q,G,Z-G,y),g||(l.r=7&y|d[y/8|0]<<3,y-=7,l.h=k,l.p=z,l.i=Z,l.w=O)}else{for(Z=l.w||0;Z<c+g;Z+=65535){var st=Z+65535;st>=c&&(d[y/8|0]=g,st=c),y=L(d,y+1,t.subarray(Z,st))}l.i=c}return D(v,0,u+T(y)+h)},B=function(){for(var t=new Int32Array(256),n=0;n<256;++n){for(var r=n,e=9;--e;)r=(1&r&&-306674912)^r>>>1;t[n]=r}return t}(),Y=function(){var t=-1;return{p:function(n){for(var r=t,e=0;e<n.length;++e)r=B[255&r^n[e]]^r>>>8;t=r},d:function(){return~t}}},J=function(){var t=1,n=0;return{p:function(r){for(var e=t,i=n,o=0|r.length,s=0;s!=o;){for(var a=Math.min(s+2655,o);s<a;++s)i+=e+=r[s];e=(65535&e)+15*(e>>16),i=(65535&i)+15*(i>>16)}t=e,n=i},d:function(){return(255&(t%=65521))<<24|(65280&t)<<8|(255&(n%=65521))<<8|n>>8}}},K=function(t,r,e,i,o){if(!o&&(o={l:1},r.dictionary)){var s=r.dictionary.subarray(-32768),a=new n(s.length+t.length);a.set(s),a.set(t,s.length),t=a,o.w=s.length}return P(t,null==r.level?6:r.level,null==r.mem?o.l?Math.ceil(1.5*Math.max(8,Math.min(13,Math.log(t.length)))):20:12+r.mem,e,i,o)},Q=function(t,n){var r={};for(var e in t)r[e]=t[e];for(var e in n)r[e]=n[e];return r},R=function(t,n,r){for(var e=t(),i=""+t,o=i.slice(i.indexOf("[")+1,i.lastIndexOf("]")).replace(/\s+/g,"").split(","),s=0;s<e.length;++s){var a=e[s],u=o[s];if("function"==typeof a){n+=";"+u+"=";var h=""+a;if(a.prototype)if(-1!=h.indexOf("[native code]")){var f=h.indexOf(" ",8)+1;n+=h.slice(f,h.indexOf("(",f))}else for(var l in n+=h,a.prototype)n+=";"+u+".prototype."+l+"="+a.prototype[l];else n+=h}else r[u]=a}return n},V=[],W=function(t){var n=[];for(var r in t)t[r].buffer&&n.push((t[r]=new t[r].constructor(t[r])).buffer);return n},X=function(n,r,e,i){if(!V[e]){for(var o="",s={},a=n.length-1,u=0;u<a;++u)o=R(n[u],o,s);V[e]={c:R(n[a],o,s),e:s}}var h=Q({},V[e].e);return(0,t.default)(V[e].c+";onmessage=function(e){for(var k in e.data)self[k]=e.data[k];onmessage="+r+"}",e,h,W(h),i)},$=function(){return[n,r,e,i,o,s,h,c,x,k,v,C,y,M,S,A,T,D,I,U,Tt,it,ot]},_=function(){return[n,r,e,i,o,s,f,p,w,m,z,b,v,j,N,y,F,E,Z,q,O,G,L,H,T,D,P,K,kt,it]},tt=function(){return[pt,gt,ct,Y,B]},nt=function(){return[vt,dt]},rt=function(){return[yt,ct,J]},et=function(){return[mt]},it=function(t){return postMessage(t,[t.buffer])},ot=function(t){return t&&{out:t.size&&new n(t.size),dictionary:t.dictionary}},st=function(t,n,r,e,i,o){var s=X(r,e,i,(function(t,n){s.terminate(),o(t,n)}));return s.postMessage([t,n],n.consume?[t.buffer]:[]),function(){s.terminate()}},at=function(t){return t.ondata=function(t,n){return postMessage([t,n],[t.buffer])},function(n){n.data.length?(t.push(n.data[0],n.data[1]),postMessage([n.data[0].length])):t.flush()}},ut=function(t,n,r,e,i,o,s){var a,u=X(t,e,i,(function(t,r){t?(u.terminate(),n.ondata.call(n,t)):Array.isArray(r)?1==r.length?(n.queuedSize-=r[0],n.ondrain&&n.ondrain(r[0])):(r[1]&&u.terminate(),n.ondata.call(n,t,r[0],r[1])):s(r)}));u.postMessage(r),n.queuedSize=0,n.push=function(t,r){n.ondata||I(5),a&&n.ondata(I(4,0,1),null,!!r),n.queuedSize+=t.length,u.postMessage([t,a=r],[t.buffer])},n.terminate=function(){u.terminate()},o&&(n.flush=function(){u.postMessage([])})},ht=function(t,n){return t[n]|t[n+1]<<8},ft=function(t,n){return(t[n]|t[n+1]<<8|t[n+2]<<16|t[n+3]<<24)>>>0},lt=function(t,n){return ft(t,n)+4294967296*ft(t,n+4)},ct=function(t,n,r){for(;r;++n)t[n]=r,r>>>=8},pt=function(t,n){var r=n.filename;if(t[0]=31,t[1]=139,t[2]=8,t[8]=n.level<2?4:9==n.level?2:0,t[9]=3,0!=n.mtime&&ct(t,4,Math.floor(new Date(n.mtime||Date.now())/1e3)),r){t[3]=8;for(var e=0;e<=r.length;++e)t[e+10]=r.charCodeAt(e)}},vt=function(t){31==t[0]&&139==t[1]&&8==t[2]||I(6,"invalid gzip data");var n=t[3],r=10;4&n&&(r+=2+(t[10]|t[11]<<8));for(var e=(n>>3&1)+(n>>4&1);e>0;e-=!t[r++]);return r+(2&n)},dt=function(t){var n=t.length;return(t[n-4]|t[n-3]<<8|t[n-2]<<16|t[n-1]<<24)>>>0},gt=function(t){return 10+(t.filename?t.filename.length+1:0)},yt=function(t,n){var r=n.level,e=0==r?0:r<6?1:9==r?3:2;if(t[0]=120,t[1]=e<<6|(n.dictionary&&32),t[1]|=31-(t[0]<<8|t[1])%31,n.dictionary){var i=J();i.p(n.dictionary),ct(t,2,i.d())}},mt=function(t,n){return(8!=(15&t[0])||t[0]>>4>7||(t[0]<<8|t[1])%31)&&I(6,"invalid zlib data"),(t[1]>>5&1)==+!n&&I(6,"invalid zlib data: "+(32&t[1]?"need":"unexpected")+" dictionary"),2+(t[1]>>3&4)};function bt(t,n){return"function"==typeof t&&(n=t,t={}),this.ondata=n,t}var wt=function(){function t(t,r){if("function"==typeof t&&(r=t,t={}),this.ondata=r,this.o=t||{},this.s={l:0,i:32768,w:32768,z:32768},this.b=new n(98304),this.o.dictionary){var e=this.o.dictionary.subarray(-32768);this.b.set(e,32768-e.length),this.s.i=32768-e.length}}return t.prototype.p=function(t,n){this.ondata(K(t,this.o,0,0,this.s),n)},t.prototype.push=function(t,r){this.ondata||I(5),this.s.l&&I(4);var e=t.length+this.s.z;if(e>this.b.length){if(e>2*this.b.length-32768){var i=new n(-32768&e);i.set(this.b.subarray(0,this.s.z)),this.b=i}var o=this.b.length-this.s.z;this.b.set(t.subarray(0,o),this.s.z),this.s.z=this.b.length,this.p(this.b,!1),this.b.set(this.b.subarray(-32768)),this.b.set(t.subarray(o),32768),this.s.z=t.length-o+32768,this.s.i=32766,this.s.w=32768}else this.b.set(t,this.s.z),this.s.z+=t.length;this.s.l=1&r,(this.s.z>this.s.w+8191||r)&&(this.p(this.b,r||!1),this.s.w=this.s.i,this.s.i-=2)},t.prototype.flush=function(){this.ondata||I(5),this.s.l&&I(4),this.p(this.b,!1),this.s.w=this.s.i,this.s.i-=2},t}();_e.Deflate=wt;var xt=function(){return function(t,n){ut([_,function(){return[at,wt]}],this,bt.call(this,t,n),(function(t){var n=new wt(t.data);onmessage=at(n)}),6,1)}}();function zt(t,n,r){return r||(r=n,n={}),"function"!=typeof r&&I(7),st(t,n,[_],(function(t){return it(kt(t.data[0],t.data[1]))}),0,r)}function kt(t,n){return K(t,n||{},0,0)}_e.AsyncDeflate=xt,_e.deflate=zt,_e.deflateSync=kt;var Mt=function(){function t(t,r){"function"==typeof t&&(r=t,t={}),this.ondata=r;var e=t&&t.dictionary&&t.dictionary.subarray(-32768);this.s={i:0,b:e?e.length:0},this.o=new n(32768),this.p=new n(0),e&&this.o.set(e)}return t.prototype.e=function(t){if(this.ondata||I(5),this.d&&I(4),this.p.length){if(t.length){var r=new n(this.p.length+t.length);r.set(this.p),r.set(t,this.p.length),this.p=r}}else this.p=t},t.prototype.c=function(t){this.s.i=+(this.d=t||!1);var n=this.s.b,r=U(this.p,this.s,this.o);this.ondata(D(r,n,this.s.b),this.d),this.o=D(r,this.s.b-32768),this.s.b=this.o.length,this.p=D(this.p,this.s.p/8|0),this.s.p&=7},t.prototype.push=function(t,n){this.e(t),this.c(n)},t}();_e.Inflate=Mt;var St=function(){return function(t,n){ut([$,function(){return[at,Mt]}],this,bt.call(this,t,n),(function(t){var n=new Mt(t.data);onmessage=at(n)}),7,0)}}();function At(t,n,r){return r||(r=n,n={}),"function"!=typeof r&&I(7),st(t,n,[$],(function(t){return it(Tt(t.data[0],ot(t.data[1])))}),1,r)}function Tt(t,n){return U(t,{i:2},n&&n.out,n&&n.dictionary)}_e.AsyncInflate=St,_e.inflate=At,_e.inflateSync=Tt;var Dt=function(){function t(t,n){this.c=Y(),this.l=0,this.v=1,wt.call(this,t,n)}return t.prototype.push=function(t,n){this.c.p(t),this.l+=t.length,wt.prototype.push.call(this,t,n)},t.prototype.p=function(t,n){var r=K(t,this.o,this.v&&gt(this.o),n&&8,this.s);this.v&&(pt(r,this.o),this.v=0),n&&(ct(r,r.length-8,this.c.d()),ct(r,r.length-4,this.l)),this.ondata(r,n)},t.prototype.flush=function(){wt.prototype.flush.call(this)},t}();_e.Gzip=Dt,_e.Compress=Dt;var Ct=function(){return function(t,n){ut([_,tt,function(){return[at,wt,Dt]}],this,bt.call(this,t,n),(function(t){var n=new Dt(t.data);onmessage=at(n)}),8,1)}}();function It(t,n,r){return r||(r=n,n={}),"function"!=typeof r&&I(7),st(t,n,[_,tt,function(){return[Ut]}],(function(t){return it(Ut(t.data[0],t.data[1]))}),2,r)}function Ut(t,n){n||(n={});var r=Y(),e=t.length;r.p(t);var i=K(t,n,gt(n),8),o=i.length;return pt(i,n),ct(i,o-8,r.d()),ct(i,o-4,e),i}_e.AsyncGzip=Ct,_e.AsyncCompress=Ct,_e.gzip=It,_e.compress=It,_e.gzipSync=Ut,_e.compressSync=Ut;var Ft=function(){function t(t,n){this.v=1,this.r=0,Mt.call(this,t,n)}return t.prototype.push=function(t,r){if(Mt.prototype.e.call(this,t),this.r+=t.length,this.v){var e=this.p.subarray(this.v-1),i=e.length>3?vt(e):4;if(i>e.length){if(!r)return}else this.v>1&&this.onmember&&this.onmember(this.r-e.length);this.p=e.subarray(i),this.v=0}Mt.prototype.c.call(this,r),!this.s.f||this.s.l||r||(this.v=T(this.s.p)+9,this.s={i:0},this.o=new n(0),this.push(new n(0),r))},t}();_e.Gunzip=Ft;var Et=function(){return function(t,n){var r=this;ut([$,nt,function(){return[at,Mt,Ft]}],this,bt.call(this,t,n),(function(t){var n=new Ft(t.data);n.onmember=function(t){return postMessage(t)},onmessage=at(n)}),9,0,(function(t){return r.onmember&&r.onmember(t)}))}}();function Zt(t,n,r){return r||(r=n,n={}),"function"!=typeof r&&I(7),st(t,n,[$,nt,function(){return[qt]}],(function(t){return it(qt(t.data[0],t.data[1]))}),3,r)}function qt(t,r){var e=vt(t);return e+8>t.length&&I(6,"invalid gzip data"),U(t.subarray(e,-8),{i:2},r&&r.out||new n(dt(t)),r&&r.dictionary)}_e.AsyncGunzip=Et,_e.gunzip=Zt,_e.gunzipSync=qt;var Ot=function(){function t(t,n){this.c=J(),this.v=1,wt.call(this,t,n)}return t.prototype.push=function(t,n){this.c.p(t),wt.prototype.push.call(this,t,n)},t.prototype.p=function(t,n){var r=K(t,this.o,this.v&&(this.o.dictionary?6:2),n&&4,this.s);this.v&&(yt(r,this.o),this.v=0),n&&ct(r,r.length-4,this.c.d()),this.ondata(r,n)},t.prototype.flush=function(){wt.prototype.flush.call(this)},t}();_e.Zlib=Ot;var Gt=function(){return function(t,n){ut([_,rt,function(){return[at,wt,Ot]}],this,bt.call(this,t,n),(function(t){var n=new Ot(t.data);onmessage=at(n)}),10,1)}}();function Lt(t,n,r){return r||(r=n,n={}),"function"!=typeof r&&I(7),st(t,n,[_,rt,function(){return[Ht]}],(function(t){return it(Ht(t.data[0],t.data[1]))}),4,r)}function Ht(t,n){n||(n={});var r=J();r.p(t);var e=K(t,n,n.dictionary?6:2,4);return yt(e,n),ct(e,e.length-4,r.d()),e}_e.AsyncZlib=Gt,_e.zlib=Lt,_e.zlibSync=Ht;var jt=function(){function t(t,n){Mt.call(this,t,n),this.v=t&&t.dictionary?2:1}return t.prototype.push=function(t,n){if(Mt.prototype.e.call(this,t),this.v){if(this.p.length<6&&!n)return;this.p=this.p.subarray(mt(this.p,this.v-1)),this.v=0}n&&(this.p.length<4&&I(6,"invalid zlib data"),this.p=this.p.subarray(0,-4)),Mt.prototype.c.call(this,n)},t}();_e.Unzlib=jt;var Nt=function(){return function(t,n){ut([$,et,function(){return[at,Mt,jt]}],this,bt.call(this,t,n),(function(t){var n=new jt(t.data);onmessage=at(n)}),11,0)}}();function Pt(t,n,r){return r||(r=n,n={}),"function"!=typeof r&&I(7),st(t,n,[$,et,function(){return[Bt]}],(function(t){return it(Bt(t.data[0],ot(t.data[1])))}),5,r)}function Bt(t,n){return U(t.subarray(mt(t,n&&n.dictionary),-4),{i:2},n&&n.out,n&&n.dictionary)}_e.AsyncUnzlib=Nt,_e.unzlib=Pt,_e.unzlibSync=Bt;var Yt=function(){function t(t,n){this.o=bt.call(this,t,n)||{},this.G=Ft,this.I=Mt,this.Z=jt}return t.prototype.i=function(){var t=this;this.s.ondata=function(n,r){t.ondata(n,r)}},t.prototype.push=function(t,r){if(this.ondata||I(5),this.s)this.s.push(t,r);else{if(this.p&&this.p.length){var e=new n(this.p.length+t.length);e.set(this.p),e.set(t,this.p.length)}else this.p=t;this.p.length>2&&(this.s=31==this.p[0]&&139==this.p[1]&&8==this.p[2]?new this.G(this.o):8!=(15&this.p[0])||this.p[0]>>4>7||(this.p[0]<<8|this.p[1])%31?new this.I(this.o):new this.Z(this.o),this.i(),this.s.push(this.p,r),this.p=null)}},t}();_e.Decompress=Yt;var Jt=function(){function t(t,n){Yt.call(this,t,n),this.queuedSize=0,this.G=Et,this.I=St,this.Z=Nt}return t.prototype.i=function(){var t=this;this.s.ondata=function(n,r,e){t.ondata(n,r,e)},this.s.ondrain=function(n){t.queuedSize-=n,t.ondrain&&t.ondrain(n)}},t.prototype.push=function(t,n){this.queuedSize+=t.length,Yt.prototype.push.call(this,t,n)},t}();function Kt(t,n,r){return r||(r=n,n={}),"function"!=typeof r&&I(7),31==t[0]&&139==t[1]&&8==t[2]?Zt(t,n,r):8!=(15&t[0])||t[0]>>4>7||(t[0]<<8|t[1])%31?At(t,n,r):Pt(t,n,r)}function Qt(t,n){return 31==t[0]&&139==t[1]&&8==t[2]?qt(t,n):8!=(15&t[0])||t[0]>>4>7||(t[0]<<8|t[1])%31?Tt(t,n):Bt(t,n)}_e.AsyncDecompress=Jt,_e.decompress=Kt,_e.decompressSync=Qt;var Rt=function(t,r,e,i){for(var o in t){var s=t[o],a=r+o,u=i;Array.isArray(s)&&(u=Q(i,s[1]),s=s[0]),s instanceof n?e[a]=[s,u]:(e[a+="/"]=[new n(0),u],Rt(s,a,e,i))}},Vt="undefined"!=typeof TextEncoder&&new TextEncoder,Wt="undefined"!=typeof TextDecoder&&new TextDecoder,Xt=0;try{Wt.decode(N,{stream:!0}),Xt=1}catch(t){}var $t=function(t){for(var n="",r=0;;){var e=t[r++],i=(e>127)+(e>223)+(e>239);if(r+i>t.length)return{s:n,r:D(t,r-1)};i?3==i?(e=((15&e)<<18|(63&t[r++])<<12|(63&t[r++])<<6|63&t[r++])-65536,n+=String.fromCharCode(55296|e>>10,56320|1023&e)):n+=String.fromCharCode(1&i?(31&e)<<6|63&t[r++]:(15&e)<<12|(63&t[r++])<<6|63&t[r++]):n+=String.fromCharCode(e)}},_t=function(){function t(t){this.ondata=t,Xt?this.t=new TextDecoder:this.p=N}return t.prototype.push=function(t,r){if(this.ondata||I(5),r=!!r,this.t)return this.ondata(this.t.decode(t,{stream:!0}),r),void(r&&(this.t.decode().length&&I(8),this.t=null));this.p||I(4);var e=new n(this.p.length+t.length);e.set(this.p),e.set(t,this.p.length);var i=$t(e),o=i.s,s=i.r;r?(s.length&&I(8),this.p=null):this.p=s,this.ondata(o,r)},t}();_e.DecodeUTF8=_t;var tn=function(){function t(t){this.ondata=t}return t.prototype.push=function(t,n){this.ondata||I(5),this.d&&I(4),this.ondata(nn(t),this.d=n||!1)},t}();function nn(t,r){if(r){for(var e=new n(t.length),i=0;i<t.length;++i)e[i]=t.charCodeAt(i);return e}if(Vt)return Vt.encode(t);var o=t.length,s=new n(t.length+(t.length>>1)),a=0,u=function(t){s[a++]=t};for(i=0;i<o;++i){if(a+5>s.length){var h=new n(a+8+(o-i<<1));h.set(s),s=h}var f=t.charCodeAt(i);f<128||r?u(f):f<2048?(u(192|f>>6),u(128|63&f)):f>55295&&f<57344?(u(240|(f=65536+(1047552&f)|1023&t.charCodeAt(++i))>>18),u(128|f>>12&63),u(128|f>>6&63),u(128|63&f)):(u(224|f>>12),u(128|f>>6&63),u(128|63&f))}return D(s,0,a)}function rn(t,n){if(n){for(var r="",e=0;e<t.length;e+=16384)r+=String.fromCharCode.apply(null,t.subarray(e,e+16384));return r}if(Wt)return Wt.decode(t);var i=$t(t),o=i.s;return(r=i.r).length&&I(8),o}_e.EncodeUTF8=tn,_e.strToU8=nn,_e.strFromU8=rn;var en=function(t){return 1==t?3:t<6?2:9==t?1:0},on=function(t,n){return n+30+ht(t,n+26)+ht(t,n+28)},sn=function(t,n,r){var e=ht(t,n+28),i=rn(t.subarray(n+46,n+46+e),!(2048&ht(t,n+8))),o=n+46+e,s=ft(t,n+20),a=r&&4294967295==s?an(t,o):[s,ft(t,n+24),ft(t,n+42)],u=a[0],h=a[1],f=a[2];return[ht(t,n+10),u,h,i,o+ht(t,n+30)+ht(t,n+32),f]},an=function(t,n){for(;1!=ht(t,n);n+=4+ht(t,n+2));return[lt(t,n+12),lt(t,n+4),lt(t,n+20)]},un=function(t){var n=0;if(t)for(var r in t){var e=t[r].length;e>65535&&I(9),n+=e+4}return n},hn=function(t,n,r,e,i,o,s,a){var u=e.length,h=r.extra,f=a&&a.length,l=un(h);ct(t,n,null!=s?33639248:67324752),n+=4,null!=s&&(t[n++]=20,t[n++]=r.os),t[n]=20,n+=2,t[n++]=r.flag<<1|(o<0&&8),t[n++]=i&&8,t[n++]=255&r.compression,t[n++]=r.compression>>8;var c=new Date(null==r.mtime?Date.now():r.mtime),p=c.getFullYear()-1980;if((p<0||p>119)&&I(10),ct(t,n,p<<25|c.getMonth()+1<<21|c.getDate()<<16|c.getHours()<<11|c.getMinutes()<<5|c.getSeconds()>>1),n+=4,-1!=o&&(ct(t,n,r.crc),ct(t,n+4,o<0?-o-2:o),ct(t,n+8,r.size)),ct(t,n+12,u),ct(t,n+14,l),n+=16,null!=s&&(ct(t,n,f),ct(t,n+6,r.attrs),ct(t,n+10,s),n+=14),t.set(e,n),n+=u,l)for(var v in h){var d=h[v],g=d.length;ct(t,n,+v),ct(t,n+2,g),t.set(d,n+4),n+=4+g}return f&&(t.set(a,n),n+=f),n},fn=function(t,n,r,e,i){ct(t,n,101010256),ct(t,n+8,r),ct(t,n+10,r),ct(t,n+12,e),ct(t,n+16,i)},ln=function(){function t(t){this.filename=t,this.c=Y(),this.size=0,this.compression=0}return t.prototype.process=function(t,n){this.ondata(null,t,n)},t.prototype.push=function(t,n){this.ondata||I(5),this.c.p(t),this.size+=t.length,n&&(this.crc=this.c.d()),this.process(t,n||!1)},t}();_e.ZipPassThrough=ln;var cn=function(){function t(t,n){var r=this;n||(n={}),ln.call(this,t),this.d=new wt(n,(function(t,n){r.ondata(null,t,n)})),this.compression=8,this.flag=en(n.level)}return t.prototype.process=function(t,n){try{this.d.push(t,n)}catch(t){this.ondata(t,null,n)}},t.prototype.push=function(t,n){ln.prototype.push.call(this,t,n)},t}();_e.ZipDeflate=cn;var pn=function(){function t(t,n){var r=this;n||(n={}),ln.call(this,t),this.d=new xt(n,(function(t,n,e){r.ondata(t,n,e)})),this.compression=8,this.flag=en(n.level),this.terminate=this.d.terminate}return t.prototype.process=function(t,n){this.d.push(t,n)},t.prototype.push=function(t,n){ln.prototype.push.call(this,t,n)},t}();_e.AsyncZipDeflate=pn;var vn=function(){function t(t){this.ondata=t,this.u=[],this.d=1}return t.prototype.add=function(t){var r=this;if(this.ondata||I(5),2&this.d)this.ondata(I(4+8*(1&this.d),0,1),null,!1);else{var e=nn(t.filename),i=e.length,o=t.comment,s=o&&nn(o),a=i!=t.filename.length||s&&o.length!=s.length,u=i+un(t.extra)+30;i>65535&&this.ondata(I(11,0,1),null,!1);var h=new n(u);hn(h,0,t,e,a,-1);var f=[h],l=function(){for(var t=0,n=f;t<n.length;t++)r.ondata(null,n[t],!1);f=[]},c=this.d;this.d=0;var p=this.u.length,v=Q(t,{f:e,u:a,o:s,t:function(){t.terminate&&t.terminate()},r:function(){if(l(),c){var t=r.u[p+1];t?t.r():r.d=1}c=1}}),d=0;t.ondata=function(e,i,o){if(e)r.ondata(e,i,o),r.terminate();else if(d+=i.length,f.push(i),o){var s=new n(16);ct(s,0,134695760),ct(s,4,t.crc),ct(s,8,d),ct(s,12,t.size),f.push(s),v.c=d,v.b=u+d+16,v.crc=t.crc,v.size=t.size,c&&v.r(),c=1}else c&&l()},this.u.push(v)}},t.prototype.end=function(){var t=this;2&this.d?this.ondata(I(4+8*(1&this.d),0,1),null,!0):(this.d?this.e():this.u.push({r:function(){1&t.d&&(t.u.splice(-1,1),t.e())},t:function(){}}),this.d=3)},t.prototype.e=function(){for(var t=0,r=0,e=0,i=0,o=this.u;i<o.length;i++)e+=46+(h=o[i]).f.length+un(h.extra)+(h.o?h.o.length:0);for(var s=new n(e+22),a=0,u=this.u;a<u.length;a++){var h;hn(s,t,h=u[a],h.f,h.u,-h.c-2,r,h.o),t+=46+h.f.length+un(h.extra)+(h.o?h.o.length:0),r+=h.b}fn(s,t,this.u.length,e,r),this.ondata(null,s,!0),this.d=2},t.prototype.terminate=function(){for(var t=0,n=this.u;t<n.length;t++)n[t].t();this.d=2},t}();function dn(t,r,e){e||(e=r,r={}),"function"!=typeof e&&I(7);var i={};Rt(t,"",i,r);var o=Object.keys(i),s=o.length,a=0,u=0,h=s,f=Array(s),l=[],c=function(){for(var t=0;t<l.length;++t)l[t]()},p=function(t,n){xn((function(){e(t,n)}))};xn((function(){p=e}));var v=function(){var t=new n(u+22),r=a,e=u-a;u=0;for(var i=0;i<h;++i){var o=f[i];try{var s=o.c.length;hn(t,u,o,o.f,o.u,s);var l=30+o.f.length+un(o.extra),c=u+l;t.set(o.c,c),hn(t,a,o,o.f,o.u,s,u,o.m),a+=16+l+(o.m?o.m.length:0),u=c+s}catch(t){return p(t,null)}}fn(t,a,f.length,e,r),p(null,t)};s||v();for(var d=function(t){var n=o[t],r=i[n],e=r[0],h=r[1],d=Y(),g=e.length;d.p(e);var y=nn(n),m=y.length,b=h.comment,w=b&&nn(b),x=w&&w.length,z=un(h.extra),k=0==h.level?0:8,M=function(r,e){if(r)c(),p(r,null);else{var i=e.length;f[t]=Q(h,{size:g,crc:d.d(),c:e,f:y,m:w,u:m!=n.length||w&&b.length!=x,compression:k}),a+=30+m+z+i,u+=76+2*(m+z)+(x||0)+i,--s||v()}};if(m>65535&&M(I(11,0,1),null),k)if(g<16e4)try{M(null,kt(e,h))}catch(t){M(t,null)}else l.push(zt(e,h,M));else M(null,e)},g=0;g<h;++g)d(g);return c}function gn(t,r){r||(r={});var e={},i=[];Rt(t,"",e,r);var o=0,s=0;for(var a in e){var u=e[a],h=u[0],f=u[1],l=0==f.level?0:8,c=(M=nn(a)).length,p=f.comment,v=p&&nn(p),d=v&&v.length,g=un(f.extra);c>65535&&I(11);var y=l?kt(h,f):h,m=y.length,b=Y();b.p(h),i.push(Q(f,{size:h.length,crc:b.d(),c:y,f:M,m:v,u:c!=a.length||v&&p.length!=d,o:o,compression:l})),o+=30+c+g+m,s+=76+2*(c+g)+(d||0)+m}for(var w=new n(s+22),x=o,z=s-o,k=0;k<i.length;++k){var M;hn(w,(M=i[k]).o,M,M.f,M.u,M.c.length);var S=30+M.f.length+un(M.extra);w.set(M.c,M.o+S),hn(w,o,M,M.f,M.u,M.c.length,M.o,M.m),o+=16+S+(M.m?M.m.length:0)}return fn(w,o,i.length,z,x),w}_e.Zip=vn,_e.zip=dn,_e.zipSync=gn;var yn=function(){function t(){}return t.prototype.push=function(t,n){this.ondata(null,t,n)},t.compression=0,t}();_e.UnzipPassThrough=yn;var mn=function(){function t(){var t=this;this.i=new Mt((function(n,r){t.ondata(null,n,r)}))}return t.prototype.push=function(t,n){try{this.i.push(t,n)}catch(t){this.ondata(t,null,n)}},t.compression=8,t}();_e.UnzipInflate=mn;var bn=function(){function t(t,n){var r=this;n<32e4?this.i=new Mt((function(t,n){r.ondata(null,t,n)})):(this.i=new St((function(t,n,e){r.ondata(t,n,e)})),this.terminate=this.i.terminate)}return t.prototype.push=function(t,n){this.i.terminate&&(t=D(t,0)),this.i.push(t,n)},t.compression=8,t}();_e.AsyncUnzipInflate=bn;var wn=function(){function t(t){this.onfile=t,this.k=[],this.o={0:yn},this.p=N}return t.prototype.push=function(t,r){var e=this;if(this.onfile||I(5),this.p||I(4),this.c>0){var i=Math.min(this.c,t.length),o=t.subarray(0,i);if(this.c-=i,this.d?this.d.push(o,!this.c):this.k[0].push(o),(t=t.subarray(i)).length)return this.push(t,r)}else{var s=0,a=0,u=void 0,h=void 0;this.p.length?t.length?((h=new n(this.p.length+t.length)).set(this.p),h.set(t,this.p.length)):h=this.p:h=t;for(var f=h.length,l=this.c,c=l&&this.d,p=function(){var t,n=ft(h,a);if(67324752==n){s=1,u=a,v.d=null,v.c=0;var r=ht(h,a+6),i=ht(h,a+8),o=2048&r,c=8&r,p=ht(h,a+26),d=ht(h,a+28);if(f>a+30+p+d){var g=[];v.k.unshift(g),s=2;var y,m=ft(h,a+18),b=ft(h,a+22),w=rn(h.subarray(a+30,a+=30+p),!o);4294967295==m?(t=c?[-2]:an(h,a),m=t[0],b=t[1]):c&&(m=-1),a+=d,v.c=m;var x={name:w,compression:i,start:function(){if(x.ondata||I(5),m){var t=e.o[i];t||x.ondata(I(14,"unknown compression type "+i,1),null,!1),(y=m<0?new t(w):new t(w,m,b)).ondata=function(t,n,r){x.ondata(t,n,r)};for(var n=0,r=g;n<r.length;n++)y.push(r[n],!1);e.k[0]==g&&e.c?e.d=y:y.push(N,!0)}else x.ondata(null,N,!0)},terminate:function(){y&&y.terminate&&y.terminate()}};m>=0&&(x.size=m,x.originalSize=b),v.onfile(x)}return"break"}if(l){if(134695760==n)return u=a+=12+(-2==l&&8),s=3,v.c=0,"break";if(33639248==n)return u=a-=4,s=3,v.c=0,"break"}},v=this;a<f-4&&"break"!==p();++a);if(this.p=N,l<0){var d=h.subarray(0,s?u-12-(-2==l&&8)-(134695760==ft(h,u-16)&&4):a);c?c.push(d,!!s):this.k[+(2==s)].push(d)}if(2&s)return this.push(h.subarray(a),r);this.p=h.subarray(a)}r&&(this.c&&I(13),this.p=null)},t.prototype.register=function(t){this.o[t.compression]=t},t}();_e.Unzip=wn;var xn="function"==typeof queueMicrotask?queueMicrotask:"function"==typeof setTimeout?setTimeout:function(t){t()};function zn(t,r,e){e||(e=r,r={}),"function"!=typeof e&&I(7);var i=[],o=function(){for(var t=0;t<i.length;++t)i[t]()},s={},a=function(t,n){xn((function(){e(t,n)}))};xn((function(){a=e}));for(var u=t.length-22;101010256!=ft(t,u);--u)if(!u||t.length-u>65558)return a(I(13,0,1),null),o;var h=ht(t,u+8);if(h){var f=h,l=ft(t,u+16),c=4294967295==l||65535==f;if(c){var p=ft(t,u-12);(c=101075792==ft(t,p))&&(f=h=ft(t,p+32),l=ft(t,p+48))}for(var v=r&&r.filter,d=function(r){var e=sn(t,l,c),u=e[0],f=e[1],p=e[2],d=e[3],g=e[4],y=on(t,e[5]);l=g;var m=function(t,n){t?(o(),a(t,null)):(n&&(s[d]=n),--h||a(null,s))};if(!v||v({name:d,size:f,originalSize:p,compression:u}))if(u)if(8==u){var b=t.subarray(y,y+f);if(p<524288||f>.8*p)try{m(null,Tt(b,{out:new n(p)}))}catch(t){m(t,null)}else i.push(At(b,{size:p},m))}else m(I(14,"unknown compression type "+u,1),null);else m(null,D(t,y,y+f));else m(null,null)},g=0;g<f;++g)d()}else a(null,{});return o}function kn(t,r){for(var e={},i=t.length-22;101010256!=ft(t,i);--i)(!i||t.length-i>65558)&&I(13);var o=ht(t,i+8);if(!o)return{};var s=ft(t,i+16),a=4294967295==s||65535==o;if(a){var u=ft(t,i-12);(a=101075792==ft(t,u))&&(o=ft(t,u+32),s=ft(t,u+48))}for(var h=r&&r.filter,f=0;f<o;++f){var l=sn(t,s,a),c=l[0],p=l[1],v=l[2],d=l[3],g=l[4],y=on(t,l[5]);s=g,h&&!h({name:d,size:p,originalSize:v,compression:c})||(c?8==c?e[d]=Tt(t.subarray(y,y+p),{out:new n(v)}):I(14,"unknown compression type "+c):e[d]=D(t,y,y+p))}return e}_e.unzip=zn,_e.unzipSync=kn;return _e});
+</script>
+<script>
 (function(){
-  var S = window.BalloonScenes, P = S.PANELS;
-  var cv = document.getElementById('cv'), ctx = cv.getContext('2d');
-  var cap = document.getElementById('cap'), count = document.getElementById('count');
-  var playBtn = document.getElementById('play'), scrub = document.getElementById('scrub');
-  var optCap = document.getElementById('optCap'), optBoil = document.getElementById('optBoil'), optPush = document.getElementById('optPush');
+  'use strict';
+  var S = window.BalloonScenes, P = S.PANELS, W = S.W, H = S.H;
+  var $ = function (id) { return document.getElementById(id); };
+  var cv = $('cv'), ctx = cv.getContext('2d');
+  var cap = $('cap'), count = $('count'), playBtn = $('play'), scrub = $('scrub');
+  var optCap = $('optCap'), optText = $('optText'), optName = $('optName'), editor = $('editor');
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (reduce) optPush.checked = false;
-  var cache = {}, idx = 0, playing = false, start = 0, boil = 0, lastBoil = 0;
   var NAMES = { 1: 'The balloon', 2: 'The railway', 3: 'The parachute', 4: 'The car', 5: 'The plane', 6: 'The core', 7: 'The capsule', 8: 'The robot', 9: 'The self-driving car', 10: 'Outro' };
-  function thumbFull(n){
-    var key = 't_' + n;
-    if (!cache[key]) { var c = document.createElement('canvas'); c.width = S.W; c.height = S.H; S.render(c.getContext('2d'), n, 0, { noChrome: true }); cache[key] = c; }
-    return cache[key];
+
+  /* ---------- per-panel settings ---------- */
+  function defaults(p) { return { dur: Math.round(p.dur * 10) / 10, wobble: 'off', zoom: p.push ? 'in' : 'none', amount: p.push ? 6 : 8, fx: 0.5, fy: 0.55, text: 'default' }; }
+  var SET = {}, GLOBAL = { fps: 30, quality: 8, boilRate: 8, amp: 1.4 };
+  P.forEach(function (p) { SET[p.n] = defaults(p); });
+  var STORE = 'firsts-drawn-in-code-settings-v1';
+  function packSettings() {
+    var panels = {};
+    P.forEach(function (p) { var d = defaults(p), s = SET[p.n], diff = {}, any = false; Object.keys(s).forEach(function (k) { if (s[k] !== d[k]) { diff[k] = s[k]; any = true; } }); if (any) panels[p.n] = diff; });
+    return { version: 1, global: GLOBAL, text: optText.checked, name: optName.checked, panels: panels };
   }
-  function ease(t){ return t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t); }
-  function zoomDraw(gridImg, cellIdx, e){
-    var cell = S.gridCell(cellIdx), target = thumbFull(S.firstOfCell(cellIdx));
-    var z = S.W / cell.w, vw = S.W / Math.pow(z, e), vh = vw * 9 / 16;
-    var f = (S.W - vw) / (S.W - cell.w);
-    var cx = S.W / 2 + (cell.x + cell.w / 2 - S.W / 2) * f, cy = S.H / 2 + (cell.y + cell.h / 2 - S.H / 2) * f;
-    var sc = S.W / vw;
-    ctx.fillStyle = '#c3e7f8'; ctx.fillRect(0, 0, S.W, S.H);
-    ctx.setTransform(sc, 0, 0, sc, -(cx - vw / 2) * sc, -(cy - vh / 2) * sc);
-    ctx.drawImage(gridImg, 0, 0);
-    ctx.drawImage(target, cell.x, cell.y, cell.w, cell.h);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+  function unpackSettings(o) {
+    if (!o || typeof o !== 'object') return;
+    P.forEach(function (p) { SET[p.n] = defaults(p); });
+    if (o.global) Object.keys(GLOBAL).forEach(function (k) { if (typeof o.global[k] === 'number') GLOBAL[k] = o.global[k]; });
+    if (typeof o.text === 'boolean') optText.checked = o.text;
+    if (typeof o.name === 'boolean') optName.checked = o.name;
+    if (o.panels) Object.keys(o.panels).forEach(function (n) { if (SET[n]) Object.assign(SET[n], o.panels[n]); });
+  }
+  function persist() { try { localStorage.setItem(STORE, JSON.stringify(packSettings())); } catch (e) {} }
+  try { var saved = localStorage.getItem(STORE); if (saved) unpackSettings(JSON.parse(saved)); } catch (e) {}
+  S.setBarName(optName.checked);
+
+  /* ---------- drawing a frame (the player and the exporter share this) ---------- */
+  var cache = new Map();
+  function art(n, boil, text, wobPeople, amp) {
+    var key = n + '|' + boil + '|' + (text ? 1 : 0) + '|' + (wobPeople ? 1 : 0) + '|' + amp;
+    var c = cache.get(key);
+    if (c) { cache.delete(key); cache.set(key, c); return c; }
+    c = document.createElement('canvas'); c.width = W; c.height = H;
+    S.render(c.getContext('2d'), n, boil, { noChrome: true, text: text, wobPeople: wobPeople, wobAmp: amp });
+    cache.set(key, c);
+    while (cache.size > 24) cache.delete(cache.keys().next().value);
+    return c;
+  }
+  function textOn(n) { var t = SET[n].text; return t === 'default' ? optText.checked : t === 'on'; }
+  function boilAt(n, t) { return SET[n].wobble === 'off' ? 0 : 1 + (Math.floor(t * GLOBAL.boilRate) % 3); }
+  function ease(t) { return t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t); }
+  function zoomAt(n, t) { var s = SET[n]; if (s.zoom === 'none') return 1; var e = ease(Math.min(1, Math.max(0, t / s.dur))), a = s.amount / 100; return s.zoom === 'in' ? 1 + a * e : 1 + a * (1 - e); }
+  function zoomDraw(g, gridImg, cellIdx, e) {
+    var cell = S.gridCell(cellIdx), first = S.firstOfCell(cellIdx), target = art(first, 0, textOn(first), false, 1);
+    var z = W / cell.w, vw = W / Math.pow(z, e), vh = vw * 9 / 16, f = (W - vw) / (W - cell.w);
+    var cx = W / 2 + (cell.x + cell.w / 2 - W / 2) * f, cy = H / 2 + (cell.y + cell.h / 2 - H / 2) * f, sc = W / vw;
+    g.fillStyle = '#c3e7f8'; g.fillRect(0, 0, W, H);
+    g.setTransform(sc, 0, 0, sc, -(cx - vw / 2) * sc, -(cy - vh / 2) * sc);
+    g.drawImage(gridImg, 0, 0); g.drawImage(target, cell.x, cell.y, cell.w, cell.h);
+    g.setTransform(1, 0, 0, 1, 0, 0);
+  }
+  /* frame of panel P[idx] at t seconds into it */
+  function drawFrame(g, idx, t, still) {
+    var p = P[idx], st = SET[p.n];
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    if (p.grid) {
+      var gimg = art(p.n, 0, true, false, 1), u = still ? 0 : t / st.dur;
+      if (p.zoomTo !== undefined) return zoomDraw(g, gimg, p.zoomTo, still ? 0 : ease(Math.max(0, (u - 0.1) / 0.9)));
+      if (p.zoomFrom !== undefined) return zoomDraw(g, gimg, p.zoomFrom, still ? 0 : 1 - ease(Math.min(1, u / 0.9)));
+      g.drawImage(gimg, 0, 0); return;
+    }
+    var img = art(p.n, still ? 0 : boilAt(p.n, t), textOn(p.n), st.wobble === 'all', GLOBAL.amp);
+    var z = still ? 1 : zoomAt(p.n, t), fx = st.fx * W, fy = st.fy * H;
+    g.fillStyle = '#c3e7f8'; g.fillRect(0, 0, W, H);
+    g.drawImage(img, fx * (1 - z), fy * (1 - z), W * z, H * z);
+    S.bar(g, p.n);
   }
 
-  function frame(n, b){
-    var key = n + '_' + b;
-    if (!cache[key]) {
-      var c = document.createElement('canvas'); c.width = S.W; c.height = S.H;
-      S.render(c.getContext('2d'), n, b, { noChrome: true }); cache[key] = c;
-    }
-    return cache[key];
-  }
-  P.forEach(function(p, i){
-    var s = document.createElement('span');
-    s.addEventListener('click', function(){ go(i); });
-    scrub.appendChild(s);
-  });
-  function ui(){
+  /* ---------- the player ---------- */
+  var idx = 0, playing = false, start = 0;
+  P.forEach(function (p, i) { var s = document.createElement('span'); s.addEventListener('click', function () { go(i); }); scrub.appendChild(s); });
+  function ui() {
     var p = P[idx];
-    cap.textContent = p.line ? '\u201C' + p.line + '\u201D' : '';
+    cap.textContent = p.line ? '“' + p.line + '”' : '';
     cap.hidden = !optCap.checked;
     count.textContent = (p.grid ? 'Grid' : NAMES[p.item]) + ', panel ' + p.n + '  (' + (idx + 1) + ' of ' + P.length + ')';
-    Array.prototype.forEach.call(scrub.children, function(s, i){ s.className = i === idx ? 'on' : (i < idx ? 'done' : ''); });
+    Array.prototype.forEach.call(scrub.children, function (s, i) { s.className = i === idx ? 'on' : (i < idx ? 'done' : ''); });
     playBtn.textContent = playing ? 'Pause' : 'Play';
+    edSync();
   }
-  function draw(now){
-    var p = P[idx];
-    var t = playing ? Math.min(1, (now - start) / (p.dur * 1000)) : 0;
-    if (p.grid) {
-      var g = frame(p.n, 0);
-      if (p.zoomTo !== undefined) { zoomDraw(g, p.zoomTo, reduce ? 0 : ease(Math.max(0, (t - 0.1) / 0.9))); return; }
-      if (p.zoomFrom !== undefined) { zoomDraw(g, p.zoomFrom, reduce ? 0 : 1 - ease(Math.min(1, t / 0.9))); return; }
-      ctx.setTransform(1,0,0,1,0,0); ctx.drawImage(g, 0, 0); return;
+  function draw(now) {
+    var p = P[idx], st = SET[p.n];
+    var t = playing ? Math.min(st.dur, (now - start) / 1000) : 0;
+    if (reduce && playing) t = 0;
+    drawFrame(ctx, idx, t, !playing);
+    if (!playing && editor.open && !p.grid && st.zoom !== 'none') {
+      /* show where the zoom goes: its centre, and the frame it ends on */
+      var a = st.amount / 100, zEnd = 1 + a, fx = st.fx * W, fy = st.fy * H;
+      ctx.save(); ctx.strokeStyle = '#d7262b'; ctx.lineWidth = 5; ctx.setLineDash([22, 14]);
+      ctx.strokeRect(fx - fx / zEnd, fy - fy / zEnd, W / zEnd, H / zEnd);
+      ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(fx - 34, fy); ctx.lineTo(fx + 34, fy); ctx.moveTo(fx, fy - 34); ctx.lineTo(fx, fy + 34); ctx.stroke(); ctx.restore();
     }
-    var img = frame(p.n, optBoil.checked ? boil : 0);
-    var z = (optPush.checked && p.push) ? 1 + 0.045 * (playing ? t : 0) : 1;
-    ctx.setTransform(1,0,0,1,0,0);
-    ctx.drawImage(img, S.W * (1 - z) / 2, S.H * (1 - z) / 2, S.W * z, S.H * z);
-    S.bar(ctx, p.n);
   }
-  function go(i){ idx = Math.max(0, Math.min(P.length - 1, i)); start = performance.now(); ui(); draw(start); }
-  function tickLoop(now){
-    if (optBoil.checked && now - lastBoil > 150) { boil = (boil + 1) % 3; lastBoil = now; }
-    if (playing && now - start >= P[idx].dur * 1000) {
-      if (idx < P.length - 1) { idx++; start = now; ui(); }
-      else { playing = false; ui(); }
+  function go(i) { idx = Math.max(0, Math.min(P.length - 1, i)); start = performance.now(); ui(); draw(start); }
+  function tickLoop(now) {
+    if (playing && now - start >= SET[P[idx].n].dur * 1000) {
+      if (idx < P.length - 1) { idx++; start = now; ui(); } else { playing = false; ui(); }
     }
-    draw(now);
+    if (playing) draw(now);
     requestAnimationFrame(tickLoop);
   }
-  playBtn.addEventListener('click', function(){
-    if (!playing && idx === P.length - 1) idx = 0;
-    playing = !playing; start = performance.now(); ui();
-  });
-  document.getElementById('prev').addEventListener('click', function(){ go(idx - 1); });
-  document.getElementById('next').addEventListener('click', function(){ go(idx + 1); });
-  document.getElementById('restart').addEventListener('click', function(){ playing = false; go(0); });
+  playBtn.addEventListener('click', function () { if (!playing && idx === P.length - 1) idx = 0; playing = !playing; start = performance.now(); ui(); draw(start); });
+  $('prev').addEventListener('click', function () { go(idx - 1); });
+  $('next').addEventListener('click', function () { go(idx + 1); });
+  $('restart').addEventListener('click', function () { playing = false; go(0); });
   optCap.addEventListener('change', ui);
-  var optText = document.getElementById('optText');
-  optText.addEventListener('change', function () { S.setText(optText.checked); cache = {}; draw(performance.now()); });
-  var optName = document.getElementById('optName');
-  optName.addEventListener('change', function () { S.setBarName(optName.checked); draw(performance.now()); });
-  document.addEventListener('keydown', function(e){
-    if (e.target && e.target.tagName === 'INPUT') return;
+  optText.addEventListener('change', function () { S.setText(optText.checked); cache.clear(); persist(); draw(performance.now()); });
+  optName.addEventListener('change', function () { S.setBarName(optName.checked); persist(); draw(performance.now()); });
+  document.addEventListener('keydown', function (e) {
+    var tag = e.target && e.target.tagName;
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || (tag === 'BUTTON' && e.key === ' ')) return;
     if (e.key === 'ArrowRight') { go(idx + 1); e.preventDefault(); }
     else if (e.key === 'ArrowLeft') { go(idx - 1); e.preventDefault(); }
     else if (e.key === ' ') { playBtn.click(); e.preventDefault(); }
   });
-  function boot(){ cache = {}; ui(); draw(performance.now()); requestAnimationFrame(tickLoop); }
+
+  /* ---------- the editor ---------- */
+  var edDur = $('edDur'), edWob = $('edWob'), edZoom = $('edZoom'), edAmt = $('edAmt'), edAmtOut = $('edAmtOut'), edText = $('edText'), edPanel = $('edPanel');
+  function edSync() {
+    var p = P[idx], s = SET[p.n];
+    edPanel.textContent = p.n + (p.grid ? ' (grid)' : '');
+    edDur.value = s.dur; edWob.value = s.wobble; edZoom.value = s.zoom; edAmt.value = s.amount; edAmtOut.textContent = s.amount + '%'; edText.value = s.text;
+    [edWob, edZoom, edAmt, edText].forEach(function (el) { el.disabled = !!p.grid; });
+    $('exFps').value = String(GLOBAL.fps); $('exQ').value = String(GLOBAL.quality); $('exBoil').value = String(GLOBAL.boilRate); $('exAmp').value = String(GLOBAL.amp);
+  }
+  function edSet(k, v) { SET[P[idx].n][k] = v; if (k === 'text') cache.clear(); persist(); edSync(); draw(performance.now()); }
+  edDur.addEventListener('change', function () { var v = parseFloat(edDur.value); if (v >= 0.3 && v <= 60) edSet('dur', Math.round(v * 10) / 10); else edSync(); });
+  edWob.addEventListener('change', function () { edSet('wobble', edWob.value); });
+  edZoom.addEventListener('change', function () { edSet('zoom', edZoom.value); });
+  edAmt.addEventListener('input', function () { edSet('amount', parseInt(edAmt.value, 10)); });
+  edText.addEventListener('change', function () { edSet('text', edText.value); });
+  function copyTo(filter) {
+    var src = SET[P[idx].n];
+    P.forEach(function (p) { if (!p.grid && filter(p)) { var d = SET[p.n]; d.wobble = src.wobble; d.zoom = src.zoom; d.amount = src.amount; d.text = src.text; } });
+    cache.clear(); persist(); edSync(); msg('Copied wobble, zoom and text settings. (Lengths and zoom centres stay per panel.)');
+  }
+  $('edItem').addEventListener('click', function () { var it = P[idx].item; copyTo(function (p) { return p.item === it; }); });
+  $('edAll').addEventListener('click', function () { copyTo(function () { return true; }); });
+  $('edReset').addEventListener('click', function () { SET[P[idx].n] = defaults(P[idx]); cache.clear(); persist(); edSync(); draw(performance.now()); });
+  editor.addEventListener('toggle', function () { draw(performance.now()); });
+  cv.addEventListener('click', function (e) {
+    if (!editor.open || playing || P[idx].grid) return;
+    var r = cv.getBoundingClientRect(), s = SET[P[idx].n];
+    s.fx = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)); s.fy = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+    if (s.zoom === 'none') s.zoom = 'in';
+    persist(); edSync(); draw(performance.now());
+  });
+  $('exFps').addEventListener('change', function () { GLOBAL.fps = parseInt(this.value, 10); persist(); });
+  $('exQ').addEventListener('change', function () { GLOBAL.quality = parseInt(this.value, 10); persist(); });
+  $('exBoil').addEventListener('change', function () { GLOBAL.boilRate = parseInt(this.value, 10); persist(); });
+  $('exAmp').addEventListener('change', function () { GLOBAL.amp = parseFloat(this.value); cache.clear(); persist(); });
+  $('exWhat').addEventListener('change', function () { $('exRange').hidden = this.value !== 'range'; });
+
+  /* ---------- export ---------- */
+  var exMsg = $('exMsg'), exProg = $('exProg'), exCancel = $('exCancel'), running = false, cancelled = false;
+  function msg(t) { exMsg.textContent = t; }
+  function chosen() {
+    var what = $('exWhat').value;
+    if (what === 'panel') return [idx];
+    if (what === 'item') {
+      /* the item on screen, starting from the grid zooming into it */
+      var p0 = P[idx], it = !p0.grid ? p0.item : p0.zoomTo !== undefined ? p0.zoomTo + 1 : p0.zoomFrom !== undefined ? p0.zoomFrom + 1 : 0, list = [];
+      P.forEach(function (p, i) { if ((!p.grid && p.item === it) || (p.grid && p.zoomTo === it - 1)) list.push(i); });
+      return list.length ? list : [idx];
+    }
+    if (what === 'range') { var a = parseInt($('exFrom').value, 10), b = parseInt($('exTo').value, 10), out = []; P.forEach(function (p, i) { if (p.n >= Math.min(a, b) && p.n <= Math.max(a, b)) out.push(i); }); return out; }
+    return P.map(function (p, i) { return i; });
+  }
+  function slug(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+  function pad(n) { return ('00' + n).slice(-3); }
+  function download(blob, name) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 4000); }
+  function yieldUI() { return new Promise(function (r) { setTimeout(r, 0); }); }
+  function begin(label) { running = true; cancelled = false; exProg.hidden = false; exProg.value = 0; exCancel.hidden = false; msg(label); document.querySelectorAll('.ex-btn').forEach(function (b) { b.disabled = true; }); }
+  function end(text) { running = false; exProg.hidden = true; exCancel.hidden = true; msg(text); document.querySelectorAll('.ex-btn').forEach(function (b) { b.disabled = false; }); }
+  exCancel.addEventListener('click', function () { cancelled = true; });
+
+  async function pickCodec(fps) {
+    if (typeof VideoEncoder === 'undefined') return null;
+    var hi = fps > 30, list = [['avc', hi ? 'avc1.64002a' : 'avc1.640028', 'H.264'], ['avc', hi ? 'avc1.4d002a' : 'avc1.4d0028', 'H.264'], ['avc', 'avc1.42002a', 'H.264'], ['vp9', 'vp09.00.41.08', 'VP9']];
+    for (var i = 0; i < list.length; i++) {
+      var cfg = { codec: list[i][1], width: W, height: H, bitrate: GLOBAL.quality * 1e6, framerate: fps };
+      if (list[i][0] === 'avc') cfg.avc = { format: 'avc' };
+      try { var r = await VideoEncoder.isConfigSupported(cfg); if (r.supported) return { kind: list[i][0], cfg: cfg, label: list[i][2] }; } catch (e) {}
+    }
+    return null;
+  }
+  function framesOf(list) { var fps = GLOBAL.fps, n = 0; list.forEach(function (i) { n += Math.max(1, Math.round(SET[P[i].n].dur * fps)); }); return n; }
+  /* encode the panels in list to one MP4; returns the file as an ArrayBuffer unless a stream target is given */
+  async function encode(list, codec, streamTarget, progress) {
+    var fps = GLOBAL.fps, target = streamTarget || new Mp4Muxer.ArrayBufferTarget();
+    var muxer = new Mp4Muxer.Muxer({ target: target, video: { codec: codec.kind, width: W, height: H, frameRate: fps }, fastStart: streamTarget ? false : 'in-memory', firstTimestampBehavior: 'offset' });
+    var failure = null, enc = new VideoEncoder({ output: function (chunk, meta) { muxer.addVideoChunk(chunk, meta); }, error: function (e) { failure = e; } });
+    enc.configure(codec.cfg);
+    var off = document.createElement('canvas'); off.width = W; off.height = H; var g = off.getContext('2d');
+    var frame = 0;
+    for (var k = 0; k < list.length; k++) {
+      var nf = Math.max(1, Math.round(SET[P[list[k]].n].dur * fps));
+      for (var f = 0; f < nf; f++) {
+        if (cancelled) { try { enc.close(); } catch (e) {} throw new Error('cancelled'); }
+        if (failure) throw failure;
+        drawFrame(g, list[k], f / fps, false);
+        var vf = new VideoFrame(off, { timestamp: Math.round(frame * 1e6 / fps), duration: Math.round(1e6 / fps) });
+        enc.encode(vf, { keyFrame: frame % (fps * 2) === 0 }); vf.close();
+        frame++;
+        while (enc.encodeQueueSize > 4) await new Promise(function (r) { setTimeout(r, 1); });
+        if (frame % 8 === 0) { progress(frame); await yieldUI(); }
+      }
+    }
+    await enc.flush(); if (failure) throw failure;
+    enc.close(); muxer.finalize();
+    return streamTarget ? null : target.buffer;
+  }
+  /* where files go: a folder the user picks (Chrome/Edge), otherwise one ZIP download */
+  async function makeSink(zipName, allowFolder) {
+    if (allowFolder && window.showDirectoryPicker) {
+      try {
+        var dir = await window.showDirectoryPicker({ mode: 'readwrite' });
+        return { put: async function (name, data) { var fh = await dir.getFileHandle(name, { create: true }), w = await fh.createWritable(); await w.write(data); await w.close(); }, close: async function () {}, where: 'the folder you chose' };
+      } catch (e) { if (e && e.name === 'AbortError') return null; }
+    }
+    var files = {};
+    return {
+      put: async function (name, data) { files[name] = data instanceof Uint8Array ? data : new Uint8Array(data instanceof Blob ? await data.arrayBuffer() : data); },
+      close: function () { return new Promise(function (res, rej) { fflate.zip(files, { level: 0 }, function (err, out) { if (err) return rej(err); download(new Blob([out], { type: 'application/zip' }), zipName); res(); }); }); },
+      where: zipName
+    };
+  }
+  function timingCsv(list) {
+    var t = 0, rows = ['panel,item,start_seconds,length_seconds,wobble,zoom,zoom_percent,zoom_centre_x,zoom_centre_y,narration'];
+    list.forEach(function (i) { var p = P[i], s = SET[p.n]; rows.push([p.n, p.grid ? 'grid' : NAMES[p.item], t.toFixed(2), s.dur, p.grid ? '' : s.wobble, p.grid ? '' : s.zoom, p.grid ? '' : s.amount, s.fx.toFixed(3), s.fy.toFixed(3), '"' + (p.line || '').replace(/"/g, '""') + '"'].join(',')); t += s.dur; });
+    return new Blob([rows.join('\n') + '\n'], { type: 'text/csv' });
+  }
+  function codecNote(c) { return c.kind === 'avc' ? '' : ' Your browser could only make VP9 video; if your editor won\'t open it, export again from Google Chrome or Microsoft Edge on a computer.'; }
+  var NO_CODEC = 'This browser can\'t make video files. Use Google Chrome or Microsoft Edge on a computer, or export PNG layers instead.';
+
+  $('exMp4').addEventListener('click', async function () {
+    if (running) return;
+    var list = chosen(); if (!list.length) return msg('Nothing in that range.');
+    var name = 'firsts-' + ($('exWhat').value === 'all' ? 'whole-video' : 'panels-' + P[list[0]].n + '-' + P[list[list.length - 1]].n) + '.mp4';
+    var handle = null;
+    if (window.showSaveFilePicker) { try { handle = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: 'MP4 video', accept: { 'video/mp4': ['.mp4'] } }] }); } catch (e) { if (e && e.name === 'AbortError') return; } }
+    var codec = await pickCodec(GLOBAL.fps); if (!codec) return msg(NO_CODEC);
+    var total = framesOf(list); begin('Making the video…'); exProg.max = total;
+    try {
+      var writable = handle ? await handle.createWritable() : null;
+      var buf = await encode(list, codec, writable ? new Mp4Muxer.FileSystemWritableFileStreamTarget(writable) : null, function (f) { exProg.value = f; msg('Frame ' + f + ' of ' + total + ' (' + codec.label + ')'); });
+      if (writable) await writable.close(); else download(new Blob([buf], { type: 'video/mp4' }), name);
+      end('Done: ' + name + ', ' + (total / GLOBAL.fps).toFixed(1) + ' seconds.' + codecNote(codec));
+    } catch (e) { end(e && e.message === 'cancelled' ? 'Cancelled.' : 'Export failed: ' + (e && e.message || e)); }
+  });
+
+  $('exClips').addEventListener('click', async function () {
+    if (running) return;
+    var list = chosen(); if (!list.length) return msg('Nothing in that range.');
+    var sink = await makeSink('firsts-clips.zip', true); if (!sink) return;
+    var codec = await pickCodec(GLOBAL.fps); if (!codec) return msg(NO_CODEC);
+    var total = framesOf(list), done = 0; begin('Making clips…'); exProg.max = total;
+    try {
+      for (var k = 0; k < list.length; k++) {
+        var base = done;
+        var buf = await encode([list[k]], codec, null, function (f) { exProg.value = base + f; msg('Clip ' + (k + 1) + ' of ' + list.length + ' (panel ' + P[list[k]].n + ')'); });
+        await sink.put('p' + pad(P[list[k]].n) + '.mp4', new Uint8Array(buf));
+        done += Math.max(1, Math.round(SET[P[list[k]].n].dur * GLOBAL.fps));
+      }
+      await sink.put('timing.csv', timingCsv(list));
+      msg('Packing…'); await sink.close();
+      end('Done: ' + list.length + ' clips saved to ' + sink.where + ', with timing.csv.' + codecNote(codec));
+    } catch (e) { end(e && e.message === 'cancelled' ? 'Cancelled.' : 'Export failed: ' + (e && e.message || e)); }
+  });
+
+  $('exLayers').addEventListener('click', async function () {
+    if (running) return;
+    var list = chosen(); if (!list.length) return msg('Nothing in that range.');
+    var sink = await makeSink('firsts-layers.zip', true); if (!sink) return;
+    begin('Drawing layers…'); exProg.max = list.length;
+    function png(c) { return new Promise(function (res) { c.toBlob(res, 'image/png'); }); }
+    try {
+      var bars = {};
+      for (var k = 0; k < list.length; k++) {
+        if (cancelled) throw new Error('cancelled');
+        var p = P[list[k]], a = document.createElement('canvas'), t = document.createElement('canvas');
+        a.width = t.width = W; a.height = t.height = H;
+        S.render(a.getContext('2d'), p.n, 0, { noChrome: true, text: true, textLayer: t.getContext('2d') });
+        await sink.put('p' + pad(p.n) + '_art.png', await png(a));
+        if (!p.grid) await sink.put('p' + pad(p.n) + '_text.png', await png(t));
+        var title = S.barTitle(p.n);
+        if (title && !bars[title]) { var b = document.createElement('canvas'); b.width = W; b.height = H; S.bar(b.getContext('2d'), p.n); await sink.put('titlebar_' + slug(title) + '.png', await png(b)); bars[title] = 1; }
+        exProg.value = k + 1; msg('Panel ' + p.n + ' (' + (k + 1) + ' of ' + list.length + ')'); await yieldUI();
+      }
+      await sink.put('timing.csv', timingCsv(list));
+      await sink.put('README.txt', new Blob([[
+        'Firsts, drawn in code: layers for After Effects / Premiere Pro',
+        '',
+        'Every file is 1920x1080 so the layers line up with no moving.',
+        '  pNNN_art.png        the drawing (the bottom layer)',
+        '  pNNN_text.png       dates, labels and arrows on a transparent background',
+        '  titlebar_NAME.png   the white title bar with the name and portrait (the top layer)',
+        '  timing.csv          start time, length, wobble and zoom settings for each panel',
+        '',
+        'Stack them art, text, title bar (bottom to top). Zoom the art layer only, so the title bar stays still.'
+      ].join('\n')], { type: 'text/plain' }));
+      msg('Packing…'); await sink.close();
+      end('Done: layers for ' + list.length + ' panels saved to ' + sink.where + '.');
+    } catch (e) { end(e && e.message === 'cancelled' ? 'Cancelled.' : 'Export failed: ' + (e && e.message || e)); }
+  });
+
+  $('exSave').addEventListener('click', function () { download(new Blob([JSON.stringify(packSettings(), null, 2)], { type: 'application/json' }), 'firsts-settings.json'); msg('Settings saved as firsts-settings.json.'); });
+  $('exLoad').addEventListener('change', function () {
+    var f = this.files && this.files[0]; if (!f) return;
+    f.text().then(function (txt) { unpackSettings(JSON.parse(txt)); S.setText(optText.checked); S.setBarName(optName.checked); cache.clear(); persist(); edSync(); draw(performance.now()); msg('Settings loaded.'); }).catch(function () { msg('That file isn\'t a settings file.'); });
+    this.value = '';
+  });
+
+  window.FirstsEditor = { SET: SET, GLOBAL: GLOBAL, chosen: chosen, encode: encode, pickCodec: pickCodec, drawFrame: drawFrame, go: go, framesOf: framesOf };
+  function boot() { cache.clear(); S.setText(optText.checked); ui(); draw(performance.now()); requestAnimationFrame(tickLoop); }
   var fontReady = (document.fonts && document.fonts.load) ? document.fonts.load("700 70px 'Comic Neue'") : Promise.resolve();
-  Promise.race([fontReady, new Promise(function(r){ setTimeout(r, 2500); })]).then(boot, boot);
+  Promise.race([fontReady, new Promise(function (r) { setTimeout(r, 2500); })]).then(boot, boot);
 })();
 </script>
 </body>
