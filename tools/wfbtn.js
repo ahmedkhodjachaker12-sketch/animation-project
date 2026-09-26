@@ -1,0 +1,20 @@
+const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+require('fs').mkdirSync('exp', { recursive: true });
+(async () => {
+  const b = await chromium.launch(); const p = await (await b.newContext({ acceptDownloads: true, viewport: { width: 1400, height: 1000 } })).newPage();
+  const errs = []; p.on('pageerror', e => errs.push(e.message));
+  await p.route(/^https?:/, r => r.abort());
+  await p.goto('file://' + require('./html.js')(process.argv[2]));
+  await p.waitForFunction(() => window.FirstsEditor);
+  await p.evaluate(() => { window.showDirectoryPicker = undefined; window.FirstsEditor.go(window.BalloonScenes.PANELS.findIndex(x => x.n === 56)); });
+  await p.click('#wfOpen');
+  await p.waitForFunction(() => document.querySelectorAll('#wfGrid figure').length === 8);
+  const vis = await p.evaluate(() => ({ editor: document.getElementById('editor').open, wf: document.getElementById('wf').open, panel: document.getElementById('wfPanel').textContent }));
+  for (const n of [1, 2, 3]) await p.check(`#wfGrid input[data-b="${n}"]`);
+  const [d] = await Promise.all([p.waitForEvent('download'), p.click('#wfPng')]);
+  await d.saveAs('exp/wf56.zip');
+  await p.waitForFunction(() => !document.querySelector('#exMp4').disabled);
+  const diff = await p.evaluate(() => { const S = window.BalloonScenes; function px(bo) { const c = document.createElement('canvas'); c.width = 480; c.height = 270; S.render(c.getContext('2d'), 56, bo, { noChrome: true, scale: 0.25, wobAmp: 1.4 }); return c.getContext('2d').getImageData(0, 0, 480, 270).data; } const a = px(1), b2 = px(2); let n = 0; for (let i = 0; i < a.length; i += 4) if (Math.abs(a[i] - b2[i]) > 30) n++; return n; });
+  console.log(JSON.stringify({ errs, vis, msg: await p.textContent('#exMsg'), diff56: diff }));
+  await b.close();
+})();
