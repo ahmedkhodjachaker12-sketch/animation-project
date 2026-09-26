@@ -1052,28 +1052,48 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   function cam(vx, vy, f, hc) { var pr = function (X, Y, Z) { return [vx + f * X / Z, vy + f * (hc - Y) / Z]; }; pr.f = f; pr.px = function (m, Z) { return f * m / Z; }; return pr; }
   function q3(ctx, pr, pts, o) { return S(ctx, pts.map(function (p) { return pr(p[0], p[1], p[2]); }), Object.assign({ closed: true, smooth: false }, o)); }
   /* a person standing at (X, Z) in a cam() shot, sized for their distance */
-  function personAt(ctx, pr, X, Z, o, h) { var p = pr(X, 0, Z), sc = pr.px(h || 1.72, Z) / 534; return person(ctx, Object.assign({ x: p[0], y: p[1], s: sc }, o)); }
+  function personAt(ctx, pr, X, Z, o, h) { var p = pr(X, 0, Z), sc = pr.px(h || 1.72, Z) / 534, q = Object.assign({}, o, { x: p[0], y: p[1], s: sc }); if (o.walk !== undefined) { q = walkPose(q, o.walk); } return person(ctx, q); }
   /* a street running away from the camera: road, pavements, and a row of house fronts on each side */
   function streetDepth(ctx, pr, o) {
-    var rw = o.roadW / 2, pw = o.pav, z0 = o.z0 || 1.2, z1 = o.z1 || 70, i;
-    q3(ctx, pr, [[-rw, 0, z0], [rw, 0, z0], [rw, 0, z1], [-rw, 0, z1]], { fill: o.road || C.road, j: 0.3 });
-    if (pw) [-1, 1].forEach(function (sd) { q3(ctx, pr, [[sd * rw, 0.12, z0], [sd * (rw + pw), 0.12, z0], [sd * (rw + pw), 0.12, z1], [sd * rw, 0.12, z1]], { fill: o.pavCol || '#cfcac0', j: 0.3 }); });
-    for (i = 0; i < 26; i++) { var Z = rr(z0 + 1, 22), X = rr(-rw + 0.3, rw - 0.3), p = pr(X, 0, Z), k = pr.px(1, Z); E(ctx, p[0], p[1], 0.24 * k, 0.08 * k, { w: 2.2, color: o.stone || '#8a8a86', j: 0 }); }
+    var rw = o.roadW / 2, pw = o.pav, z0 = o.z0 || 1.2, z1 = o.z1 || 70, zh = o.zh0 || z0 + 1.5, i;
+    q3(ctx, pr, [[-rw - pw - 30, 0, z0], [rw + pw + 30, 0, z0], [rw + pw + 30, 0, z1 + 60], [-rw - pw - 30, 0, z1 + 60]], { fill: o.road || C.road, w: 0, j: 0 });
+    /* pavements level with the road, with a kerb line along the edge */
+    if (pw) [-1, 1].forEach(function (sd) { q3(ctx, pr, [[sd * rw, 0, z0], [sd * (rw + pw + 0.2), 0, z0], [sd * (rw + pw + 0.2), 0, z1], [sd * rw, 0, z1]], { fill: o.pavCol || '#cfcac0', w: 0, j: 0 }); var a = pr(sd * rw, 0, z0), b = pr(sd * rw, 0, z1); Ln(ctx, a[0], a[1], b[0], b[1], { w: 4, color: o.kerb || '#8a867c' }); });
+    for (i = 0; i < 40; i++) { var Z = rr(z0 + 1, 26), X = rr(-rw + 0.3, rw - 0.3), p = pr(X, 0, Z), k = pr.px(1, Z); Ln(ctx, p[0] - 0.1 * k, p[1], p[0] + 0.1 * k, p[1], { w: Math.max(2, 0.04 * k), color: o.stone || '#8a8a86', j: 0 }); }
     [-1, 1].forEach(function (sd) {
-      var X = sd * (rw + pw), z = z0 - 0.6, segs = [], n = 0;
-      while (z < z1) { var len = rr(o.minLen || 6, o.maxLen || 8.5); segs.push({ za: z, zb: z + len, h: rr(o.hMin, o.hMax), n: n++ }); z += len + (o.gaps && rnd() < o.gaps ? rr(2, 5) : 0); }
+      var X = sd * (rw + pw), z = zh, segs = [], n = 0;
+      while (z < z1) { var len = rr(o.minLen || 6, o.maxLen || 8.5); segs.push({ za: z, zb: z + len, h: rr(o.hMin, o.hMax), n: n++ }); z += len; }
       segs.reverse().forEach(function (g) {
-        var col = o.cols[g.n % o.cols.length];
-        q3(ctx, pr, [[X, g.h, g.za], [X + sd * 2.4, g.h + o.roof, g.za], [X + sd * 2.4, g.h + o.roof, g.zb], [X, g.h, g.zb]], { fill: o.roofCol || C.slate, j: 0.3 });
-        var cz = g.za + (g.zb - g.za) * 0.7; q3(ctx, pr, [[X + sd * 1.2, g.h + o.roof * 0.5, cz], [X + sd * 1.2, g.h + o.roof + 1.3, cz], [X + sd * 1.2, g.h + o.roof + 1.3, cz + 0.8], [X + sd * 1.2, g.h + o.roof * 0.5, cz + 0.8]], { fill: o.chimCol || '#8a5a45', j: 0.3 });
-        q3(ctx, pr, [[X, 0, g.za], [X, g.h, g.za], [X, g.h, g.zb], [X, 0, g.zb]], { fill: col, j: 0.3 });
-        var floors = o.floors(g.h);
-        floors.forEach(function (fy, fi) {
-          for (var wz = g.za + 1.1; wz < g.zb - 1.2; wz += o.winStep || 2.4) {
-            if (fi === 0 && Math.abs(wz - (g.za + 1.1 + (o.winStep || 2.4))) < 0.1) q3(ctx, pr, [[X, 0, wz], [X, 2.3, wz], [X, 2.3, wz + 1.1], [X, 0, wz + 1.1]], { fill: o.doors[g.n % o.doors.length], j: 0.3 });
-            else q3(ctx, pr, [[X, fy, wz], [X, fy + o.winH, wz], [X, fy + o.winH, wz + o.winW], [X, fy, wz + o.winW]], { fill: o.winCol || '#e9e2cf', j: 0.3, w: 3 });
+        var col = o.cols[(g.n + (sd > 0 ? 1 : 0)) % o.cols.length], R = o.roof;
+        /* roof, sloping back from the street, then the chimney stack standing on it (a box, seen end-on) */
+        q3(ctx, pr, [[X, g.h, g.za], [X + sd * 2.6, g.h + R, g.za], [X + sd * 2.6, g.h + R, g.zb], [X, g.h, g.zb]], { fill: o.roofCol || C.slate, w: 3, j: 0 });
+        var cz = g.za + (g.zb - g.za) * 0.72;
+        q3(ctx, pr, [[X + sd * 1.3, g.h + R * 0.5, cz], [X + sd * 2.3, g.h + R * 0.5, cz], [X + sd * 2.3, g.h + R + 1.1, cz], [X + sd * 1.3, g.h + R + 1.1, cz]], { fill: o.chimCol || '#b98a6a', w: 3, j: 0 });
+        q3(ctx, pr, [[X + sd * 1.25, g.h + R + 1.1, cz], [X + sd * 2.35, g.h + R + 1.1, cz], [X + sd * 2.35, g.h + R + 1.3, cz], [X + sd * 1.25, g.h + R + 1.3, cz]], { fill: '#8a6a52', w: 3, j: 0 });
+        [1.6, 2.0].forEach(function (px2) { var a = pr(X + sd * px2, g.h + R + 1.3, cz), b = pr(X + sd * px2, g.h + R + 1.6, cz); Ln(ctx, a[0], a[1], b[0], b[1], { w: Math.max(3, pr.px(0.2, cz)), color: '#c0643a', j: 0 }); });
+        /* the front wall, the eaves, a downpipe between houses */
+        q3(ctx, pr, [[X, 0, g.za], [X, g.h, g.za], [X, g.h, g.zb], [X, 0, g.zb]], { fill: col, w: 3, j: 0 });
+        q3(ctx, pr, [[X, g.h - 0.3, g.za], [X, g.h, g.za], [X, g.h, g.zb], [X, g.h - 0.3, g.zb]], { fill: shade(col, 0.82), w: 3, j: 0 });
+        q3(ctx, pr, [[X, 0, g.za], [X, 0.4, g.za], [X, 0.4, g.zb], [X, 0, g.zb]], { fill: shade(col, 0.78), w: 3, j: 0 });
+        var fl = o.floors(g.h), step = o.winStep || 2.4, bays = Math.max(2, Math.floor((g.zb - g.za - 0.6) / step)), m = (g.zb - g.za - bays * step) / 2, door = 1 + (g.n % Math.max(1, bays - 1));
+        fl.forEach(function (fy, fi) {
+          for (var b = 0; b < bays; b++) {
+            var wz = g.za + m + b * step + (step - o.winW) / 2;
+            if (fi === 0 && b === door) {
+              var dz = g.za + m + b * step + (step - 1.05) / 2;
+              q3(ctx, pr, [[X, 0.4, dz], [X, 2.5, dz], [X, 2.5, dz + 1.05], [X, 0.4, dz + 1.05]], { fill: o.doors[g.n % o.doors.length], w: 3, j: 0 });
+              if (o.fanlight) q3(ctx, pr, [[X, 2.55, dz], [X, 2.95, dz + 0.2], [X, 3.05, dz + 0.52], [X, 2.95, dz + 0.85], [X, 2.55, dz + 1.05]], { fill: o.winCol || '#e9e2cf', w: 3, j: 0 });
+              q3(ctx, pr, [[X - sd * 0.35, 0, dz - 0.15], [X - sd * 0.35, 0.18, dz - 0.15], [X - sd * 0.35, 0.18, dz + 1.2], [X - sd * 0.35, 0, dz + 1.2]], { fill: '#bdb6a8', w: 3, j: 0 });
+            } else {
+              q3(ctx, pr, [[X, fy, wz], [X, fy + o.winH, wz], [X, fy + o.winH, wz + o.winW], [X, fy, wz + o.winW]], { fill: '#f4f1ea', w: 3, j: 0 });
+              q3(ctx, pr, [[X, fy + 0.08, wz + 0.08], [X, fy + o.winH - 0.08, wz + 0.08], [X, fy + o.winH - 0.08, wz + o.winW - 0.08], [X, fy + 0.08, wz + o.winW - 0.08]], { fill: o.winCol || '#5d7b95', w: 2, j: 0 });
+              var mh = pr(X, fy + o.winH / 2, wz + 0.08), mh2 = pr(X, fy + o.winH / 2, wz + o.winW - 0.08), mv = pr(X, fy + 0.08, wz + o.winW / 2), mv2 = pr(X, fy + o.winH - 0.08, wz + o.winW / 2);
+              Ln(ctx, mh[0], mh[1], mh2[0], mh2[1], { w: Math.max(2, pr.px(0.05, wz)), color: '#f4f1ea', j: 0 }); Ln(ctx, mv[0], mv[1], mv2[0], mv2[1], { w: Math.max(2, pr.px(0.05, wz)), color: '#f4f1ea', j: 0 });
+              q3(ctx, pr, [[X, fy - 0.1, wz - 0.1], [X, fy, wz - 0.1], [X, fy, wz + o.winW + 0.1], [X, fy - 0.1, wz + o.winW + 0.1]], { fill: '#e6e0d2', w: 2, j: 0 });
+            }
           }
         });
+        var d0 = pr(X, 0.4, g.za + 0.08), d1 = pr(X, g.h - 0.3, g.za + 0.08); Ln(ctx, d0[0], d0[1], d1[0], d1[1], { w: Math.max(2, pr.px(0.1, g.za)), color: '#4a4f58', j: 0 });
       });
     });
   }
@@ -1145,6 +1165,22 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     [[b.grip[0] + 6, b.grip[1] + 6], [b.grip[0] + 16, b.grip[1] + 10]].forEach(function (g) { E(ctx, g[0], g[1] + 0.9 * k, 0.9 * k, 1.2 * k, { fill: '#f4f4f0', w: 3 }); });
     personArms(ctx, Object.assign({}, o, { pose: { l: { to: [b.seat[0] + 4, b.seat[1] + 6], type: 'fist', bend: 1 }, r: { to: [b.grip[0] + 6, b.grip[1] + 4], type: 'fist', bend: 1 } } }));
   }
+  /* a court room wall: plaster above, a wood dado with low panels below, a cornice at the top */
+  function courtWall(ctx, dado, plaster, wood) {
+    Rc(ctx, -20, -20, W + 40, H + 40, { fill: plaster || '#e9dfc8', w: 0, j: 0 });
+    Rc(ctx, -20, 150, W + 40, 34, { fill: shade(plaster || '#e9dfc8', 0.9), w: 4, j: 0 });
+    Rc(ctx, -20, dado, W + 40, H - dado + 20, { fill: wood || '#8a5a3a', w: 4, j: 0 });
+    Rc(ctx, -20, dado - 12, W + 40, 18, { fill: shade(wood || '#8a5a3a', 1.2), w: 4, j: 0 });
+    for (var x = 30; x < W; x += 230) Rc(ctx, x, dado + 40, 190, Math.min(220, H - dado - 70), { w: 3.5, color: shade(wood || '#8a5a3a', 0.72), j: 0 });
+  }
+  /* a flag hanging from a pole, with a few soft folds */
+  function flagPole(ctx, x, base, h, draw) {
+    Ln(ctx, x, base, x, base - h, { w: 8, color: '#b8902a' }); E(ctx, x, base - h - 10, 12, 12, { fill: C.gold, w: 3 });
+    ctx.save(); ctx.translate(x + 6, base - h + 10); draw(); ctx.restore();
+    Rc(ctx, x - 40, base - 10, 80, 14, { fill: '#6b4a2b', w: 3 });
+  }
+  /* a seated person seen over a rail: a chair back behind, head and shoulders above the rail */
+  function seated(ctx, o) { var u = o.s * 10; Rc(ctx, o.x - 3.2 * u, o.y - 2 * u, 6.4 * u, 22 * u, { fill: o.chair || '#4a2e22', w: 4, j: 0 }); bust(ctx, o); }
   /* ---------- railway kit ---------- */
   function wheel(ctx, cx, cy, r, col) {
     E(ctx, cx, cy, r, r, { fill: col || '#caa05a', w: 6 });
@@ -2801,8 +2837,8 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     seed(79);
     /* from the driver's seat: the street ahead, Bridget Driscoll stepping out to cross, the tiller in his hands */
     var pr = cam(960, 470, 820, 1.7);
-    streetDepth(ctx, pr, { roadW: 9, pav: 2.2, hMin: 9.5, hMax: 11, roof: 2.2, cols: [C.brick, '#c98a6a', '#b5654a', '#d0a080'], doors: ['#2c3e63', '#3f6b4a', '#6b2e2e'], winW: 1.1, winH: 1.7, floors: function (h) { return [0.9, 4.2, 7.2]; } });
-    [[-5.2, 18, 1], [5.4, 26, -1], [-5.6, 34, 1]].forEach(function (p, i) { personAt(ctx, pr, p[0], p[1], walkPose({ x: 0, y: 0, coat: [C.coatK, '#6b4a6e', C.coatN][i], hat: ['bowler', 'bighat', 'top'][i], hairStyle: 'short', hair: C.hairB, trousers: i !== 1, pants: C.trou, dress: i === 1 ? '#6b4a6e' : undefined, expr: 'neutral', look: [p[2], 0] }, p[2])); });
+    streetDepth(ctx, pr, { roadW: 9, pav: 2.2, zh0: 2.6, hMin: 9.5, hMax: 10.5, roof: 2.2, cols: [C.brick, '#c98a6a', '#b5654a', '#d0a080'], doors: ['#2c3e63', '#3f6b4a', '#6b2e2e'], winCol: '#4b5566', winW: 1.1, winH: 1.8, winStep: 2.5, floors: function (h) { return [1.0, 4.1, 7.1]; } });
+    [[-5.3, 16, 1], [5.4, 24, -1], [-5.6, 32, 1]].forEach(function (p, i) { personAt(ctx, pr, p[0], p[1], { walk: p[2], coat: [C.coatK, '#6b4a6e', C.coatN][i], hat: ['bowler', 'bighat', 'top'][i], hairStyle: ['part', 'bun', 'receding'][i], hair: [C.hairB, '#7a5a3a', C.greyH][i], trousers: i !== 1, pants: C.trou, dress: i === 1 ? '#6b4a6e' : undefined, expr: 'neutral', look: [p[2], 0] }); });
     var bp = pr(-0.9, 0, 7.5), bs = pr.px(1.65, 7.5) / 534;
     person(ctx, driscoll(walkPose({ x: bp[0], y: bp[1], s: bs, expr: 'neutral', look: [1, 0.1] }, 1)));
     /* the front of the car: the dashboard, the brass lamp, the tiller bar, his gloved hands */
@@ -2824,8 +2860,10 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[81] = function (ctx) {
     seed(81);
-    Rc(ctx, -20, -20, W + 40, 1020, { fill: '#8a5a3a', w: 0, j: 0 });
-    for (var i = 0; i < 8; i++) Rc(ctx, 40 + i * 240, 260, 200, 520, { fill: '#9a6a43', w: 4 });
+    courtWall(ctx, 700, '#e3d9c0', '#6b4428');
+    Rc(ctx, 260, 250, 260, 330, { fill: '#cfe3ef', w: 7 }); Ln(ctx, 390, 250, 390, 580, { w: 6 }); Ln(ctx, 260, 415, 520, 415, { w: 6 });
+    S(ctx, [[960, 230], [1060, 230], [1052, 330], [1010, 372], [968, 330]], { closed: true, fill: '#c9423c', w: 5 }); S(ctx, [[1010, 250], [1010, 350]], { w: 4, color: C.gold }); S(ctx, [[975, 290], [1045, 290]], { w: 4, color: C.gold });
+    E(ctx, 1560, 300, 56, 56, { fill: '#f4f1ea', w: 6 }); Ln(ctx, 1560, 300, 1560, 266, { w: 5 }); Ln(ctx, 1560, 300, 1586, 312, { w: 5 });
     person(ctx, { x: 1120, y: 1150, s: 1.2, coat: C.coatK, hairStyle: 'short', hair: C.greyH, trousers: true, pants: C.coatK, collar: true, vest: '#f3efe6', expr: 'worried', pose: { l: [16, 6, 'open'], r: [60, 110, 'open'] } });
     Rc(ctx, 300, 880, 1320, 70, { fill: C.woodL }); Rc(ctx, 320, 950, 1280, 160, { fill: C.wood });
     polyR(ctx, 620, 905, 220, 50, 0.05, { fill: C.paper, w: 4 }); polyR(ctx, 1450, 905, 180, 44, -0.08, { fill: C.paper, w: 4 });
@@ -2842,14 +2880,16 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[83] = function (ctx) {
     seed(83);
-    /* down the main street of the little Irish town, the church at the end of it */
-    var pr = cam(960, 560, 860, 1.6);
-    var cp = pr(0, 0, 46), cs = pr.px(18, 46) / 550;
-    S(ctx, [[-20, 560], [W * 0.3, 540], [W * 0.7, 548], [W + 20, 536], [W + 20, 600], [-20, 600]], { closed: true, fill: '#a9c97e' });
-    church(ctx, cp[0] - 200 * cs, cp[1], cs);
-    streetDepth(ctx, pr, { roadW: 7, pav: 0.9, pavCol: '#a9c97e', road: '#c9b99a', stone: '#a8977a', hMin: 5.2, hMax: 6.2, roof: 2.6, z1: 44, gaps: 0.2, cols: [C.whitewash, '#efe3c6', C.whitewash, '#e6ecef'], doors: [C.red, '#2c3e63', '#3f6b4a'], winCol: '#5d7b95', winW: 1.0, winH: 1.2, winStep: 2.6, floors: function (h) { return [1.0, 3.4]; } });
-    personAt(ctx, pr, -1.6, 12, walkPose({ x: 0, y: 0, coat: C.coatB, hairStyle: 'short', hair: C.hairB, trousers: true, pants: C.trou, hat: 'cap', expr: 'neutral', look: [1, 0] }, 1));
-    personAt(ctx, pr, 2.8, 18, { dress: '#5e4a6e', hat: 'bonnet', hatCol: '#e9d7a8', hairStyle: 'bun', hair: C.hairD, expr: 'neutral', look: [-1, 0] });
+    /* down the main street of the little Irish town: painted house fronts, the church at the end of it */
+    var pr = cam(960, 600, 980, 1.6);
+    for (var t = 0; t < 7; t++) { var tx = 520 + t * 150 + rr(-30, 30); E(ctx, tx, 560 + rr(-10, 10), 90, 70, { fill: t % 2 ? '#86b05f' : '#7fa05a' }); }
+    var cp = pr(-3.2, 0, 52), cs = pr.px(20, 52) / 550;
+    church(ctx, cp[0], cp[1], cs);
+    streetDepth(ctx, pr, { roadW: 8, pav: 1.6, z1: 52, zh0: 3.2, pavCol: '#d6cfbf', kerb: '#a8a08c', road: '#c9b99a', stone: '#a8977a', hMin: 6.4, hMax: 7.2, roof: 2.4, minLen: 6.5, maxLen: 8,
+      cols: ['#f2e3a4', '#b9d3e0', '#f2efe6', '#e8b8aa', '#c9dbb0', '#f2efe6'], doors: ['#2c3e63', C.red, '#3f6b4a', '#2b2b2b'], winCol: '#4b6b85', winW: 1.0, winH: 1.5, winStep: 2.3, fanlight: true, floors: function (h) { return [1.0, 3.9]; } });
+    personAt(ctx, pr, 3.4, 10, { walk: -1, coat: C.coatB, hairStyle: 'short', hair: '#9a3a1f', trousers: true, pants: C.trou, hat: 'cap', expr: 'neutral', look: [-1, 0] });
+    personAt(ctx, pr, -3.6, 15, { dress: '#5e4a6e', hat: 'bonnet', hatCol: '#e9d7a8', hairStyle: 'bun', hair: C.hairD, expr: 'neutral', look: [1, 0] });
+    personAt(ctx, pr, -3.2, 24, { walk: 1, coat: C.coatG, hairStyle: 'receding', hair: C.greyH, trousers: true, pants: C.trou, hat: 'top', expr: 'neutral', look: [1, 0] });
     T(ctx, '1869', 300, 300, 120);
   };
   P[84] = function (ctx) {
@@ -3585,12 +3625,39 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   P[183] = function (ctx) { seed(183); factoryBg(ctx); console2(ctx, 360, 380, 1200, 640, { noStop: true, screen: function (x, y, w, h) { T(ctx, 'RUNNING', x + w / 2, y + h / 2, h * 0.24, { obj: true, color: '#7dffb0' }); } }); T(ctx, 'NO AUTO SHUTDOWN', 1260, 920, 54, { color: C.red, maxW: 520 }); };
   P[184] = function (ctx) {
     seed(184);
-    Rc(ctx, -20, -20, W + 40, 1120, { fill: '#8a5a3a', w: 0, j: 0 }); for (var i = 0; i < 8; i++) Rc(ctx, 40 + i * 240, 240, 200, 420, { fill: '#9a6a43', w: 4 });
-    person(ctx, { x: 1300, y: 935, s: 0.75, coat: '#1e1e22', vest: '#1e1e22', noCravat: false, hairStyle: 'short', hair: C.greyH, trousers: true, noLegs: true, expr: 'determined', pose: { l: [16, 6, 'open'], r: [16, 6, 'open'] } });
-    Rc(ctx, 980, 760, 700, 330, { fill: C.wood }); Rc(ctx, 960, 740, 740, 40, { fill: C.woodL });
-    for (var r = 0; r < 2; r++) for (var c = 0; c < 4; c++) mini(ctx, 190 + c * 150 + r * 60, 850 + r * 80, 6.5, [C.coatN, C.coatR, C.coatT, C.coatG, C.coatK, '#6b7d4f', '#b56d8a', C.coatB][r * 4 + c], Object.assign(looks(1979, (r + c) % 3 === 0), { hat: '' }));
-    Rc(ctx, 100, 860, 760, 240, { fill: C.wood }); T(ctx, 'JURY', 480, 980, 54, { color: '#f4ebd4' });
-    T(ctx, '$10,000,000', 1330, 380, 110, { maxW: 760 }); T(ctx, 'a Michigan record', 1330, 490, 46, { weight: 400 });
+    /* the court room, from the public seats: the judge's bench under the state seal between the two flags,
+       the witness stand, the six-person civil jury seated in their box, the family at the rail in front of us */
+    courtWall(ctx, 640);
+    var drape = function (col, stripes) { return function () {
+      Rc(ctx, 0, 0, 170, 112, { fill: col, w: 0, j: 0 });
+      if (stripes) { for (var st = 0; st < 7; st++) Rc(ctx, 0, st * 16, 170, 8.6, { fill: C.red, w: 0, j: 0 }); Rc(ctx, 0, 0, 74, 60, { fill: '#2c3e63', w: 0, j: 0 }); for (var sx = 0; sx < 5; sx++) for (var sy = 0; sy < 4; sy++) E(ctx, 9 + sx * 14 + (sy % 2) * 7, 9 + sy * 13, 2.6, 2.6, { fill: '#f4f1ea', stroke: false, j: 0 }); }
+      else { S(ctx, [[62, 30], [108, 30], [104, 76], [85, 90], [66, 76]], { closed: true, fill: '#e6b83c', w: 3 }); E(ctx, 85, 54, 12, 12, { fill: '#8fb4c9', w: 2.6 }); }
+      Rc(ctx, 0, 0, 170, 112, { w: 4 });
+    }; };
+    flagPole(ctx, 700, 640, 440, drape('#f4f1ea', true));
+    flagPole(ctx, 1500, 640, 440, drape('#27406b', false));
+    E(ctx, 1100, 262, 84, 84, { fill: '#27406b', w: 6 }); E(ctx, 1100, 262, 60, 60, { fill: '#8fb4c9', w: 4 }); S(ctx, [[1074, 244], [1126, 244], [1122, 288], [1100, 302], [1078, 288]], { closed: true, fill: '#e6b83c', w: 3 });
+    E(ctx, 1790, 470, 52, 52, { fill: '#f4f1ea', w: 6 }); Ln(ctx, 1790, 470, 1790, 438, { w: 5 }); Ln(ctx, 1790, 470, 1812, 482, { w: 5 });
+    /* the judge, seated high behind the bench */
+    bust(ctx, { x: 1100, y: 440, s: 0.95, coat: '#1e1e22', noCravat: true, hairStyle: 'receding', hair: C.greyH, expr: 'neutral', look: [-0.4, 0.2] });
+    Rc(ctx, 830, 580, 540, 340, { fill: '#7a4e32', w: 5 }); Rc(ctx, 810, 560, 580, 32, { fill: '#9a6a43', w: 5 });
+    for (var bp = 0; bp < 3; bp++) Rc(ctx, 860 + bp * 172, 630, 140, 240, { w: 3.5, color: '#5e3a24', j: 0 });
+    Rc(ctx, 1200, 538, 50, 22, { fill: '#5e3a24', w: 3 }); Ln(ctx, 1225, 538, 1260, 516, { w: 7, color: '#5e3a24' });
+    /* the witness stand */
+    Rc(ctx, 1500, 700, 240, 220, { fill: '#7a4e32', w: 5 }); Rc(ctx, 1486, 684, 268, 26, { fill: '#9a6a43', w: 5 });
+    Ln(ctx, 1560, 684, 1590, 630, { w: 4, color: '#3a3a3a' }); E(ctx, 1594, 624, 10, 12, { fill: '#3a3a3a', w: 2 });
+    /* the jury box, six jurors seated behind its rail */
+    for (var j = 0; j < 6; j++) { var lk = looks(1979, j % 2 === 1); seated(ctx, Object.assign({ x: 150 + j * 104, y: 640 + (j % 2) * 6, s: 0.5, coat: [C.coatN, '#6b4a2b', '#8a5a7a', C.coatG, '#3f5f8f', '#b56d8a'][j], expr: 'neutral', look: [0.6, 0.1] }, lk, { dress: lk.hairStyle === 'bob' || lk.hairStyle === 'long' || lk.hairStyle === 'bun' || lk.hairStyle === 'ponytail' || j % 2 ? [C.coatN, '#6b4a2b', '#8a5a7a', C.coatG, '#3f5f8f', '#b56d8a'][j] : undefined })); }
+    Rc(ctx, 70, 740, 690, 220, { fill: '#7a4e32', w: 5 }); Rc(ctx, 56, 722, 718, 28, { fill: '#9a6a43', w: 5 });
+    for (var jp = 0; jp < 3; jp++) Rc(ctx, 100 + jp * 220, 780, 190, 150, { w: 3.5, color: '#5e3a24', j: 0 });
+    /* the rail in front of the public seats, and his family behind it, seen from behind */
+    watcher(ctx, { x: 980, y: 900, s: 1.7, coat: '#3a3a44', hairStyle: 'bun', hair: '#3e2e24' });
+    watcher(ctx, { x: 1200, y: 960, s: 1.25, coat: '#6b7f93', hair: '#3e2e24' });
+    watcher(ctx, { x: 780, y: 965, s: 1.2, coat: '#8a5a7a', hairStyle: 'ponytail', hair: '#5a4332' });
+    Rc(ctx, -20, 1000, W + 40, 26, { fill: '#9a6a43', w: 5 });
+    for (var bx = 20; bx < W; bx += 70) Rc(ctx, bx, 1026, 18, 80, { fill: '#7a4e32', w: 3 });
+    T(ctx, '$10,000,000', 350, 330, 100, { maxW: 540 });
+    T(ctx, 'a Michigan record', 350, 430, 44, { weight: 400 });
   };
   P[185] = function (ctx) { seed(185); newspaper(ctx, 960, 610, 640, 0.02, 'FIRST ROBOT DEATH', '1981'); };
   P[186] = function (ctx) { P[185](ctx); seed(18601); Ln(ctx, 700, 280, 1230, 520, { w: 16, color: C.red }); Ln(ctx, 1230, 280, 700, 520, { w: 16, color: C.red }); };
@@ -6620,7 +6687,7 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
 
   /* which panels were redrawn in each version of the page, so frames made by an older version can be brought up to date.
      grid panels count too: they show small copies of the first panel of each item */
-  var DRAWN = 10, REDRAWN = { 10: [3,  7,  17,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,  72,  73,  74,  95,  97,  99,  100,  106,  107,  114,  115,  116,  117,  118,  119,  120,  121,  122,  123,  124,  125,  126,  127,  128,  129,  130,  131,  132,  133,  134,  135,  136,  137,  138,  139,  140,  141,  146,  147,  156,  157,  158,  162,  177,  178,  181,  184,  192,  193,  195,  203,  204,  205,  216,  217,  218,  219,  220], 9: [3,  7,  10,  17,  19,  26,  27,  35,  36,  47,  51,  53,  58,  61,  63,  65,  79,  80,  83,  85,  87,  88,  89,  90,  95,  97,  98,  99,  104,  105,  120,  121,  123,  136,  148,  164,  174,  181,  184,  191], 8: [3, 6, 7, 15, 16, 27, 28, 31, 32, 34, 36, 43, 47, 48, 51, 52, 53, 55, 58, 59, 61, 78, 88, 96, 97, 99, 105, 106, 107, 110, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 134, 135, 136, 137, 138, 162] };
+  var DRAWN = 11, REDRAWN = { 11: [79,  81,  83,  184], 10: [3,  7,  17,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,  72,  73,  74,  95,  97,  99,  100,  106,  107,  114,  115,  116,  117,  118,  119,  120,  121,  122,  123,  124,  125,  126,  127,  128,  129,  130,  131,  132,  133,  134,  135,  136,  137,  138,  139,  140,  141,  146,  147,  156,  157,  158,  162,  177,  178,  181,  184,  192,  193,  195,  203,  204,  205,  216,  217,  218,  219,  220], 9: [3,  7,  10,  17,  19,  26,  27,  35,  36,  47,  51,  53,  58,  61,  63,  65,  79,  80,  83,  85,  87,  88,  89,  90,  95,  97,  98,  99,  104,  105,  120,  121,  123,  136,  148,  164,  174,  181,  184,  191], 8: [3, 6, 7, 15, 16, 27, 28, 31, 32, 34, 36, 43, 47, 48, 51, 52, 53, 55, 58, 59, 61, 78, 88, 96, 97, 99, 105, 106, 107, 110, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 134, 135, 136, 137, 138, 162] };
   function redrawnSince(v) { var o = {}, any = false; Object.keys(REDRAWN).forEach(function (k) { if (+k > v) REDRAWN[k].forEach(function (n) { o[n] = 1; any = true; }); }); o.any = any; return o; }
   /* every frame as a lossless PNG, numbered as one sequence. picking a folder that already has some of them carries on
      from where it stopped, and redraws only the frames whose panel changed since they were made (firsts-export.json
