@@ -2187,18 +2187,21 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[4] = function (ctx) {
     seed(4);
-    /* the round gallery hanging under the balloon, seen a little from above: a ring-shaped walkway with a railing,
-       the fire in the hole in the middle; he stands at the front of the ring, hands on the rail,
-       and stares straight down at the ground far below */
-    parisBelow(ctx, 520, { rx: 1500, ph: 0.3, towns: [[0.45, -380, 4], [0.7, -900, 5], [0.95, -1300, 5]] });
-    [[200, 330, 60], [1740, 360, 56], [170, 620, 40], [1800, 640, 36]].forEach(function (c) { puff(ctx, c[0], c[1], c[2], '#eef2f5'); });
-    var R = 1300, cx = 1190, p = { s: 0.98, coat: C.coatB, hair: C.wig, expr: 'shock', look: [-0.6, 1] };
-    var G = montgolfier(ctx, cx, 640 - 0.1 * R - 2.25 * R, R, { gallery: true, tilt: 0.3, railing: true, crew: function (G) {
-      p.x = cx - 0.8 * G.rx; p.y = G.fy + G.ry * 0.6 - 16;
-      person(ctx, Object.assign({ noArms: true }, p));
-    } }).gallery;
-    var railY = function (x) { var c = Math.max(-1, Math.min(1, (x - cx) / G.rx)); return G.fy + Math.sqrt(1 - c * c) * G.ry - G.rh; };
-    personArms(ctx, Object.assign({ pose: { l: { to: [p.x - 76, railY(p.x - 76) + 2], type: 'fist', bend: 1 }, r: { to: [p.x + 44, railY(p.x + 44) + 2], type: 'fist', bend: -1 } } }, p));
+    /* before the flight, on the ground: the gardens of the Château de la Muette, west of Paris, 21 November 1783.
+       Behind him, as he looks up past the birds at the open sky, the one place no person had ever been.
+       The flight itself stays hidden until "He flew." */
+    ground(ctx, 800, '#bcd49a');
+    var cx = 1320, base = 800, k = 0.9;
+    Rc(ctx, cx - 330 * k, base - 150 * k, 660 * k, 150 * k, { fill: '#efe6d2' });
+    S(ctx, [[cx - 340 * k, base - 150 * k], [cx - 300 * k, base - 210 * k], [cx + 300 * k, base - 210 * k], [cx + 340 * k, base - 150 * k]], { closed: true, smooth: false, fill: '#7d8aa0' });
+    Rc(ctx, cx - 80 * k, base - 190 * k, 160 * k, 190 * k, { fill: '#f3ecdc' });
+    S(ctx, [[cx - 92 * k, base - 190 * k], [cx, base - 250 * k], [cx + 92 * k, base - 190 * k]], { closed: true, smooth: false, fill: '#7d8aa0' });
+    for (var wx = cx - 300 * k; wx < cx + 300 * k; wx += 52 * k) if (Math.abs(wx + 11 * k - cx) > 90 * k) { Rc(ctx, wx, base - 130 * k, 22 * k, 44 * k, { fill: C.win, w: 3 }); Rc(ctx, wx, base - 66 * k, 22 * k, 44 * k, { fill: C.win, w: 3 }); }
+    Rc(ctx, cx - 26 * k, base - 80 * k, 52 * k, 80 * k, { fill: '#6b4a2b', w: 3 });
+    [[860, 0.9], [980, 0.7], [1760, 0.95], [1880, 0.75]].forEach(function (t) { tree(ctx, t[0], base + 4, t[1]); });
+    [[1400, 420, 50], [1720, 520, 40], [220, 260, 36]].forEach(function (c) { puff(ctx, c[0], c[1], c[2], '#eef2f5'); });
+    birds(ctx, [[1240, 300], [1320, 270], [1400, 318], [1530, 262], [1600, 300]]);
+    watcher(ctx, { x: 520, y: 700, s: 2.3, coat: C.coatB, hair: C.wig, queue: true });
   };
   P[5] = function (ctx) {
     seed(5);
@@ -6839,7 +6842,7 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
 
   /* which panels were redrawn in each version of the page, so frames made by an older version can be brought up to date.
      grid panels count too: they show small copies of the first panel of each item */
-  var DRAWN = 15, REDRAWN = { 15: [4, 6], 14: [4, 6], 13: [1,2,3,4,5,6,7,21,22,24,25,49,50,51,52,53,63,75,76,93,94,112,113,142,143,167,168,188,189,210,211,212,213,214,215,216,217,218,219,220], 12: [1,2,3,4,5,6,7,21,22,24,25,37,49,50,63,75,76,77,79,80,91,93,94,95,96,97,99,104,112,113,116,142,143,146,148,164,166,167,168,188,189,210,211,212,213,214,215,216,217,218,219,220], 11: [79,  81,  83,  184], 10: [3,  7,  17,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,  72,  73,  74,  95,  97,  99,  100,  106,  107,  114,  115,  116,  117,  118,  119,  120,  121,  122,  123,  124,  125,  126,  127,  128,  129,  130,  131,  132,  133,  134,  135,  136,  137,  138,  139,  140,  141,  146,  147,  156,  157,  158,  162,  177,  178,  181,  184,  192,  193,  195,  203,  204,  205,  216,  217,  218,  219,  220], 9: [3,  7,  10,  17,  19,  26,  27,  35,  36,  47,  51,  53,  58,  61,  63,  65,  79,  80,  83,  85,  87,  88,  89,  90,  95,  97,  98,  99,  104,  105,  120,  121,  123,  136,  148,  164,  174,  181,  184,  191], 8: [3, 6, 7, 15, 16, 27, 28, 31, 32, 34, 36, 43, 47, 48, 51, 52, 53, 55, 58, 59, 61, 78, 88, 96, 97, 99, 105, 106, 107, 110, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 134, 135, 136, 137, 138, 162] };
+  var DRAWN = 16, REDRAWN = { 16: [4], 15: [4, 6], 14: [4, 6], 13: [1,2,3,4,5,6,7,21,22,24,25,49,50,51,52,53,63,75,76,93,94,112,113,142,143,167,168,188,189,210,211,212,213,214,215,216,217,218,219,220], 12: [1,2,3,4,5,6,7,21,22,24,25,37,49,50,63,75,76,77,79,80,91,93,94,95,96,97,99,104,112,113,116,142,143,146,148,164,166,167,168,188,189,210,211,212,213,214,215,216,217,218,219,220], 11: [79,  81,  83,  184], 10: [3,  7,  17,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,  72,  73,  74,  95,  97,  99,  100,  106,  107,  114,  115,  116,  117,  118,  119,  120,  121,  122,  123,  124,  125,  126,  127,  128,  129,  130,  131,  132,  133,  134,  135,  136,  137,  138,  139,  140,  141,  146,  147,  156,  157,  158,  162,  177,  178,  181,  184,  192,  193,  195,  203,  204,  205,  216,  217,  218,  219,  220], 9: [3,  7,  10,  17,  19,  26,  27,  35,  36,  47,  51,  53,  58,  61,  63,  65,  79,  80,  83,  85,  87,  88,  89,  90,  95,  97,  98,  99,  104,  105,  120,  121,  123,  136,  148,  164,  174,  181,  184,  191], 8: [3, 6, 7, 15, 16, 27, 28, 31, 32, 34, 36, 43, 47, 48, 51, 52, 53, 55, 58, 59, 61, 78, 88, 96, 97, 99, 105, 106, 107, 110, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 134, 135, 136, 137, 138, 162] };
   function redrawnSince(v) { var o = {}, any = false; Object.keys(REDRAWN).forEach(function (k) { if (+k > v) REDRAWN[k].forEach(function (n) { o[n] = 1; any = true; }); }); o.any = any; return o; }
   /* every frame as a lossless PNG, numbered as one sequence. picking a folder that already has some of them carries on
      from where it stopped, and redraws only the frames whose panel changed since they were made (firsts-export.json
