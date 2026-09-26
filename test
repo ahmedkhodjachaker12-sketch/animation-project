@@ -2771,21 +2771,25 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[63] = function (ctx) {
     seed(63);
-    /* the balloon's car above, with Spencer and Green looking down */
-    Ln(ctx, 1330, 250, 1350, -20, { w: 4 }); Ln(ctx, 1520, 250, 1500, -20, { w: 4 });
-    mini(ctx, 1380, 300, 3.2, C.coatK, { hat: 'top', hair: C.hairB });
-    mini(ctx, 1470, 300, 3.2, C.coatN, { hat: 'top', hair: C.hairB });
-    wicker(ctx, 1320, 250, 210, 70);
-    /* the tip of his cone overhead, and the cords down to his basket */
-    S(ctx, [[560, 220], [1060, 220], [850, 470], [770, 470]], { closed: true, smooth: false, fill: C.cream });
-    [[0.2, 0.4], [0.6, 0.8]].forEach(function (b) { var a0 = 560 + 500 * b[0], a1 = 560 + 500 * b[1], c0 = 770 + 80 * b[0], c1 = 770 + 80 * b[1]; S(ctx, [[a0, 220], [a1, 220], [c1, 470], [c0, 470]], { closed: true, smooth: false, fill: '#d6574f', stroke: false }); });
-    S(ctx, [[560, 220], [1060, 220], [850, 470], [770, 470]], { closed: true, smooth: false });
-    E(ctx, 810, 220, 250, 36, { fill: '#e9dcbc' });
-    Ln(ctx, 772, 470, 626, 760, { w: 3.5 }); Ln(ctx, 848, 470, 994, 760, { w: 3.5 });
-    /* the rope holding his parachute to the balloon's car, and the release cord hanging by his basket */
-    Ln(ctx, 1400, 320, 1030, 230, { w: 4 }); Ln(ctx, 1030, 232, 1000, 700, { w: 3 });
-    var ck = cocking({ x: 810, y: 1010, s: 1.0, expr: 'happy', look: [0.8, -1] });
-    rider(ctx, Object.assign({ pose: { l: { to: [700, 758], type: 'fist', bend: 1 }, r: { to: [960, 490], type: 'open', bend: 1 } } }, ck), null, function () { wicker(ctx, 610, 760, 400, 260); });
+    /* the parachute hung straight down from the balloon's car on one rope: Spencer and Green look down from the car,
+       Cocking waves up at them from his basket under the cone */
+    [[1420, 520, 90], [300, 640, 70], [1640, 860, 64], [260, 330, 50]].forEach(function (c) { puff(ctx, c[0], c[1], c[2], '#eef2f5'); });
+    Ln(ctx, 712, 240, 740, -20, { w: 4 }); Ln(ctx, 908, 240, 880, -20, { w: 4 });
+    mini(ctx, 770, 282, 2.6, C.coatK, { hat: 'top', hair: C.hairB, look: [0.3, 1] });
+    mini(ctx, 850, 282, 2.6, C.coatN, { hat: 'top', hair: C.hairB, look: [-0.3, 1] });
+    wicker(ctx, 705, 240, 210, 62);
+    Ln(ctx, 810, 302, 810, 384, { w: 4 });
+    /* his cone, wide end up, and the cords down to his basket */
+    var cx = 810, rt = 384, rx = 190, cb = 560, bw = 36;
+    S(ctx, [[cx - rx, rt], [cx + rx, rt], [cx + bw, cb], [cx - bw, cb]], { closed: true, smooth: false, fill: C.cream });
+    [[0.2, 0.4], [0.6, 0.8]].forEach(function (b) { var a0 = cx - rx + 2 * rx * b[0], a1 = cx - rx + 2 * rx * b[1], c0 = cx - bw + 2 * bw * b[0], c1 = cx - bw + 2 * bw * b[1]; S(ctx, [[a0, rt], [a1, rt], [c1, cb], [c0, cb]], { closed: true, smooth: false, fill: '#d6574f', stroke: false }); });
+    S(ctx, [[cx - rx, rt], [cx + rx, rt], [cx + bw, cb], [cx - bw, cb]], { closed: true, smooth: false });
+    E(ctx, cx, rt, rx, 28, { fill: '#e9dcbc' });
+    Ln(ctx, cx - bw, cb, 676, 790, { w: 3.5 }); Ln(ctx, cx + bw, cb, 944, 790, { w: 3.5 });
+    /* the release cord, hanging from the rope's fastening down by his basket */
+    Ln(ctx, cx + rx - 4, rt + 4, 978, 770, { w: 3 });
+    var ck = cocking({ x: 810, y: 1010, s: 0.8, expr: 'happy', look: [0.2, -1] });
+    rider(ctx, Object.assign({ pose: { l: { to: [712, 792], type: 'fist', bend: 1 }, r: { to: [930, 590], type: 'open', bend: 1 } } }, ck), null, function () { wicker(ctx, 660, 790, 300, 230); });
   };
   P[64] = function (ctx) {
     seed(64);
@@ -6788,7 +6792,7 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
 
   /* which panels were redrawn in each version of the page, so frames made by an older version can be brought up to date.
      grid panels count too: they show small copies of the first panel of each item */
-  var DRAWN = 12, REDRAWN = { 12: [1,2,3,4,5,6,7,21,22,24,25,37,49,50,75,76,77,79,80,91,93,94,95,96,97,99,104,112,113,116,142,143,146,148,164,166,167,168,188,189,210,211,212,213,214,215,216,217,218,219,220], 11: [79,  81,  83,  184], 10: [3,  7,  17,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,  72,  73,  74,  95,  97,  99,  100,  106,  107,  114,  115,  116,  117,  118,  119,  120,  121,  122,  123,  124,  125,  126,  127,  128,  129,  130,  131,  132,  133,  134,  135,  136,  137,  138,  139,  140,  141,  146,  147,  156,  157,  158,  162,  177,  178,  181,  184,  192,  193,  195,  203,  204,  205,  216,  217,  218,  219,  220], 9: [3,  7,  10,  17,  19,  26,  27,  35,  36,  47,  51,  53,  58,  61,  63,  65,  79,  80,  83,  85,  87,  88,  89,  90,  95,  97,  98,  99,  104,  105,  120,  121,  123,  136,  148,  164,  174,  181,  184,  191], 8: [3, 6, 7, 15, 16, 27, 28, 31, 32, 34, 36, 43, 47, 48, 51, 52, 53, 55, 58, 59, 61, 78, 88, 96, 97, 99, 105, 106, 107, 110, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 134, 135, 136, 137, 138, 162] };
+  var DRAWN = 12, REDRAWN = { 12: [1,2,3,4,5,6,7,21,22,24,25,37,49,50,63,75,76,77,79,80,91,93,94,95,96,97,99,104,112,113,116,142,143,146,148,164,166,167,168,188,189,210,211,212,213,214,215,216,217,218,219,220], 11: [79,  81,  83,  184], 10: [3,  7,  17,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,  72,  73,  74,  95,  97,  99,  100,  106,  107,  114,  115,  116,  117,  118,  119,  120,  121,  122,  123,  124,  125,  126,  127,  128,  129,  130,  131,  132,  133,  134,  135,  136,  137,  138,  139,  140,  141,  146,  147,  156,  157,  158,  162,  177,  178,  181,  184,  192,  193,  195,  203,  204,  205,  216,  217,  218,  219,  220], 9: [3,  7,  10,  17,  19,  26,  27,  35,  36,  47,  51,  53,  58,  61,  63,  65,  79,  80,  83,  85,  87,  88,  89,  90,  95,  97,  98,  99,  104,  105,  120,  121,  123,  136,  148,  164,  174,  181,  184,  191], 8: [3, 6, 7, 15, 16, 27, 28, 31, 32, 34, 36, 43, 47, 48, 51, 52, 53, 55, 58, 59, 61, 78, 88, 96, 97, 99, 105, 106, 107, 110, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 134, 135, 136, 137, 138, 162] };
   function redrawnSince(v) { var o = {}, any = false; Object.keys(REDRAWN).forEach(function (k) { if (+k > v) REDRAWN[k].forEach(function (n) { o[n] = 1; any = true; }); }); o.any = any; return o; }
   /* every frame as a lossless PNG, numbered as one sequence. picking a folder that already has some of them carries on
      from where it stopped, and redraws only the frames whose panel changed since they were made (firsts-export.json
