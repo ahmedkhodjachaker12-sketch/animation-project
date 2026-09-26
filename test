@@ -27,6 +27,9 @@ canvas{ width:100%; height:100%; display:block; }
 .caption{ min-height:3.2em; margin:14px 0 10px; font-size:clamp(1.05rem,2vw,1.35rem); line-height:1.4; max-width:70ch; }
 .caption[hidden]{ display:block; visibility:hidden; }
 .bar{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.barwob{ display:inline-flex; align-items:center; gap:6px; font-weight:700; }
+.barwob select{ font:inherit; font-size:1rem; color:var(--ink); background:var(--panel); border:2px solid var(--ink); border-radius:999px; padding:6px 12px; min-height:44px; cursor:pointer; }
+.barwob select:focus-visible{ outline:3px solid var(--accent); outline-offset:2px; }
 button{ font:inherit; font-weight:700; font-size:1rem; color:var(--ink); background:var(--panel); border:2px solid var(--ink); border-radius:999px; padding:8px 16px; cursor:pointer; min-height:44px; }
 button:hover{ background:var(--line); }
 button:focus-visible, input:focus-visible{ outline:3px solid var(--accent); outline-offset:2px; }
@@ -100,7 +103,9 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     <button id="play" class="play">Play</button>
     <button id="next" aria-label="Next panel">Next</button>
     <button id="restart">Start over</button>
+    <label class="barwob">Wobble <select id="barWob" title="Wobble for the panel on screen. Only panels set here wobble in the videos."></select></label>
     <button id="wfOpen" type="button" title="See this panel's wobble frames, pick the ones you like and save them">Wobble frames</button>
+    <button id="barWobEx" type="button" title="One MP4 for each panel whose Wobble is on, exactly as that panel looks in the whole video (same length and zoom), so it can go straight over it">Save wobble clips</button>
     <span class="count" id="count"></span>
   </div>
   <div class="scrub" id="scrub" aria-hidden="true"></div>
@@ -195,7 +200,8 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
       </details>
       <details>
         <summary>Wobble on only some parts</summary>
-        <p>Wobble is set per panel, and the videos only wobble where you turned it on. Four choices:</p>
+        <p><b>The quick way:</b> go to a panel you want wobbling and set <b>Wobble</b> under the picture (it starts wobbling right there so you can see it). Do that for every panel you want. Then press <b>Save wobble clips</b>: you get one MP4 per wobbling panel, exactly as that panel is in the whole video (same length, same zoom), plus <i>timing.csv</i> with the time each one starts in the whole video (<i>in_whole_video_at</i>). Put each clip on the track above your video at that time and it covers the still version exactly.</p>
+        <p>Every panel starts with Wobble <b>Off</b>, so a video exported without setting any wobble is completely still. Wobble is set per panel, and the videos only wobble where you turned it on. Four choices:</p>
         <ul>
           <li><b>Off:</b> still.</li>
           <li><b>Lines wobble, people still:</b> the background and objects wobble, the people stay steady.</li>
@@ -6275,7 +6281,8 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
     }
   }
   function stopPeek() { showBoil = 0; wfPlay = 0; }
-  function go(i) { idx = Math.max(0, Math.min(P.length - 1, i)); start = performance.now(); stopPeek(); ui(); draw(start); }
+  function liveWobble() { var p = P[idx]; if (!playing && !p.grid && SET[p.n].wobble !== 'off') { wfPlay = 1; wfStart = performance.now(); } }
+  function go(i) { idx = Math.max(0, Math.min(P.length - 1, i)); start = performance.now(); stopPeek(); liveWobble(); ui(); draw(start); }
   function tickLoop(now) {
     if (playing && now - start >= SET[P[idx].n].dur * 1000) {
       if (idx < P.length - 1) { idx++; start = now; ui(); } else { playing = false; ui(); }
@@ -6284,7 +6291,7 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
     else if (wfPlay) { var seq = loopFrames(P[idx].n), b = seq[Math.floor((now - wfStart) / 1000 * GLOBAL.boilRate) % seq.length]; if (b !== showBoil) { showBoil = b; draw(now); } }
     requestAnimationFrame(tickLoop);
   }
-  playBtn.addEventListener('click', function () { if (!playing && idx === P.length - 1) idx = 0; playing = !playing; start = performance.now(); stopPeek(); ui(); draw(start); });
+  playBtn.addEventListener('click', function () { if (!playing && idx === P.length - 1) idx = 0; playing = !playing; start = performance.now(); stopPeek(); liveWobble(); ui(); draw(start); });
   $('prev').addEventListener('click', function () { go(idx - 1); });
   $('next').addEventListener('click', function () { go(idx + 1); });
   $('restart').addEventListener('click', function () { playing = false; go(0); });
@@ -6302,10 +6309,14 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
   /* ---------- the editor ---------- */
   function fill(sel, list) { list.forEach(function (o) { var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; sel.appendChild(op); }); }
   var edDur = $('edDur'), edWob = $('edWob'), edZoom = $('edZoom'), edAmt = $('edAmt'), edAmtOut = $('edAmtOut'), edText = $('edText'), edPanel = $('edPanel'), edGuide = $('edGuide');
-  fill(edWob, WOBBLES); fill(edZoom, ZOOMS);
+  var barWob = $('barWob'), barWobEx = $('barWobEx');
+  fill(edWob, WOBBLES); fill(barWob, WOBBLES); fill(edZoom, ZOOMS);
   function edSync() {
     var p = P[idx], s = SET[p.n];
     edPanel.textContent = p.n + (p.grid ? ' (grid)' : '');
+    barWob.value = s.wobble; barWob.disabled = !!p.grid;
+    var nw = P.filter(function (q) { return !q.grid && SET[q.n].wobble !== 'off'; }).length;
+    barWobEx.textContent = 'Save wobble clips (' + nw + ')';
     edDur.value = s.dur; edWob.value = s.wobble; edZoom.value = s.zoom; edAmt.value = s.amount; edAmtOut.textContent = s.amount + '%'; edText.value = s.text;
     [edWob, edZoom, edAmt, edText].forEach(function (el) { el.disabled = !!p.grid; });
     edGuide.checked = !!GLOBAL.guide;
@@ -6317,7 +6328,8 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
   function changed(clear) { if (clear) clearCache(); persist(); ui(); draw(performance.now()); }
   function edSet(k, v) { SET[P[idx].n][k] = v; changed(k === 'text'); }
   edDur.addEventListener('change', function () { var v = parseFloat(edDur.value); if (v >= 0.3 && v <= 60) edSet('dur', Math.round(v * 10) / 10); else edSync(); });
-  edWob.addEventListener('change', function () { edSet('wobble', edWob.value); });
+  edWob.addEventListener('change', function () { edSet('wobble', edWob.value); stopPeek(); liveWobble(); draw(performance.now()); });
+  barWob.addEventListener('change', function () { edSet('wobble', barWob.value); stopPeek(); liveWobble(); draw(performance.now()); });
   edZoom.addEventListener('change', function () { edSet('zoom', edZoom.value); });
   edAmt.addEventListener('input', function () { edSet('amount', parseInt(edAmt.value, 10)); });
   edText.addEventListener('change', function () { edSet('text', edText.value); });
@@ -6639,19 +6651,21 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
   }
   /* timing and zoom keyframes: Anchor Point in pixels of the files, Position and Scale for a sequence the size of the files and for a 1920x1080 one */
   function timingCsv(list) {
-    var sz = size(), fps = GLOBAL.fps, t = 0, fr = 0;
-    var rows = ['panel,item,start_seconds,length_seconds,start_frame,length_frames,wobble,zoom,anchor_x,anchor_y,scale_start,scale_end,position_x_in_1080p,position_y_in_1080p,scale_start_in_1080p,scale_end_in_1080p,narration'];
+    var sz = size(), fps = GLOBAL.fps, t = 0, fr = 0, at = {}, acc = 0;
+    P.forEach(function (q, i) { at[i] = acc; acc += nfOf(i); });
+    function tc(f) { var sec = Math.floor(f / fps), ff = f % fps; return [Math.floor(sec / 3600), Math.floor(sec / 60) % 60, sec % 60, ff].map(function (x) { return (x < 10 ? '0' : '') + x; }).join(':'); }
+    var rows = ['panel,item,in_whole_video_at,in_whole_video_seconds,start_seconds,length_seconds,start_frame,length_frames,wobble,zoom,anchor_x,anchor_y,scale_start,scale_end,position_x_in_1080p,position_y_in_1080p,scale_start_in_1080p,scale_end_in_1080p,narration'];
     list.forEach(function (i) {
       var p = P[i], s = SET[p.n], nf = nfOf(i), z = p.grid || s.zoom === 'none' ? 0 : s.amount;
       var s0 = s.zoom === 'out' ? 100 + z : 100, s1 = s.zoom === 'in' ? 100 + z : 100, base = 1920 / sz[0];
-      rows.push([p.n, p.grid ? 'grid' : NAMES[p.item], t.toFixed(3), s.dur, fr, nf, p.grid ? '' : s.wobble, p.grid ? 'grid zoom (use the MP4)' : s.zoom,
+      rows.push([p.n, p.grid ? 'grid' : NAMES[p.item], tc(at[i]), (at[i] / fps).toFixed(3), t.toFixed(3), s.dur, fr, nf, p.grid ? '' : s.wobble, p.grid ? 'grid zoom (use the MP4)' : s.zoom,
         Math.round(s.fx * sz[0]), Math.round(s.fy * sz[1]), s0, s1, Math.round(s.fx * 1920), Math.round(s.fy * 1080), +(s0 * base).toFixed(2), +(s1 * base).toFixed(2),
         '"' + (p.line || '').replace(/"/g, '""') + '"'].join(','));
       t += s.dur; fr += nf;
     });
     return new Blob([rows.join('\r\n') + '\r\n'], { type: 'text/csv' });
   }
-  function readme(kind, fmt) {
+  function readme(kind, fmt, over) {
     var wmp4 = (fmt || GLOBAL.wobFmt) === 'mp4';
     var sz = size(), big = sz[0] !== 1920, R = GLOBAL.boilRate, split = GLOBAL.layers === 'split', L = [
       'Firsts, drawn in code: how to use this export',
@@ -6659,7 +6673,15 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
       '',
       'WHAT IS IN HERE'
     ];
-    if (kind === 'clips') L.push(
+    if (kind === 'clips' && over) L.push(
+      '  pNNN.mp4        the panels you set to wobble, each exactly as it is in the whole video (same length, same zoom),',
+      '                  but wobbling. Lay each one over your whole video, on the track above it, where that panel starts:',
+      '                  in_whole_video_at in timing.csv (hours:minutes:seconds:frames). It covers that panel exactly.',
+      '                  Premiere Pro: click the timecode above the timeline, type it (e.g. 00:02:14:05), Enter, then drag the',
+      '                  clip onto V2 so it snaps to the playhead. After Effects: same, with the time box at the top left',
+      '                  of the timeline, then drag the clip in and press [ to start it there.',
+      '                  Your whole video must have been exported with the same panel lengths, or the times will not match.');
+    else if (kind === 'clips') L.push(
       '  pNNN.mp4        one clip per panel, already the right length, with its wobble and zoom baked in.',
       '                  Put them on one track in number order, end to end, and the video plays like the preview.');
     if (kind === 'frames') L.push(
@@ -6756,8 +6778,9 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
   async function allBars(sink, list) { var bars = {}; for (var b = 0; b < list.length; b++) await putBar(sink, P[list[b]], bars, true); }
 
   /* one MP4 per panel */
-  $('exClips').addEventListener('click', guard(async function (list) {
-    var sz = size(), sink = await makeSink('firsts-clips.zip'); if (!sink) return;
+  /* one clip per panel, drawn exactly as in the whole video (length, wobble, zoom) so it can replace that stretch of it */
+  async function clipsExport(list, zipName, over) {
+    var sz = size(), sink = await makeSink(zipName || 'firsts-clips.zip'); if (!sink) return;
     var codec = await pickCodec(GLOBAL.fps, sz[0], sz[1]); if (!codec) return msg(NO_CODEC);
     var total = framesOf(list), done = 0, kept = 0, skipped = 0, gsig = [sz.join('x'), GLOBAL.fps, GLOBAL.quality].join('|'), book = { global: gsig, clips: {} };
     await begin('Making clips…');
@@ -6772,10 +6795,11 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
       done += tl.total;
     }
     if (!GLOBAL.barInVideo) await allBars(sink, list);
-    await sink.put('timing.csv', timingCsv(list)); await sink.put('README.txt', readme('clips'));
+    await sink.put('timing.csv', timingCsv(list)); await sink.put('README.txt', readme('clips', null, over));
     msg('Saving…'); await sink.close();
     end('Done: ' + list.length + ' clips saved to ' + sink.where + '.' + (kept ? ' ' + kept + ' of them were already there with the same settings, so they were kept.' : '') + codecNote(codec));
-  }));
+  }
+  $('exClips').addEventListener('click', guard(function (list) { return clipsExport(list); }));
 
   /* the layers of one panel, drawn with the chosen split. boil 0 is the still picture */
   function layersOf(p, boil) {
@@ -6839,6 +6863,12 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
   $('exWobble').addEventListener('click', guard(function (list) { return wobbleExport(list, GLOBAL.wobFmt, true); }));
   $('wfPng').addEventListener('click', guard(function (list) { return wobbleExport(list, 'png', false); }, function () { return [idx]; }));
   $('wfMp4').addEventListener('click', guard(function (list) { return wobbleExport(list, 'mp4', false); }, function () { return [idx]; }));
+  barWobEx.addEventListener('click', function () {
+    var list = []; P.forEach(function (p, i) { if (!p.grid && SET[p.n].wobble !== 'off') list.push(i); });
+    editor.open = true; setTimeout(function () { exMsg.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 50);
+    if (!list.length) return msg('No panel wobbles yet. Go to a panel you want wobbling, set Wobble under the picture, then press Save wobble clips.');
+    guard(function (l) { return clipsExport(l, 'firsts-wobble-clips.zip', true); }, function () { return list; })();
+  });
 
   /* which panels were redrawn in each version of the page, so frames made by an older version can be brought up to date.
      grid panels count too: they show small copies of the first panel of each item */
