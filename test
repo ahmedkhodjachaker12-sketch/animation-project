@@ -826,7 +826,11 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
       gal = { rx: grx, ry: gry, fy: gfy, rh: rh, ps: ps };
       var backArc = [], i2;
       for (i2 = 0; i2 <= 16; i2++) { var ab = Math.PI + i2 / 16 * Math.PI; backArc.push([cx + Math.cos(ab) * grx, gfy + Math.sin(ab) * gry]); }
-      S(ctx, backArc.map(function (p) { return [p[0], p[1] - rh]; }).concat(backArc.slice().reverse()), { closed: true, fill: C.wickerD, w: 3.5 });
+      if (o.railing) {
+        /* an open railing round the walkway: posts and a top rail, so the floor and the sky show through */
+        for (i2 = 1; i2 < 16; i2++) Ln(ctx, backArc[i2][0], backArc[i2][1], backArc[i2][0], backArc[i2][1] - rh, { w: Math.max(2.4, R * 0.007), color: C.wickerD });
+        S(ctx, backArc.map(function (p) { return [p[0], p[1] - rh]; }), { w: Math.max(4, R * 0.014), color: C.wickerD });
+      } else S(ctx, backArc.map(function (p) { return [p[0], p[1] - rh]; }).concat(backArc.slice().reverse()), { closed: true, fill: C.wickerD, w: 3.5 });
       [-1, 1].forEach(function (sd) { Ln(ctx, cx + sd * neckR * 0.8, neckY, cx + sd * grx * 0.62, gfy - gry * 0.8 - rh, { w: 3 }); });
       E(ctx, cx, gfy, grx, gry, { fill: '#b38c55', w: 3.5 });
       for (i2 = 0; i2 < 20; i2++) { var af0 = i2 / 20 * 6.283; Ln(ctx, cx + Math.cos(af0) * neckR * 1.08, gfy + Math.sin(af0) * neckR * 1.08 * tl, cx + Math.cos(af0) * grx * 0.97, gfy + Math.sin(af0) * gry * 0.97, { w: 2, color: '#96723f', j: 0.3 }); }
@@ -866,6 +870,15 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
       if (o.crew) o.crew(gal);
       else if (o.people !== false) [-1, 1].forEach(function (sd) { mini(ctx, cx + sd * (gal.rx - R * 0.1), gal.fy + 2 - 4 * gal.ps, gal.ps, sd < 0 ? C.coatBl : C.coatB, { hair: C.wig, up: o.up, wave: o.wave ? sd : 0 }); });
       var front = [], i3;
+      if (o.railing) {
+        var nf = 30, lip = Math.max(8, R * 0.035), pw = Math.max(3, R * 0.011), tw = Math.max(5, R * 0.02);
+        for (i3 = 0; i3 <= nf; i3++) { var ar = i3 / nf * Math.PI; front.push([cx + Math.cos(ar) * gal.rx, gal.fy + Math.sin(ar) * gal.ry]); }
+        S(ctx, front.concat(front.map(function (p) { return [p[0], p[1] + lip]; }).reverse()), { closed: true, fill: C.wicker, w: 3.5 });
+        front.forEach(function (p) { Ln(ctx, p[0], p[1], p[0], p[1] - gal.rh, { w: pw + 5, color: C.ink, j: 0.3 }); Ln(ctx, p[0], p[1] - 2, p[0], p[1] - gal.rh + 2, { w: pw, color: C.wicker, j: 0.3 }); });
+        var tr = front.map(function (p) { return [p[0], p[1] - gal.rh]; });
+        S(ctx, tr, { w: tw + 7, color: C.ink }); S(ctx, tr, { w: tw, color: C.wickerD }); S(ctx, tr, { w: tw * 0.35, color: C.wicker, j: 0 });
+        return { neckY: neckY, bottom: neckY + R * 0.72, basketY: neckY + R * 0.42 + R * 0.3, gallery: gal };
+      }
       for (i3 = 0; i3 <= 16; i3++) { var af = i3 / 16 * Math.PI; front.push([cx + Math.cos(af) * gal.rx, gal.fy + Math.sin(af) * gal.ry]); }
       S(ctx, front.map(function (p) { return [p[0], p[1] - gal.rh]; }).concat(front.slice().reverse()), { closed: true, fill: C.wicker, w: 3.5 });
       for (i3 = 1; i3 < 16; i3++) { var ax = Math.PI * i3 / 16, px = cx + Math.cos(ax) * gal.rx, py = gal.fy + Math.sin(ax) * gal.ry; Ln(ctx, px, py - gal.rh + 3, px, py - 2, { w: 2.2, color: C.wickerD, j: 0 }); }
@@ -2173,25 +2186,33 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[4] = function (ctx) {
     seed(4);
-    /* close up in the gallery: he leans on its waist-high wicker rail and looks down over it at the land far below;
-       beside him the balloon's cloth, its open mouth and the straw fire hanging in it */
-    parisBelow(ctx, 640, { rx: 460, ph: 2.4, towns: [[0.45, -380, 4], [0.6, 360, 4]] });
-    [[250, 400, 60], [470, 560, 40], [140, 590, 34]].forEach(function (c) { puff(ctx, c[0], c[1], c[2], '#eef2f5'); });
-    var ex = 1500, R = 900, ny = 520;
+    /* close up in the gallery: a narrow walkway round the balloon's mouth with a railing; he stands at the rail and
+       looks down over it, the land far below showing through the rails and under the walkway;
+       beside him the balloon's cloth and the straw fire hanging in its mouth */
+    parisBelow(ctx, 620, { rx: 470, ph: 2.4, towns: [[0.5, -380, 4], [0.66, 360, 4], [0.9, -620, 5]] });
+    [[250, 380, 60], [470, 540, 40], [140, 560, 34]].forEach(function (c) { puff(ctx, c[0], c[1], c[2], '#eef2f5'); });
+    var ex = 1500, R = 900, ny = 500;
     montgolfier(ctx, ex, ny - 2.25 * R, R, { basket: false });
-    [-1, 1].forEach(function (sd) { Ln(ctx, ex + sd * 230, ny + 4, ex + sd * 60, ny + 130, { w: 4 }); Ln(ctx, ex + sd * 300, ny + 6, ex + sd * 420, 800, { w: 4 }); });
+    [-1, 1].forEach(function (sd) { Ln(ctx, ex + sd * 230, ny + 4, ex + sd * 60, ny + 130, { w: 4 }); Ln(ctx, ex + sd * 300, ny + 6, ex + sd * 420, 990, { w: 4 }); });
     fire(ctx, ex, ny + 100, 80);
     Rc(ctx, ex - 72, ny + 128, 144, 40, { fill: '#4a4a4a', w: 4 });
-    var p = { x: 640, y: 1070, s: 1.35, coat: C.coatB, hair: C.wig, expr: 'happy', look: [0.2, 1] };
+    var top = function (x) { return 650 + 40 * Math.cos((x - 900) / 900); }, fl = function (x) { return top(x) + 290; }, x;
+    /* the walkway he stands on, seen just from above */
+    var back = [], front = [];
+    for (x = -20; x <= W + 20; x += 60) { back.push([x, fl(x) - 34]); front.push([x, fl(x) + 4]); }
+    S(ctx, back.concat(front.slice().reverse()), { closed: true, fill: '#b38c55', w: 3.5 });
+    var p = { x: 640, y: fl(640) - 14, s: 1.3, coat: C.coatB, hair: C.wig, expr: 'happy', look: [0.2, 1] };
     person(ctx, Object.assign({ noArms: true }, p));
-    /* the rail, right in front of him */
-    var top = function (x) { return 792 - 26 * Math.cos((x - 900) / 1300); }, edge = [], x;
-    for (x = -20; x <= W + 20; x += 60) edge.push([x, top(x)]);
-    S(ctx, edge.concat([[W + 20, H + 20], [-20, H + 20]]), { closed: true, fill: C.wicker, w: 5 });
-    for (x = 20; x < W; x += 56) Ln(ctx, x, top(x) + 16, x - 6, H + 10, { w: 3, color: C.wickerD, j: 0.4 });
-    for (var r = 0; r < 3; r++) S(ctx, edge.map(function (q) { return [q[0], q[1] + 90 + r * 80]; }), { w: 3, color: C.wickerD });
-    S(ctx, edge, { w: 16, color: C.wickerD }); S(ctx, edge, { w: 5, color: '#7a5a30', j: 0 });
-    personArms(ctx, Object.assign({ pose: { l: { to: [540, top(540) + 4], type: 'fist', bend: 1 }, r: { to: [750, top(750) + 4], type: 'fist', bend: -1 } } }, p));
+    /* the railing: posts with gaps, a top rail, and the walkway's edge under it */
+    for (x = 30; x < W; x += 74) { Ln(ctx, x, top(x) + 8, x, fl(x) + 2, { w: 12, color: C.ink, j: 0.3 }); Ln(ctx, x, top(x) + 8, x, fl(x) + 2, { w: 6, color: C.wicker, j: 0.3 }); }
+    for (x = -20; x <= W + 20; x += 60) front.push([x, fl(x) + 38]);
+    var edge = []; for (x = -20; x <= W + 20; x += 60) edge.push([x, top(x)]);
+    var lip = []; for (x = -20; x <= W + 20; x += 60) lip.push([x, fl(x)]);
+    var lip2 = []; for (x = -20; x <= W + 20; x += 60) lip2.push([x, fl(x) + 36]);
+    S(ctx, lip.concat(lip2.slice().reverse()), { closed: true, fill: C.wicker, w: 4 });
+    for (x = 0; x < W; x += 40) Ln(ctx, x, fl(x) + 4, x - 4, fl(x) + 32, { w: 2.4, color: C.wickerD, j: 0.3 });
+    S(ctx, edge, { w: 24, color: C.ink }); S(ctx, edge, { w: 16, color: C.wickerD }); S(ctx, edge, { w: 5, color: C.wicker, j: 0 });
+    personArms(ctx, Object.assign({ pose: { l: { to: [560, top(560) - 4], type: 'fist', bend: 1 }, r: { to: [728, top(728) - 4], type: 'fist', bend: -1 } } }, p));
   };
   P[5] = function (ctx) {
     seed(5);
@@ -2209,7 +2230,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     parisBelow(ctx, 640, { rx: 900, ph: 1.2, nd: 0.75 });
     [[170, 330, 56], [1740, 380, 60], [1830, 590, 36], [150, 560, 40]].forEach(function (c) { puff(ctx, c[0], c[1], c[2], '#eef2f5'); });
     var R = 620, cx = 960;
-    montgolfier(ctx, cx, 640 - 2.25 * R, R, { gallery: true, tilt: 0.2, crew: function (G) {
+    montgolfier(ctx, cx, 640 - 2.25 * R, R, { gallery: true, tilt: 0.2, railing: true, crew: function (G) {
       var ps = G.ps * 1.3, u = 0.0689 * ps * 10, off = G.rx - R * 0.1, fy = G.fy + G.ry * Math.sqrt(1 - Math.pow(off / G.rx, 2)) * 0.6 - 4 * ps, xl = cx - off, xr = cx + off;
       var hx = xl - 7 * u, hy = fy - 33 * u;
       Ln(ctx, hx, fy - 10 * u, hx, fy - 62 * u, { w: 6, color: '#7a5a3a' });
@@ -6832,7 +6853,7 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
 
   /* which panels were redrawn in each version of the page, so frames made by an older version can be brought up to date.
      grid panels count too: they show small copies of the first panel of each item */
-  var DRAWN = 13, REDRAWN = { 13: [1,2,3,4,5,6,7,21,22,24,25,49,50,51,52,53,63,75,76,93,94,112,113,142,143,167,168,188,189,210,211,212,213,214,215,216,217,218,219,220], 12: [1,2,3,4,5,6,7,21,22,24,25,37,49,50,63,75,76,77,79,80,91,93,94,95,96,97,99,104,112,113,116,142,143,146,148,164,166,167,168,188,189,210,211,212,213,214,215,216,217,218,219,220], 11: [79,  81,  83,  184], 10: [3,  7,  17,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,  72,  73,  74,  95,  97,  99,  100,  106,  107,  114,  115,  116,  117,  118,  119,  120,  121,  122,  123,  124,  125,  126,  127,  128,  129,  130,  131,  132,  133,  134,  135,  136,  137,  138,  139,  140,  141,  146,  147,  156,  157,  158,  162,  177,  178,  181,  184,  192,  193,  195,  203,  204,  205,  216,  217,  218,  219,  220], 9: [3,  7,  10,  17,  19,  26,  27,  35,  36,  47,  51,  53,  58,  61,  63,  65,  79,  80,  83,  85,  87,  88,  89,  90,  95,  97,  98,  99,  104,  105,  120,  121,  123,  136,  148,  164,  174,  181,  184,  191], 8: [3, 6, 7, 15, 16, 27, 28, 31, 32, 34, 36, 43, 47, 48, 51, 52, 53, 55, 58, 59, 61, 78, 88, 96, 97, 99, 105, 106, 107, 110, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 134, 135, 136, 137, 138, 162] };
+  var DRAWN = 14, REDRAWN = { 14: [4, 6], 13: [1,2,3,4,5,6,7,21,22,24,25,49,50,51,52,53,63,75,76,93,94,112,113,142,143,167,168,188,189,210,211,212,213,214,215,216,217,218,219,220], 12: [1,2,3,4,5,6,7,21,22,24,25,37,49,50,63,75,76,77,79,80,91,93,94,95,96,97,99,104,112,113,116,142,143,146,148,164,166,167,168,188,189,210,211,212,213,214,215,216,217,218,219,220], 11: [79,  81,  83,  184], 10: [3,  7,  17,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,  72,  73,  74,  95,  97,  99,  100,  106,  107,  114,  115,  116,  117,  118,  119,  120,  121,  122,  123,  124,  125,  126,  127,  128,  129,  130,  131,  132,  133,  134,  135,  136,  137,  138,  139,  140,  141,  146,  147,  156,  157,  158,  162,  177,  178,  181,  184,  192,  193,  195,  203,  204,  205,  216,  217,  218,  219,  220], 9: [3,  7,  10,  17,  19,  26,  27,  35,  36,  47,  51,  53,  58,  61,  63,  65,  79,  80,  83,  85,  87,  88,  89,  90,  95,  97,  98,  99,  104,  105,  120,  121,  123,  136,  148,  164,  174,  181,  184,  191], 8: [3, 6, 7, 15, 16, 27, 28, 31, 32, 34, 36, 43, 47, 48, 51, 52, 53, 55, 58, 59, 61, 78, 88, 96, 97, 99, 105, 106, 107, 110, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 134, 135, 136, 137, 138, 162] };
   function redrawnSince(v) { var o = {}, any = false; Object.keys(REDRAWN).forEach(function (k) { if (+k > v) REDRAWN[k].forEach(function (n) { o[n] = 1; any = true; }); }); o.any = any; return o; }
   /* every frame as a lossless PNG, numbered as one sequence. picking a folder that already has some of them carries on
      from where it stopped, and redraws only the frames whose panel changed since they were made (firsts-export.json
