@@ -820,7 +820,16 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     var N = 22, right = [], left = [];
     for (var i = 0; i <= N; i++) { var t = i / N, yy = top + t * Hh; right.push([cx + prof(t), yy]); left.push([cx - prof(t), yy]); }
     var neckY = top + Hh, neckR = prof(1);
-    if (o.basket !== false) {
+    var gal = null;
+    if (o.gallery) {
+      var grx = neckR + R * 0.36, gry = grx * 0.24, gfy = neckY + R * 0.1, ps = R / 190 * 1.9, rh = 36.8 * ps * 0.42;
+      gal = { rx: grx, ry: gry, fy: gfy, rh: rh, ps: ps };
+      var backArc = [], i2;
+      for (i2 = 0; i2 <= 16; i2++) { var ab = Math.PI + i2 / 16 * Math.PI; backArc.push([cx + Math.cos(ab) * grx, gfy + Math.sin(ab) * gry]); }
+      S(ctx, backArc.map(function (p) { return [p[0], p[1] - rh]; }).concat(backArc.slice().reverse()), { closed: true, fill: C.wickerD, w: 3.5 });
+      [-1, 1].forEach(function (sd) { Ln(ctx, cx + sd * neckR * 0.8, neckY, cx + sd * grx * 0.62, gfy - gry * 0.8 - rh, { w: 3 }); });
+    }
+    if (o.basket !== false && !o.gallery) {
       var bw = R * 0.62, bh = R * 0.3, by = neckY + R * 0.42;
       Ln(ctx, cx - neckR * 0.9, neckY, cx - bw / 2, by, { w: 3.5 }); Ln(ctx, cx + neckR * 0.9, neckY, cx + bw / 2, by, { w: 3.5 });
       if (o.fire) fire(ctx, cx, neckY + R * 0.12, R * 0.22);
@@ -845,7 +854,21 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     S(ctx, [[cx - rr1, ry], [cx - rr1 * 0.5, ry + R * 0.07], [cx, ry + R * 0.09], [cx + rr1 * 0.5, ry + R * 0.07], [cx + rr1, ry]], { w: 4 });
     ribbon(ctx, d, true, LW, C.ink);
     Rc(ctx, cx - neckR, neckY - 6, neckR * 2, 14, { fill: C.gold, w: 4 });
-    return { neckY: neckY, bottom: neckY + R * 0.72, basketY: neckY + R * 0.42 + R * 0.3 };
+    if (gal) {
+      /* the straw fire in its brazier, hanging in the mouth of the balloon */
+      Ln(ctx, cx - neckR * 0.5, neckY + 4, cx - R * 0.08, neckY + R * 0.16, { w: 2.6 }); Ln(ctx, cx + neckR * 0.5, neckY + 4, cx + R * 0.08, neckY + R * 0.16, { w: 2.6 });
+      fire(ctx, cx, neckY + R * 0.12, R * 0.12);
+      Rc(ctx, cx - R * 0.09, neckY + R * 0.15, R * 0.18, R * 0.05, { fill: '#4a4a4a', w: 3 });
+      /* the two men, on opposite sides of the gallery */
+      if (o.crew) o.crew(gal);
+      else if (o.people !== false) [-1, 1].forEach(function (sd) { mini(ctx, cx + sd * (gal.rx - R * 0.1), gal.fy + 2 - 4 * gal.ps, gal.ps, sd < 0 ? C.coatBl : C.coatB, { hair: C.wig, up: o.up, wave: o.wave ? sd : 0 }); });
+      var front = [], i3;
+      for (i3 = 0; i3 <= 16; i3++) { var af = i3 / 16 * Math.PI; front.push([cx + Math.cos(af) * gal.rx, gal.fy + Math.sin(af) * gal.ry]); }
+      S(ctx, front.map(function (p) { return [p[0], p[1] - gal.rh]; }).concat(front.slice().reverse()), { closed: true, fill: C.wicker, w: 3.5 });
+      for (i3 = 1; i3 < 16; i3++) { var ax = Math.PI * i3 / 16, px = cx + Math.cos(ax) * gal.rx, py = gal.fy + Math.sin(ax) * gal.ry; Ln(ctx, px, py - gal.rh + 3, px, py - 2, { w: 2.2, color: C.wickerD, j: 0 }); }
+      S(ctx, front.map(function (p) { return [p[0], p[1] - gal.rh]; }), { w: 5, color: C.wickerD });
+    }
+    return { neckY: neckY, bottom: neckY + R * 0.72, basketY: neckY + R * 0.42 + R * 0.3, gallery: gal };
   }
   function roziere(ctx, cx, top, R, o) {
     o = o || {};
@@ -1181,6 +1204,27 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   }
   /* a seated person seen over a rail: a chair back behind, head and shoulders above the rail */
   function seated(ctx, o) { var u = o.s * 10; Rc(ctx, o.x - 3.2 * u, o.y - 2 * u, 6.4 * u, 22 * u, { fill: o.chair || '#4a2e22', w: 4, j: 0 }); bust(ctx, o); }
+  /* the Crystal Palace at Sydenham seen far off: the long glass hall, the arched centre transept, Brunel's two water towers */
+  function palaceFar(ctx, cx, base, k) {
+    var hw = 900 * k, hh = 150 * k;
+    [-1, 1].forEach(function (sd) { var tx = cx + sd * (hw + 90 * k); Rc(ctx, tx - 22 * k, base - 520 * k, 44 * k, 520 * k, { fill: '#e9e2cf', w: 3 }); Rc(ctx, tx - 34 * k, base - 560 * k, 68 * k, 50 * k, { fill: '#d6cfbf', w: 3 }); });
+    Rc(ctx, cx - hw, base - hh, hw * 2, hh, { fill: '#d6e8ef', w: 4 });
+    for (var x = cx - hw; x <= cx + hw; x += 26 * k) Ln(ctx, x, base - hh, x, base, { w: 2, color: '#8a9aa6', j: 0 });
+    var arc = []; for (var i = 0; i <= 18; i++) { var t = i / 18 * Math.PI; arc.push([cx - Math.cos(t) * 190 * k, base - hh - Math.sin(t) * 150 * k]); }
+    S(ctx, arc, { closed: true, fill: '#d6e8ef', w: 4 });
+    for (i = 1; i < 8; i++) { var a = i / 8 * Math.PI; Ln(ctx, cx, base - hh, cx - Math.cos(a) * 190 * k, base - hh - Math.sin(a) * 150 * k, { w: 2, color: '#8a9aa6', j: 0 }); }
+    [-1, 1].forEach(function (sd) { var ax = cx + sd * hw * 0.62, ar = []; for (var j = 0; j <= 12; j++) { var t2 = j / 12 * Math.PI; ar.push([ax - Math.cos(t2) * 110 * k, base - hh - Math.sin(t2) * 80 * k]); } S(ctx, ar, { closed: true, fill: '#d6e8ef', w: 3 }); });
+    Ln(ctx, cx - hw, base - hh, cx + hw, base - hh, { w: 4 });
+  }
+  /* a stone balustrade in a depth shot, running away from us at X, from z0 to z1 */
+  function balustradeDepth(ctx, pr, X, z0, z1) {
+    var top = [], bot = [], z;
+    q3(ctx, pr, [[X, 0, z0], [X, 1.0, z0], [X, 1.0, z1], [X, 0, z1]], { fill: 'rgba(0,0,0,0)', w: 0, j: 0 });
+    for (z = z0 + 0.2; z < z1; z += 0.35) { var a = pr(X, 0.12, z), b = pr(X, 0.88, z); Ln(ctx, a[0], a[1], b[0], b[1], { w: Math.max(2, pr.px(0.12, z)), color: '#bdb6a8', j: 0 }); }
+    q3(ctx, pr, [[X, 0.88, z0], [X, 1.02, z0], [X, 1.02, z1], [X, 0.88, z1]], { fill: '#e9e2d4', w: 3, j: 0 });
+    q3(ctx, pr, [[X, 0, z0], [X, 0.14, z0], [X, 0.14, z1], [X, 0, z1]], { fill: '#d6cfbf', w: 3, j: 0 });
+    for (z = z0 + 1; z < z1; z += 7) { var p0 = pr(X, 0, z), p1 = pr(X, 1.02, z), wpx = pr.px(0.5, z); Rc(ctx, p0[0] - wpx / 2, p1[1], wpx, p0[1] - p1[1], { fill: '#e9e2d4', w: 3, j: 0 }); var u0 = pr(X, 1.02, z), ur = pr.px(0.3, z); E(ctx, u0[0], u0[1] - ur * 0.9, ur, ur * 0.8, { fill: '#e9e2d4', w: 3, j: 0 }); Rc(ctx, u0[0] - ur * 0.4, u0[1] - ur * 0.3, ur * 0.8, ur * 0.3, { fill: '#d6cfbf', w: 2, j: 0 }); }
+  }
   /* ---------- railway kit ---------- */
   function wheel(ctx, cx, cy, r, col) {
     E(ctx, cx, cy, r, r, { fill: col || '#caa05a', w: 6 });
@@ -1516,7 +1560,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     });
     [-0.22, 0.22].forEach(function (t) { var a0 = pt(t, 0, 0.1), e = pt(t * 0.4, -0.15, -3.8); S(ctx, [a0, [(a0[0] + e[0]) / 2, a0[1] + 3 * k], e], { w: 4 }); });
     S(ctx, [pt(-1, 0, 0), pt(1, 0, 0), pt(1, 0, 1), pt(-1, 0, 1)], { closed: true, smooth: false, fill: C.cloth });
-    if (o.pilots) { var pp = pt(-0.06, 0, 0.3); mini(ctx, pp[0] - 3.6 * k, pp[1], k * 0.42, '#4a4a4f', { hat: 'cap', hair: C.hairB, open: o.shock, wave: o.shock ? -1 : 0 }); mini(ctx, pp[0] + 3.6 * k, pp[1] - 0.8 * k, k * 0.42, C.olive, { hair: C.hairB, open: o.shock, wave: o.shock ? 1 : 0 }); }
+    if (o.pilots) { var pp = pt(-0.06, 0, 0.3); mini(ctx, pp[0] - 3.6 * k, pp[1], k * 0.42, '#4a4a4f', { hair: '#4a3a2e', hairStyle: 'receding', open: o.shock, wave: o.shock ? -1 : 0 }); mini(ctx, pp[0] + 3.6 * k, pp[1] - 0.8 * k, k * 0.42, C.olive, { hair: C.hairB, open: o.shock, wave: o.shock ? 1 : 0 }); }
     for (var t = -1; t <= 1.001; t += 0.25) [0, 1].forEach(function (b) { var p0 = pt(t, 0, b), p1 = pt(t, 1, b); Ln(ctx, p0[0], p0[1], p1[0], p1[1], { w: 3, j: 0.3 }); });
     S(ctx, [pt(-1, 1, 0), pt(1, 1, 0), pt(1, 1, 1), pt(-1, 1, 1)], { closed: true, smooth: false, fill: C.cloth });
     var e0 = pt(0, 0.25, -3.8);
@@ -1697,6 +1741,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     tyre(x + 33 * k, y - 8.5 * k, 8.5 * k); guard(x + 33 * k, y - 8.5 * k, 8.5 * k);
     Rc(ctx, x + 35.5 * k, y - 36 * k, 4 * k, 12 * k, { fill: '#5a2a1e' });
     for (var b = 0; b < 3; b++) E(ctx, x + 37.5 * k, y - (33.5 - b * 3.2) * k, 0.35 * k, 0.35 * k, { fill: C.ink, stroke: false, j: 0 });
+    if (o.passenger) person(ctx, Object.assign({ x: x + 25.5 * k, y: y - 26.5 * k + 25 * 0.6 * k, s: 0.057 * k, dress: '#7a4a5a', hairStyle: 'bun', hair: '#6a4a32', hat: 'bonnet', hatCol: '#5a3a4a', noLegs: true, expr: 'neutral', look: [-1, 0], pose: { l: [14, 8, 'open'], r: [14, 8, 'open'] } }, o.passenger));
     if (o.driver) person(ctx, Object.assign({ x: x + 30 * k, y: y - 26.5 * k + 25 * 0.6 * k, s: 0.06 * k, coat: C.coatK, hairStyle: 'short', hair: C.hairB, hat: 'cap', capCol: '#4a4a4f', collar: true, vest: '#f3efe6', noLegs: true, expr: 'neutral', look: [-1, 0], pose: { l: { to: [x + 20.2 * k, y - 33.2 * k], type: 'fist' }, r: { to: [x + 21.4 * k, y - 30.6 * k], type: 'fist', bend: -1 } } }, o.driver));
     Rc(ctx, x + 21 * k, y - 27 * k, 16 * k, 3 * k, { fill: '#5a2a1e' });
     Ln(ctx, x + 5 * k, y - 11 * k, x + 41 * k, y - 11 * k, { w: 10 });
@@ -1873,12 +1918,21 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     return { valve: [vx, vy], people: people };
   }
   function rocket(ctx, x, base, h) {
-    var w = h * 0.12;
-    Rc(ctx, x - w / 2, base - h * 0.82, w, h * 0.82, { fill: '#e9ecef' });
-    S(ctx, [[x - w / 2, base - h * 0.82], [x - w * 0.35, base - h * 0.95], [x, base - h], [x + w * 0.35, base - h * 0.95], [x + w / 2, base - h * 0.82]], { closed: true, fill: '#e9ecef' });
-    [-1, 1].forEach(function (sd) { S(ctx, [[x + sd * w / 2, base - h * 0.3], [x + sd * w * 1.15, base - h * 0.05], [x + sd * w * 1.15, base], [x + sd * w / 2, base]], { closed: true, smooth: false, fill: '#d9dde1' }); });
-    Rc(ctx, x - w / 2, base - h * 0.6, w, h * 0.04, { fill: C.red, w: 3 });
-    T(ctx, 'СССР', x, base - h * 0.45, w * 0.28, { obj: true, rot: -Math.PI / 2, color: C.red });
+    var w = h * 0.07, lt = '#e9ecef', gr = '#cfd4d9';
+    /* escape tower, payload fairing, upper stage, the open truss between the stages, then the core */
+    Ln(ctx, x, base - h, x, base - h * 0.915, { w: Math.max(4, w * 0.16), color: '#6b6f78' });
+    S(ctx, [[x - w * 0.18, base - h * 0.93], [x, base - h * 0.965], [x + w * 0.18, base - h * 0.93]], { closed: true, smooth: false, fill: '#6b6f78', w: 3 });
+    S(ctx, [[x - w * 0.62, base - h * 0.74], [x - w * 0.62, base - h * 0.85], [x - w * 0.22, base - h * 0.915], [x + w * 0.22, base - h * 0.915], [x + w * 0.62, base - h * 0.85], [x + w * 0.62, base - h * 0.74]], { closed: true, smooth: false, fill: lt });
+    Rc(ctx, x - w * 0.5, base - h * 0.74, w, h * 0.13, { fill: gr });
+    for (var t = 0; t < 4; t++) Ln(ctx, x - w * 0.45 + t * w * 0.3, base - h * 0.61, x - w * 0.3 + t * w * 0.3, base - h * 0.585, { w: 3 });
+    Ln(ctx, x - w * 0.45, base - h * 0.585, x + w * 0.45, base - h * 0.585, { w: 3 });
+    S(ctx, [[x - w * 0.46, base - h * 0.585], [x - w * 0.5, base - h * 0.3], [x - w * 0.42, base - h * 0.03], [x + w * 0.42, base - h * 0.03], [x + w * 0.5, base - h * 0.3], [x + w * 0.46, base - h * 0.585]], { closed: true, smooth: false, fill: lt });
+    Rc(ctx, x - w * 0.5, base - h * 0.52, w, h * 0.02, { fill: C.red, w: 3 });
+    T(ctx, 'СССР', x, base - h * 0.44, w * 0.28, { obj: true, rot: -Math.PI / 2, color: C.red });
+    /* the strap-on boosters: long cones, pointed at the top where they lean on the core, flaring out to the engines */
+    [-1, 1].forEach(function (sd) { S(ctx, [[x + sd * w * 0.5, base - h * 0.4], [x + sd * w * 1.35, base - h * 0.04], [x + sd * w * 1.3, base], [x + sd * w * 0.45, base]], { closed: true, smooth: false, fill: gr }); });
+    S(ctx, [[x, base - h * 0.42], [x - w * 0.55, base - h * 0.04], [x - w * 0.5, base], [x + w * 0.5, base], [x + w * 0.55, base - h * 0.04]], { closed: true, smooth: false, fill: lt });
+    [[-1.05, 0.3], [-0.2, 0.34], [0.2, 0.34], [1.05, 0.3]].forEach(function (n) { S(ctx, [[x + n[0] * w - w * 0.12, base], [x + n[0] * w + w * 0.12, base], [x + n[0] * w + w * 0.16, base + w * 0.12], [x + n[0] * w - w * 0.16, base + w * 0.12]], { closed: true, smooth: false, fill: '#4a4a4a', w: 3 }); });
   }
   function valveCallout(ctx, x, y, r, good, label, lineFrom) {
     if (lineFrom) Ln(ctx, lineFrom[0], lineFrom[1], x, y, { w: 3, color: '#f4f1ea' });
@@ -2072,7 +2126,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     for (var c = 0; c < 5; c++) puff(ctx, 180 + c * 380, 520 - (c % 2) * 40, 22, '#eef2f5');
     Rc(ctx, -20, 760, W + 40, 340, { fill: C.sea, w: 0, j: 0 }); Ln(ctx, -10, 760, W + 10, 760, { w: 4 });
     for (var i = 0; i < 12; i++) { var wx = rr(40, W - 80), wy = rr(790, 1080); if (wy > 820 && wy < 1030 && wx > 180 && wx < 1440) continue; S(ctx, [[wx, wy], [wx + 30, wy - 10], [wx + 60, wy]], { w: 3.5, color: C.seaD }); }
-    montgolfier(ctx, 900, 90, 170, { people: true, up: false });
+    montgolfier(ctx, 900, 90, 170, { gallery: true, up: false });
     birds(ctx, [[400, 330], [460, 300], [1380, 360]]);
     crowd(ctx, { x0: 250, x1: 1400, y0: 842, y1: 842, rows: 1, s0: 2.7, s1: 2.7, era: 1783, target: [900, 380], front: true, pointers: 0.25, gap: 26 });
     stoneBridge(ctx, 200, 1440, 850, 1030);
@@ -2086,40 +2140,45 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     E(ctx, bx, by - 60, 940, 360, { fill: C.blue, k: 48 });
     for (var g = 0; g < gores; g += 2) { var a0 = g / gores * 6.283, a1 = (g + 1) / gores * 6.283; S(ctx, [[bx + Math.cos(a0) * 150, by + Math.sin(a0) * 58], [bx + Math.cos(a0) * 940, by - 60 + Math.sin(a0) * 360], [bx + Math.cos((a0 + a1) / 2) * 950, by - 60 + Math.sin((a0 + a1) / 2) * 366], [bx + Math.cos(a1) * 940, by - 60 + Math.sin(a1) * 360], [bx + Math.cos(a1) * 150, by + Math.sin(a1) * 58]], { closed: true, smooth: false, fill: C.gold, stroke: false, j: 0.5 }); }
     for (g = 0; g < gores; g++) { var a = g / gores * 6.283; Ln(ctx, bx + Math.cos(a) * 150, by + Math.sin(a) * 58, bx + Math.cos(a) * 940, by - 60 + Math.sin(a) * 360, { w: 3 }); }
-    E(ctx, bx, by, 170, 66, { fill: C.gold, w: 6 }); E(ctx, bx, by, 118, 42, { fill: '#3a2a1a', w: 4 });
-    [[620, 470], [1300, 470]].forEach(function (p, i) { Ln(ctx, bx + (i ? 150 : -150), by + 20, p[0], p[1], { w: 6 }); });
-    S(ctx, [[580, 780], [1340, 780], [1290, 850], [630, 850]], { closed: true, smooth: false, fill: C.wickerD });
-    S(ctx, [[620, 470], [1300, 470], [1340, 780], [580, 780]], { closed: true, smooth: false, fill: C.wicker });
-    for (var r = 1; r < 5; r++) { var yy = 470 + r * 62; Ln(ctx, 620 - r * 8, yy, 1300 + r * 8, yy, { w: 3, color: C.wickerD }); }
-    for (var c = 1; c < 9; c++) { var t = c / 9; Ln(ctx, 620 + 680 * t, 480, 580 + 760 * t, 772, { w: 3, color: C.wickerD }); }
+    /* the gallery seen from underneath: a wicker ring round the mouth of the balloon, the brazier hanging in the middle */
+    var gcx = 960, gcy = 150, grx = 700, gry = 250;
+    E(ctx, gcx, gcy, grx, gry, { fill: C.wicker, w: 6 });
+    for (var k = 0; k < 28; k++) { var a = k / 28 * 6.283; Ln(ctx, gcx + Math.cos(a) * 250, gcy + Math.sin(a) * 90, gcx + Math.cos(a) * grx * 0.97, gcy + Math.sin(a) * gry * 0.97, { w: 3, color: C.wickerD }); }
+    E(ctx, gcx, gcy, 480, 172, { w: 3, color: C.wickerD });
+    E(ctx, gcx, gcy, 250, 90, { fill: C.gold, w: 6 }); E(ctx, gcx, gcy, 200, 70, { fill: '#3a2a1a', w: 4 });
+    [[-120, 20], [120, 20]].forEach(function (c) { Ln(ctx, gcx + c[0], gcy + c[1], gcx + c[0] * 0.35, gcy + 70, { w: 4 }); });
+    fire(ctx, gcx, gcy + 70, 60); Rc(ctx, gcx - 60, gcy + 80, 120, 34, { fill: '#4a4a4a', w: 4 });
+    /* its outer rail, and him leaning over it, looking down at the drop (at us) */
+    var rim = []; for (k = 0; k <= 20; k++) { var ar = 0.12 * Math.PI + k / 20 * 0.76 * Math.PI; rim.push([gcx + Math.cos(ar) * grx, gcy + Math.sin(ar) * gry]); }
     var pl = { x: 960, s: 1.65, coat: C.coatB, expr: 'nervous', look: [0, 1], hair: C.wig };
-    body(function () { head(ctx, 960, 368, HEAD_R * 16.5, pl); });
-    Rc(ctx, 600, 440, 720, 40, { fill: C.wickerD });
-    body(function () { [[790, 452], [1130, 452]].forEach(function (h) { ln2(ctx, [[h[0] + (h[0] < 960 ? 30 : -30), 430], h], pen(16.5) * 1.05); stickHand(ctx, h[0], h[1], Math.PI / 2, 16, 'fist', pen(16.5)); }); });
+    body(function () { head(ctx, 960, 470, HEAD_R * 16.5, pl); });
+    S(ctx, rim, { w: 34, color: C.wickerD }); S(ctx, rim, { w: 6, color: '#8a6a3a', j: 0 });
+    body(function () { [[800, 392], [1120, 392]].forEach(function (h) { ln2(ctx, [[h[0] + (h[0] < 960 ? 50 : -50), 330], h], pen(16.5) * 1.05); stickHand(ctx, h[0], h[1], Math.PI / 2, 16, 'fist', pen(16.5)); }); });
   };
   P[5] = function (ctx) {
     seed(5);
     frameCard(ctx, 960, 590, 900, 620, -0.04, C.sepia);
-    alpha(ctx, 0.35, function () { montgolfier(ctx, 960, 330, 150, { basket: true }); });
+    alpha(ctx, 0.35, function () { montgolfier(ctx, 960, 250, 150, { gallery: true }); });
     T(ctx, 'PHOTO', 960, 520, 110, { obj: true, rot: -0.04, color: '#5a4a32' });
     T(ctx, '1783 engraving of the first flight', 960, 640, 48, { obj: true, rot: -0.04, color: '#5a4a32' });
     T(ctx, 'Wikimedia Commons · public domain', 960, 710, 36, { obj: true, rot: -0.04, color: '#7a6a52', weight: 400 });
   };
   P[6] = function (ctx) {
     seed(6);
-    /* over Paris: the Seine, Notre-Dame and the Invalides dome below, the man on the right pointing down at them */
-    parisSkyline(ctx, { x0: 820, base: 960, sc: 0.46, nd: 1330, inv: 1760, river: true });
-    montgolfier(ctx, 380, -353, 300, { basket: false });
-    [-1, 1].forEach(function (sd) { Ln(ctx, 380 + sd * 95, 328, 380 + sd * 320, 746, { w: 5 }); });
-    var bw = function () { wicker(ctx, 50, 760, 660, 300); };
-    var shock = { x: 225, y: 1040, s: 1.35, coat: C.coatBl, expr: 'shock', look: [0.7, 0.6] };
-    var happy = { x: 520, y: 1030, s: 1.35, coat: C.coatB, expr: 'happy', look: [1, 0.6] };
-    person(ctx, Object.assign({ noArms: true }, shock));
-    person(ctx, Object.assign({ noArms: true }, happy));
-    bw();
-    personArms(ctx, Object.assign({ pose: { l: { to: [140, 744], type: 'fist', bend: 1 }, r: { to: [310, 744], type: 'fist', bend: -1 } } }, shock));
-    personArms(ctx, Object.assign({ pose: { l: { to: [440, 744], type: 'fist', bend: 1 }, r: { to: [810, 600], type: 'point', bend: 1 } } }, happy));
-    dashed(ctx, [[880, 640], [1100, 700], [1300, 760]], { w: 4 });
+    /* over Paris: the two men stand on opposite sides of the round gallery, the fire between them;
+       d'Arlandes waves down to the city, Pilâtre holds the fork of straw that feeds the fire */
+    parisSkyline(ctx, { x0: -40, base: 1060, sc: 0.3, nd: 1300, inv: 380, river: true });
+    [[1640, 420, 70], [200, 330, 52], [1790, 660, 44]].forEach(function (c) { puff(ctx, c[0], c[1], c[2], '#eef2f5'); });
+    var R = 560, cx = 900;
+    montgolfier(ctx, cx, 680 - 2.25 * R, R, { gallery: true, crew: function (G) {
+      var ps = G.ps, u = 0.0689 * ps * 10, off = G.rx - R * 0.09, fy = G.fy + G.ry * Math.sqrt(1 - Math.pow(off / G.rx, 2)) * 0.6 - 4 * ps, xl = cx - off, xr = cx + off;
+      var hx = xl - 7 * u, hy = fy - 30 * u;
+      Ln(ctx, hx, fy - 8 * u, hx, fy - 62 * u, { w: 5, color: '#7a5a3a' });
+      [-1.6, 0, 1.6].forEach(function (d) { Ln(ctx, hx + d * u, fy - 62 * u, hx + d * u * 1.2, fy - 70 * u, { w: 3.5, color: '#555' }); });
+      for (var k = 0; k < 7; k++) Ln(ctx, hx - 3 * u + k * u, fy - 69 * u - rnd() * 3 * u, hx - 3.6 * u + k * 1.1 * u, fy - 75 * u - rnd() * 3 * u, { w: 3, color: '#d9b64a' });
+      mini(ctx, xl, fy, ps, C.coatB, { hair: C.wig, expr: 'determined', look: [0.6, 0], hands: { l: { to: [hx, hy], type: 'fist', bend: -1 }, r: { to: [xl + 4 * u, fy - 28 * u], type: 'fist', bend: 1 } } });
+      mini(ctx, xr, fy, ps, C.coatBl, { hair: C.wig, expr: 'happy', look: [1, 0.7], wave: 1 });
+    } });
   };
   P[7] = function (ctx) {
     seed(7);
@@ -2127,7 +2186,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     parisSkyline(ctx, { base: 700, sc: 0.5, nd: 620, inv: 1500 });
     Rc(ctx, -20, 700, W + 40, H - 680, { fill: '#d8cfbb', w: 0, j: 0 }); Ln(ctx, -10, 706, W + 10, 706, { w: 4 });
     for (var p = 0; p < 16; p++) E(ctx, rr(30, W - 30), rr(740, H - 20), rr(16, 28), rr(7, 11), { w: 2.6, color: '#a89f8b' });
-    montgolfier(ctx, 1420, 250, 68, { fire: false });
+    montgolfier(ctx, 1420, 230, 68, { gallery: true });
     dashed(ctx, [[260, 560], [700, 440], [1100, 400], [1350, 440]], { w: 4 });
     T(ctx, '25 MINUTES', 760, 300, 128);
     var cols = [C.coatR, C.coatBl, C.coatT, C.coatG, C.coatB, '#6b7d4f', '#8a5a7a'];
@@ -2256,7 +2315,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   P[21] = function (ctx) {
     seed(21);
     Ln(ctx, 960, 190, 965, H + 10, { w: 6 });
-    montgolfier(ctx, 470, 290, 125, {});
+    montgolfier(ctx, 470, 250, 125, { gallery: true });
     arrowAlong(ctx, [[720, 720], [725, 550], [720, 400]], { w: 8, head: 40 });
     T(ctx, '1783', 470, 950, 90);
     alpha(ctx, 0.22, function () { crumpled(ctx, 1440, 330, 105); });
@@ -2403,13 +2462,29 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[37] = function (ctx) {
     seed(37);
-    ground(ctx, 800); rails(ctx, 980);
-    /* close in on the handshake: two awkward faces above two hands meeting in the middle */
-    var hk = huskisson({ x: 560, y: 1560, s: 2.4, expr: 'grin', look: [1, 0.2], noLegs: true, sweat: true, pose: { l: [12, 4, 'open'], r: { to: [940, 800], type: 'fist', bend: 1 } } });
-    var wl = wellington({ x: 1380, y: 1560, s: 2.4, hat: '', expr: 'grin', look: [-1, 0.2], noLegs: true, pose: { l: { to: [980, 800], type: 'fist', bend: -1 }, r: [12, 4, 'open'] } });
-    person(ctx, hk); person(ctx, wl);
-    E(ctx, 960, 800, 56, 44, { fill: C.skin, w: 6, j: 0 });
-    [-18, 0, 18].forEach(function (d) { Ln(ctx, 944 + d, 776, 948 + d, 824, { w: 4, j: 0 }); });
+    /* close on the handshake, the Duke's carriage as in 29: open sides, gilded pillars, crimson canopy.
+       The Duke stays seated and reaches over the side; Huskisson stands on the track below, reaching up */
+    ground(ctx, 800); rails(ctx, 1040);
+    Rc(ctx, 1000, 520, 940, 130, { fill: '#6a1f1f' });
+    for (var sb = 0; sb < 4; sb++) Rc(ctx, 1030 + sb * 230, 540, 200, 90, { w: 3, color: '#4a1515' });
+    var peel = { x: 1790, y: 1090, s: 1.15, coat: '#3a3a42', hairStyle: 'receding', hair: '#8a6a4a', vest: '#f3efe6', collar: true, hat: 'top', expr: 'neutral', look: [-1, 0.3], noLegs: true };
+    person(ctx, Object.assign({ noArms: true }, peel));
+    var wl = wellington({ x: 1440, y: 1100, s: 1.35, expr: 'grin', look: [-1, 0.4], noLegs: true });
+    person(ctx, Object.assign({ noArms: true }, wl));
+    [1030, 1640].forEach(function (px) { Rc(ctx, px - 11, 210, 22, 440, { fill: C.gold, w: 3 }); });
+    S(ctx, [[980, 150], [1940, 150], [1940, 200], [980, 200]], { closed: true, smooth: false, fill: C.grand });
+    for (var fr = 0; fr < 9; fr++) S(ctx, [[980 + fr * 107, 200], [1033 + fr * 107, 232], [1087 + fr * 107, 200]], { closed: true, fill: C.grand, w: 3 });
+    Ln(ctx, 980, 200, 1940, 200, { w: 5, color: C.gold });
+    Rc(ctx, 1000, 650, 940, 270, { fill: C.grand });
+    for (var gp = 0; gp < 3; gp++) Rc(ctx, 1040 + gp * 300, 690, 260, 170, { w: 4, color: C.gold });
+    E(ctx, 1470, 775, 30, 30, { fill: C.gold, w: 3 });
+    Rc(ctx, 990, 632, 960, 24, { fill: C.gold, w: 4 });
+    wheel(ctx, 1240, 980, 110, '#3a3a3a'); wheel(ctx, 1760, 980, 110, '#3a3a3a');
+    var hk = huskisson({ x: 760, y: 1270, s: 1.7, expr: 'grin', look: [1, -0.4], sweat: true, pose: { l: [12, 4, 'open'], r: { to: [1122, 626], type: 'fist', bend: 1 } } });
+    person(ctx, hk);
+    body(function () { var k0 = SKIN; SKIN = C.skin; var sh = [1440 - SH_X * 13.5, 1100 + SH_Y * 13.5]; armP(ctx, { to: [1152, 628], type: 'fist', bend: 1 }, sh, -1, 13.5, C.coatK); SKIN = k0; });
+    E(ctx, 1138, 626, 44, 36, { fill: C.skin, w: 6, j: 0 });
+    [-14, 0, 14].forEach(function (d) { Ln(ctx, 1126 + d, 608, 1130 + d, 644, { w: 4, j: 0 }); });
   };
   P[38] = function (ctx) {
     seed(38); ground(ctx, 640); rails(ctx, FAR); rails(ctx, NEAR);
@@ -2830,15 +2905,24 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     lampPost(ctx, 250, 670, 420); lampPost(ctx, 1700, 670, 420);
     person(ctx, driscoll({ x: 1480, y: 680, s: 0.3, dress: '#6b4a6e', hatCol: '#3a2a3e', expr: 'neutral', look: [-1, 0] }));
     person(ctx, { x: 420, y: 680, s: 0.3, coat: C.coatK, hairStyle: 'short', hair: C.hairB, hat: 'top', trousers: true, pants: C.trou, collar: true, vest: '#f3efe6', expr: 'shock', look: [1, 0] });
-    motorCar(ctx, 560, 1050, 1.1, { driver: {} });
+    motorCar(ctx, 560, 1050, 1.1, { driver: {}, passenger: {} });
   };
   P[78] = function (ctx) { seed(78); crystalPalace(ctx, 800); person(ctx, driscoll({ x: 960, y: 1060, s: 1.3, expr: 'happy', pose: { l: [16, 6, 'open'], r: [16, 6, 'open'] } })); };
   P[79] = function (ctx) {
     seed(79);
     /* from the driver's seat: the street ahead, Bridget Driscoll stepping out to cross, the tiller in his hands */
+    /* Dolphin Terrace, in the grounds of the Crystal Palace: the gravel terrace between stone balustrades, the palace
+       beyond; the car is giving demonstration rides. Bridget Driscoll steps across with her daughter May and a friend */
     var pr = cam(960, 470, 820, 1.7);
-    streetDepth(ctx, pr, { roadW: 9, pav: 2.2, zh0: 2.6, hMin: 9.5, hMax: 10.5, roof: 2.2, cols: [C.brick, '#c98a6a', '#b5654a', '#d0a080'], doors: ['#2c3e63', '#3f6b4a', '#6b2e2e'], winCol: '#4b5566', winW: 1.1, winH: 1.8, winStep: 2.5, floors: function (h) { return [1.0, 4.1, 7.1]; } });
-    [[-5.3, 16, 1], [5.4, 24, -1], [-5.6, 32, 1]].forEach(function (p, i) { personAt(ctx, pr, p[0], p[1], { walk: p[2], coat: [C.coatK, '#6b4a6e', C.coatN][i], hat: ['bowler', 'bighat', 'top'][i], hairStyle: ['part', 'bun', 'receding'][i], hair: [C.hairB, '#7a5a3a', C.greyH][i], trousers: i !== 1, pants: C.trou, dress: i === 1 ? '#6b4a6e' : undefined, expr: 'neutral', look: [p[2], 0] }); });
+    for (var tr = 0; tr < 9; tr++) E(ctx, 60 + tr * 230, 470 + rr(-8, 8), 150, 60, { fill: tr % 2 ? '#86b05f' : '#7fa05a' });
+    palaceFar(ctx, 1080, 470, 0.42);
+    q3(ctx, pr, [[-40, 0, 1.2], [40, 0, 1.2], [40, 0, 400], [-40, 0, 400]], { fill: '#a9c97e', w: 0, j: 0 });
+    q3(ctx, pr, [[-8, 0, 1.2], [8, 0, 1.2], [8, 0, 400], [-8, 0, 400]], { fill: '#e3d6b6', w: 0, j: 0 });
+    for (var gv = 0; gv < 40; gv++) { var gz = rr(3, 30), gx = rr(-7.5, 7.5), gp = pr(gx, 0, gz), gk = pr.px(1, gz); Ln(ctx, gp[0] - 0.08 * gk, gp[1], gp[0] + 0.08 * gk, gp[1], { w: Math.max(2, 0.04 * gk), color: '#b8a888', j: 0 }); }
+    balustradeDepth(ctx, pr, -8, 3, 90); balustradeDepth(ctx, pr, 8, 3, 90);
+    [[-6.2, 20, 1], [5.8, 26, -1], [6.4, 17, -1]].forEach(function (p, i) { personAt(ctx, pr, p[0], p[1], { walk: i === 2 ? undefined : p[2], coat: [C.coatK, '#6b4a6e', C.coatN][i], hat: ['bowler', 'bighat', 'boater'][i], hairStyle: ['part', 'bun', 'short'][i], hair: [C.hairB, '#7a5a3a', '#1f1a17'][i], skin: i === 2 ? '#9a653f' : undefined, trousers: i !== 1, pants: C.trou, dress: i === 1 ? '#6b4a6e' : undefined, expr: 'neutral', look: [p[2], 0] }); });
+    personAt(ctx, pr, -2.6, 8.2, { walk: 1, dress: '#8a5a7a', hairStyle: 'long', hair: '#3e2e24', hat: 'boater', expr: 'neutral', look: [1, 0] }, 1.58);
+    personAt(ctx, pr, -3.7, 8.6, { walk: 1, dress: '#5e6b4a', hairStyle: 'bun', hair: '#5a4332', hat: 'bighat', hatCol: '#6b4a3a', expr: 'neutral', look: [1, 0] }, 1.64);
     var bp = pr(-0.9, 0, 7.5), bs = pr.px(1.65, 7.5) / 534;
     person(ctx, driscoll(walkPose({ x: bp[0], y: bp[1], s: bs, expr: 'neutral', look: [1, 0.1] }, 1)));
     /* the front of the car: the dashboard, the brass lamp, the tiller bar, his gloved hands */
@@ -2851,8 +2935,18 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     T(ctx, '1896', 250, 250, 88);
   };
   P[80] = function (ctx) {
-    seed(80); street(ctx, 900);
-    motorCar(ctx, 760, 1040, 1.5, { driver: {}, puff: true });
+    seed(80);
+    /* Dolphin Terrace, side on: the gravel terrace, its balustrade, the palace beyond */
+    for (var tr = 0; tr < 9; tr++) E(ctx, 60 + tr * 230, 700 + rr(-8, 8), 150, 60, { fill: tr % 2 ? '#86b05f' : '#7fa05a' });
+    palaceFar(ctx, 1150, 700, 0.55);
+    Rc(ctx, -20, 700, W + 40, 90, { fill: '#a9c97e', w: 0, j: 0 });
+    Rc(ctx, -20, 780, W + 40, 16, { fill: '#e9e2d4', w: 3 });
+    for (var bl = 10; bl < W; bl += 34) Rc(ctx, bl, 796, 14, 74, { fill: '#e9e2d4', w: 2.5 });
+    for (var bpst = 60; bpst < W; bpst += 420) { Rc(ctx, bpst - 24, 770, 48, 110, { fill: '#e9e2d4', w: 3 }); E(ctx, bpst, 746, 24, 22, { fill: '#e9e2d4', w: 3 }); }
+    Rc(ctx, -20, 866, W + 40, 18, { fill: '#d6cfbf', w: 3 });
+    Rc(ctx, -20, 884, W + 40, H - 864, { fill: '#e3d6b6', w: 0, j: 0 });
+    for (var gv = 0; gv < 30; gv++) { var gx = rr(20, W - 20), gy = rr(900, H - 10); Ln(ctx, gx, gy, gx + 18, gy, { w: 3, color: '#b8a888', j: 0 }); }
+    motorCar(ctx, 760, 1040, 1.5, { driver: {}, passenger: {}, puff: true });
     person(ctx, walkPose({ x: 520, y: 1045, s: 0.9, coat: C.coatK, hairStyle: 'short', hair: C.hairB, hat: 'top', trousers: true, pants: C.trou, collar: true, vest: '#f3efe6', expr: 'smug', look: [-1, 0] }, -1));
     for (var i = 0; i < 3; i++) Ln(ctx, 1500, 700 + i * 60, 1680, 700 + i * 60, { w: 5 });
     T(ctx, '4 MPH', 1560, 380, 110);
@@ -2985,14 +3079,10 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[91] = function (ctx) {
     seed(91);
-    /* a plaque on a stone wall */
-    Rc(ctx, -20, -20, W + 40, H + 40, { fill: C.stone, w: 0, j: 0 });
-    for (var r = 0; r < 11; r++) for (var c = 0; c < 9; c++) Rc(ctx, (r % 2 ? -110 : 0) + c * 230, 150 + r * 90, 220, 82, { fill: shade(C.stone, 0.92 + ((r * 7 + c * 3) % 5) * 0.03), w: 3, j: 0.8 });
-    polyR(ctx, 960, 610, 900, 520, 0, { fill: '#3f5a4a', w: 7 });
-    polyR(ctx, 960, 610, 840, 460, 0, { w: 5, color: C.gold });
-    [[560, 400], [1360, 400], [560, 820], [1360, 820]].forEach(function (p) { E(ctx, p[0], p[1], 14, 14, { fill: C.gold, w: 3 }); });
-    T(ctx, 'MARY WARD', 960, 560, 110, { obj: true, color: C.gold, maxW: 720 });
-    T(ctx, '1869', 960, 690, 80, { obj: true, color: C.gold });
+    /* the accident as the papers reported it, September 1869 */
+    newspaper(ctx, 960, 620, 640, -0.03, 'FATAL ACCIDENT', 'SEPTEMBER 1869');
+    T(ctx, 'AT PARSONSTOWN', 965, 452, 40, { obj: true, rot: -0.03 });
+    T(ctx, 'the Hon. Mrs. Ward', 968, 505, 30, { obj: true, rot: -0.03, weight: 400 });
   };
   P[92] = function (ctx) {
     seed(92);
@@ -3012,13 +3102,13 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     crowd(ctx, { x0: -20, x1: 1940, y0: 800, y1: 830, rows: 2, s0: 1.8, s1: 2.1, era: 1908, target: [560, 900], front: true, gap: 16, skip: function (x) { return x > 1230 && x < 1660; } });
     S(ctx, [[-20, 830], [960, 842], [1940, 830]], { w: 5 });
     flyer(ctx, 560, 1000, 1.7, {});
-    person(ctx, orville({ x: 1440, y: 1060, s: 0.52, hat: 'cap', capCol: '#6b6150', expr: 'happy', look: [-1, 0] }));
-    person(ctx, selfridge({ x: 1580, y: 1062, s: 0.52, hat: 'cap', capCol: C.olive, expr: 'neutral', look: [-1, 0] }));
+    person(ctx, orville({ x: 1440, y: 1060, s: 0.52, expr: 'happy', look: [-1, 0] }));
+    person(ctx, selfridge({ x: 1580, y: 1062, s: 0.52, expr: 'neutral', look: [-1, 0] }));
   };
   P[96] = function (ctx) {
     seed(96); fortMyer(ctx, 700, { flag: 1800 });
     flyer(ctx, 470, 950, 1.8, {});
-    person(ctx, orville({ x: 1250, y: 1050, s: 0.5, expr: 'happy', hat: 'cap', capCol: '#6b6150', look: [-1, 0], pose: { l: [80, 88, 'point'], r: [16, 6, 'open'] } }));
+    person(ctx, orville({ x: 1250, y: 1050, s: 0.5, expr: 'happy', look: [-1, 0], pose: { l: [80, 88, 'point'], r: [16, 6, 'open'] } }));
     [1440, 1580, 1720].forEach(function (x, i) { var h = person(ctx, selfridge({ x: x, y: 1050 + i * 6, s: 0.5, hair: [C.hairD, C.hairB, C.greyH][i], hat: 'cap', capCol: C.olive, expr: 'neutral', look: [-1, 0], pose: { l: [30, -60, 'open'], r: [16, 6, 'open'] } })); clipboard(ctx, h.l[0] + 10, h.l[1] - 6, -0.2, 0.7); });
   };
   P[97] = function (ctx) {
@@ -3027,8 +3117,8 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     fortMyer(ctx, 560, { flag: 1760 });
     derrick(ctx, 1560, 700, 300);
     flyer(ctx, 740, 740, 0.9, {});
-    person(ctx, orville({ x: 1080, y: 740, s: 0.2, hat: 'cap', capCol: '#6b6150', expr: 'happy' }));
-    person(ctx, selfridge({ x: 1140, y: 742, s: 0.2, hat: 'cap', capCol: C.olive, expr: 'neutral' }));
+    person(ctx, orville({ x: 1080, y: 740, s: 0.2, expr: 'happy' }));
+    person(ctx, selfridge({ x: 1140, y: 742, s: 0.2, expr: 'neutral' }));
     for (var px = 40; px < W; px += 300) Rc(ctx, px, 780, 12, 70, { fill: '#e9e2cf', w: 3 });
     S(ctx, [[-20, 792], [300, 806], [640, 792], [960, 806], [1300, 792], [1620, 806], [1940, 792]], { w: 5 });
     crowd(ctx, { x0: -40, x1: 1960, y0: 860, y1: 1010, rows: 3, s0: 3.6, s1: 5.6, era: 1908, target: [760, 640], backs: 1, pointers: 0.15, kids: 0.12, gap: 40 });
@@ -3050,7 +3140,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     /* over Lieutenant Selfridge's shoulder: his clipboard, and the Flyer he has been sent to judge */
     fortMyer(ctx, 620, { flag: 1780 });
     flyer(ctx, 1180, 820, 1.25, {});
-    person(ctx, orville({ x: 1560, y: 860, s: 0.36, hat: 'cap', capCol: '#6b6150', expr: 'happy', look: [-1, 0] }));
+    person(ctx, orville({ x: 1560, y: 860, s: 0.36, expr: 'happy', look: [-1, 0] }));
     watcher(ctx, { x: 400, y: 640, s: 2.9, coat: C.olive, hair: C.hairD, pointSide: 1, point: [800, 1030], handType: 'fist' });
     clipboard(ctx, 880, 930, -0.22, 3.6);
     ctx.save(); ctx.translate(880, 950); ctx.rotate(-0.22);
@@ -3207,14 +3297,24 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   };
   P[115] = function (ctx) { seed(115); newspaper(ctx, 960, 620, 640, 0.02, 'JAPAN SURRENDERS', 'AUGUST 1945'); };
   P[116] = function (ctx) {
-    seed(116); ground(ctx, 700, '#e3c79a');
-    S(ctx, [[-20, 700], [200, 460], [420, 520], [640, 380], [900, 560], [1100, 440], [1400, 520], [1650, 400], [1940, 560], [1940, 700]], { closed: true, fill: '#b58a6a' });
-    Rc(ctx, 520, 640, 880, 220, { fill: '#e8e2d4' });
+    seed(116);
+    /* Los Alamos sits on a pine-covered mesa (the Pajarito Plateau) under the Jemez Mountains, not in cactus desert */
+    S(ctx, [[-20, 700], [-20, 470], [260, 400], [520, 450], [800, 360], [1080, 430], [1360, 380], [1640, 440], [1940, 400], [1940, 640], [-20, 640]], { closed: true, fill: '#7c947a' });
+    S(ctx, [[-20, 700], [-20, 610], [380, 600], [440, 640], [1480, 632], [1540, 596], [1940, 604], [1940, 760], [-20, 760]], { closed: true, smooth: false, fill: '#d8b48c' });
+    for (var st = 0; st < 5; st++) Ln(ctx, 20 + st * 390, 650 + rr(-6, 6), 200 + st * 390, 652 + rr(-6, 6), { w: 3, color: '#b8916a' });
+    ground(ctx, 700, '#cbbd8e');
+    function pine(ctx, x, y, h) {
+      Rc(ctx, x - h * 0.04, y - h * 0.3, h * 0.08, h * 0.3, { fill: '#6b4a2b', w: 3 });
+      for (var k = 0; k < 3; k++) { var w = h * (0.34 - k * 0.08), b = y - h * (0.22 + k * 0.24); S(ctx, [[x - w, b], [x, b - h * 0.42], [x + w, b]], { closed: true, smooth: false, fill: k % 2 ? '#3f6b42' : '#4a7a4a', w: 4 }); }
+    }
+    [[80, 700, 150], [200, 690, 110], [1520, 700, 160], [1660, 690, 120], [1800, 705, 170]].forEach(function (p) { pine(ctx, p[0], p[1], p[2]); });
+    Rc(ctx, 520, 640, 880, 220, { fill: '#cfc6a2' });
+    for (var sd = 0; sd < 7; sd++) Ln(ctx, 524, 668 + sd * 28, 1396, 668 + sd * 28, { w: 2, color: '#b1a883', j: 0.4 });
     S(ctx, [[500, 640], [960, 590], [1420, 640]], { closed: true, smooth: false, fill: C.slate });
     for (var i = 0; i < 6; i++) Rc(ctx, 580 + i * 135, 690, 70, 80, { fill: '#5d7b95', w: 4 });
     Rc(ctx, 1300, 740, 60, 120, { fill: '#6b4a2b', w: 4 });
     Ln(ctx, 300, 960, 300, 820, { w: 10, color: '#6b4a2b' }); Rc(ctx, 100, 740, 400, 90, { fill: C.paper, w: 6 }); T(ctx, 'LOS ALAMOS', 300, 785, 44, { obj: true });
-    [[620, 1000], [1600, 920], [1760, 880]].forEach(function (c) { S(ctx, [[c[0], c[1]], [c[0], c[1] - 110], [c[0] - 30, c[1] - 80], [c[0], c[1] - 60], [c[0] + 30, c[1] - 90], [c[0], c[1] - 70]], { w: 10, color: '#6f9a4a' }); });
+    [[700, 1010, 190], [1640, 1000, 230], [1840, 960, 150]].forEach(function (p) { pine(ctx, p[0], p[1], p[2]); });
   };
   P[117] = function (ctx) {
     seed(117); labTable(ctx, 760);
@@ -3499,6 +3599,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
     Rc(ctx, rx - rw / 2, 520, rw, 620, { fill: '#e9ecef' });
     S(ctx, [[rx - rw / 2, 522], [rx - rw * 0.4, 360], [rx - rw * 0.16, 220], [rx, 196], [rx + rw * 0.16, 220], [rx + rw * 0.4, 360], [rx + rw / 2, 522]], { closed: true, fill: '#e9ecef' });
     Ln(ctx, rx - rw / 2, 522, rx + rw / 2, 522, { w: 4 });
+    Rc(ctx, rx - 16, 150, 32, 50, { fill: '#6b6f78', w: 4 }); for (var et = 0; et < 3; et++) Ln(ctx, rx - 16, 160 + et * 14, rx + 16, 168 + et * 14, { w: 3 });
     Rc(ctx, rx - rw / 2, 820, rw, 36, { fill: C.red, w: 3 });
     E(ctx, rx + rw * 0.28, 610, 46, 56, { fill: '#2b2b30', w: 5 });
     polyR(ctx, rx + rw * 0.28 + 62, 606, 16, 110, 0.2, { fill: '#c9ccd1', w: 4 });
@@ -3817,7 +3918,7 @@ input[type=checkbox]{ width:20px; height:20px; accent-color:var(--accent); }
   }
   /* ---------- outro: the second grid ---------- */
   var G2 = [
-    function (ctx) { ground(ctx, 900); montgolfier(ctx, 1150, 60, 330, { basket: true }); person(ctx, { x: 560, y: 1040, s: 0.6, coat: C.coatB, expr: 'happy', look: [1, -0.5], pose: { l: [14, 6, 'open'], r: [120, 110, 'point'] } }); },
+    function (ctx) { ground(ctx, 900); montgolfier(ctx, 1150, 40, 300, { gallery: true }); person(ctx, { x: 560, y: 1040, s: 0.6, coat: C.coatB, expr: 'happy', look: [1, -0.5], pose: { l: [14, 6, 'open'], r: [120, 110, 'point'] } }); },
     function (ctx) { ground(ctx, 760); rails(ctx, 960); loco(ctx, 800, 960, 1.9, { smoke: false }); person(ctx, huskisson({ x: 480, y: 1040, s: 0.75, expr: 'happy', look: [1, 0] })); },
     function (ctx) { ground(ctx, 940); coneChute(ctx, 1250, 200, 380, { basket: true }); person(ctx, cocking({ x: 560, y: 1040, s: 0.55, expr: 'determined', look: [1, -0.3] })); },
     function (ctx) { ground(ctx, 820); steamCar(ctx, 820, 1030, 2.0, { seats: [] }); person(ctx, mward({ x: 520, y: 1040, s: 1.0, expr: 'happy', hat: 'bonnet', hatCol: '#e9d7a8' })); },
@@ -6687,7 +6788,7 @@ if (typeof module === "object" && typeof module.exports === "object") Object.ass
 
   /* which panels were redrawn in each version of the page, so frames made by an older version can be brought up to date.
      grid panels count too: they show small copies of the first panel of each item */
-  var DRAWN = 11, REDRAWN = { 11: [79,  81,  83,  184], 10: [3,  7,  17,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,  72,  73,  74,  95,  97,  99,  100,  106,  107,  114,  115,  116,  117,  118,  119,  120,  121,  122,  123,  124,  125,  126,  127,  128,  129,  130,  131,  132,  133,  134,  135,  136,  137,  138,  139,  140,  141,  146,  147,  156,  157,  158,  162,  177,  178,  181,  184,  192,  193,  195,  203,  204,  205,  216,  217,  218,  219,  220], 9: [3,  7,  10,  17,  19,  26,  27,  35,  36,  47,  51,  53,  58,  61,  63,  65,  79,  80,  83,  85,  87,  88,  89,  90,  95,  97,  98,  99,  104,  105,  120,  121,  123,  136,  148,  164,  174,  181,  184,  191], 8: [3, 6, 7, 15, 16, 27, 28, 31, 32, 34, 36, 43, 47, 48, 51, 52, 53, 55, 58, 59, 61, 78, 88, 96, 97, 99, 105, 106, 107, 110, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 134, 135, 136, 137, 138, 162] };
+  var DRAWN = 12, REDRAWN = { 12: [1,2,3,4,5,6,7,21,22,24,25,37,49,50,75,76,77,79,80,91,93,94,95,96,97,99,104,112,113,116,142,143,146,148,164,166,167,168,188,189,210,211,212,213,214,215,216,217,218,219,220], 11: [79,  81,  83,  184], 10: [3,  7,  17,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,  72,  73,  74,  95,  97,  99,  100,  106,  107,  114,  115,  116,  117,  118,  119,  120,  121,  122,  123,  124,  125,  126,  127,  128,  129,  130,  131,  132,  133,  134,  135,  136,  137,  138,  139,  140,  141,  146,  147,  156,  157,  158,  162,  177,  178,  181,  184,  192,  193,  195,  203,  204,  205,  216,  217,  218,  219,  220], 9: [3,  7,  10,  17,  19,  26,  27,  35,  36,  47,  51,  53,  58,  61,  63,  65,  79,  80,  83,  85,  87,  88,  89,  90,  95,  97,  98,  99,  104,  105,  120,  121,  123,  136,  148,  164,  174,  181,  184,  191], 8: [3, 6, 7, 15, 16, 27, 28, 31, 32, 34, 36, 43, 47, 48, 51, 52, 53, 55, 58, 59, 61, 78, 88, 96, 97, 99, 105, 106, 107, 110, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 134, 135, 136, 137, 138, 162] };
   function redrawnSince(v) { var o = {}, any = false; Object.keys(REDRAWN).forEach(function (k) { if (+k > v) REDRAWN[k].forEach(function (n) { o[n] = 1; any = true; }); }); o.any = any; return o; }
   /* every frame as a lossless PNG, numbered as one sequence. picking a folder that already has some of them carries on
      from where it stopped, and redraws only the frames whose panel changed since they were made (firsts-export.json
